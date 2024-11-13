@@ -1,0 +1,34 @@
+---
+title: "typingData"
+output: html_notebook
+---
+
+This script defines the class of each variable in the dataset.
+
+### 1. Load required libraries
+
+```{r}
+library(here)
+library(tidyverse)
+```
+
+### 2. Import the dataset
+
+Load the Covidence dataset
+
+```{r}
+
+d <- read_rds(here("data/fullDataRaw.rds"))
+
+```
+
+Load the data dictionary
+
+```{r}
+
+dict <- read_csv(here("data/data_dictionary.csv"))
+
+
+```
+
+
