@@ -4,6 +4,7 @@
 ### information about errors and the second contains the clean-er dataset. 
 
 standardData <- function(rawData){
+    library(here)
     ### Create two dataframes that will be updated at each cleaning step. 
     ### ### 1. Contains study ID, column name, and error. 
     missingDF <- data.frame("Study title" = NULL,
@@ -17,7 +18,7 @@ standardData <- function(rawData){
     ### Clean the column names ###
     ### For standardization and efficiency, shortened column names will be 
     ### read in from the data/data_dictionary.csv file. 
-    shortColumnNames <- read.csv("data/data_dictionary.csv")[,1:2]
+    shortColumnNames <- read.csv(here("data/data_dictionary.csv"))[,1:2]
     
     ### Check that the row count of column names equals the column count 
     ### of raw data. 
@@ -118,7 +119,7 @@ standardData <- function(rawData){
     missingDF <- missingDF[order(missingDF$Study.title),]
 
     ### Save missings dataframe as a csv
-    write.csv(missingDF,"data/missingDataToCheck.csv", row.names = FALSE)
+    write.csv(missingDF, here("data/missingDataToCheck.csv"), row.names = FALSE)
     
     ### Create a list that contains the two dataframes:
     standardizedDataSummary <- list(missingDF, 

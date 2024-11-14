@@ -2,16 +2,17 @@
 ### series and creates a fully cleaned dataframe for analysis. 
 
 cleanData <- function(){
+    library(here)
     
     ### Read in the rawData
-    rawData <- readRDS("data/fullDataRaw.rds")
+    rawData <- readRDS(here("data/fullDataRaw.rds"))
     
     ### Call in the standardizeData function
-    source("code/standardizeData.R")
+    source(here("code/standardizeData.R"))
     stndDF <- standardData(rawData)[[2]]
     
     ### Call in the validateData function
-    source("code/validateData.R")
+    source(here("code/validateData.R"))
     vldDF <- validateData(stndDF)[[2]]
     
     ### Call in logicalData function 
