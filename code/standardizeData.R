@@ -18,15 +18,15 @@ standardData <- function(rawData){
     ### Clean the column names ###
     ### For standardization and efficiency, shortened column names will be 
     ### read in from the data/data_dictionary.csv file. 
-    shortColumnNames <- read.csv(here("data/data_dictionary.csv"))[,1:2]
+    dict <- read.csv(here("data/data_dictionary.csv"))[,1:3]
     
     ### Check that the row count of column names equals the column count 
     ### of raw data. 
-    if (nrow(shortColumnNames) != ncol(rawData)){
+    if (nrow(dict) != ncol(rawData)){
         stop("Length of imported column names does not match raw data.")
     } 
     
-    colnames(cleanDF) <- shortColumnNames[,2]
+    colnames(cleanDF) <- dict[,"Short.column.name"]
     
     ### Clean responses ###
     
