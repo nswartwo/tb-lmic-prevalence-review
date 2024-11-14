@@ -18,7 +18,11 @@ Load the Covidence dataset
 
 ```{r}
 
-d <- read_rds(here("data/fullDataRaw.rds"))
+source(here("code/cleanData.R"))
+
+#this is not working in the script, but works in the console.
+#Need to work out why
+#d <- cleanData()
 
 ```
 
@@ -28,7 +32,45 @@ Load the data dictionary
 
 dict <- read_csv(here("data/data_dictionary.csv"))
 
-
 ```
+
+### 3. Update variable types in `d` to what we want indicated in `dict$Type`
+
+Merge the data dictionary with the dataset
+
+```{r}
+# Create a named vector to map column types
+type_mapping <- setNames(dict$Type, dict$`Short column name`)
+
+# Filter type_mapping to include only columns present in `d`
+type_mapping <- type_mapping[names(type_mapping) %in% names(d)]
+
+# Function to safely convert columns
+convert_column <- function(column, type) {
+  if (type == "numeric") {
+    suppressWarnings(parse_number(column))
+  } else if (type == "character") {
+    parse_character(column)
+  } else if (type == "logical") {
+    parse_logical(column)
+  } else if (type == "integer") {
+    suppressWarnings(parse_integer(column))
+  } else if (type == "factor") {
+    parse_factor(column)
+  } else {
+    column # Leave unchanged if the type isn't specified
+  }
+}
+
+# Apply the conversion based on type mapping
+d <- d %>%
+  mutate(across(
+    all_of(names(type_mapping)), 
+    ~ convert_column(.x, type_mapping[cur_column()])
+  ))
+     
+```
+
+
 
 

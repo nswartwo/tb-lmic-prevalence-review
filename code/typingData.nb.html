@@ -1757,27 +1757,10 @@ display: none;
 <h3>1. Load required libraries</h3>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShoZXJlKVxuYGBgIn0= -->
-<pre class="r"><code>library(here)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShoZXJlKVxubGlicmFyeSh0aWR5dmVyc2UpXG5gYGAifQ== -->
+<pre class="r"><code>library(here)
+library(tidyverse)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiaGVyZSgpIHN0YXJ0cyBhdCAvVXNlcnMvcGV0ZXIubWFjcGhlcnNvbi9MaWJyYXJ5L01vYmlsZSBEb2N1bWVudHMvY29tfmFwcGxlfkNsb3VkRG9jcy9Eb2N1bWVudHMvRG9jdW1lbnRzIC0gUGV0ZXLigJlzIE1hYyBtaW5pL1Byb2plY3RzL1RCX3NleF9kaWZmZXJlbmNlc18yXzIwMjQtMTEtMTMvV29yay9EYXRhL3RiLWxtaWMtcHJldmFsZW5jZS1yZXZpZXdcbiJ9 -->
-<pre><code>here() starts at /Users/peter.macpherson/Library/Mobile Documents/com~apple~CloudDocs/Documents/Documents - Peter’s Mac mini/Projects/TB_sex_differences_2_2024-11-13/Work/Data/tb-lmic-prevalence-review</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5gYGAifQ== -->
-<pre class="r"><code>library(tidyverse)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoi4pSA4pSAIEF0dGFjaGluZyBjb3JlIHRpZHl2ZXJzZSBwYWNrYWdlcyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAgdGlkeXZlcnNlIDIuMC4wIOKUgOKUgFxu4pyUIGRwbHlyICAgICAxLjEuNCAgICAg4pyUIHJlYWRyICAgICAyLjEuNVxu4pyUIGZvcmNhdHMgICAxLjAuMCAgICAg4pyUIHN0cmluZ3IgICAxLjUuMVxu4pyUIGdncGxvdDIgICAzLjUuMSAgICAg4pyUIHRpYmJsZSAgICAzLjIuMVxu4pyUIGx1YnJpZGF0ZSAxLjkuMyAgICAg4pyUIHRpZHlyICAgICAxLjMuMVxu4pyUIHB1cnJyICAgICAxLjAuMiAgICAgXG7ilIDilIAgQ29uZmxpY3RzIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCB0aWR5dmVyc2VfY29uZmxpY3RzKCkg4pSA4pSAXG7inJYgZHBseXI6OmZpbHRlcigpIG1hc2tzIHN0YXRzOjpmaWx0ZXIoKVxu4pyWIGRwbHlyOjpsYWcoKSAgICBtYXNrcyBzdGF0czo6bGFnKClcbuKEuSBVc2UgdGhlIFx1MDAxYl04OztodHRwOi8vY29uZmxpY3RlZC5yLWxpYi5vcmcvXHUwMDA3Y29uZmxpY3RlZCBwYWNrYWdlXHUwMDFiXTg7O1x1MDAwNyB0byBmb3JjZSBhbGwgY29uZmxpY3RzIHRvIGJlY29tZSBlcnJvcnNcbiJ9 -->
-<pre><code>── Attaching core tidyverse packages ────────────────────────────────────────────────────────────────────────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.5
-✔ forcats   1.0.0     ✔ stringr   1.5.1
-✔ ggplot2   3.5.1     ✔ tibble    3.2.1
-✔ lubridate 1.9.3     ✔ tidyr     1.3.1
-✔ purrr     1.0.2     
-── Conflicts ──────────────────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()
-ℹ Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1786,15 +1769,15 @@ display: none;
 <p>Load the Covidence dataset</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZCA8LSByZWFkX3JkcyhcImRhdGEvZnVsbERhdGFSYXcucmRzXCIpXG5cbmBgYCJ9 -->
-<pre class="r"><code>d &lt;- read_rds(&quot;data/fullDataRaw.rds&quot;)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5zb3VyY2UoaGVyZShcImNvZGUvY2xlYW5EYXRhLlJcIikpXG5cbiN0aGlzIGlzIG5vdCB3b3JraW5nIGluIHRoZSBzY3JpcHQsIGJ1dCB3b3JrcyBpbiB0aGUgY29uc29sZS5cbiNOZWVkIHRvIHdvcmsgb3V0IHdoeVxuI2QgPC0gY2xlYW5EYXRhKClcblxuYGBgIn0= -->
+<pre class="r"><code>
+source(here(&quot;code/cleanData.R&quot;))
+
+#this is not working in the script, but works in the console.
+#Need to work out why
+#d &lt;- cleanData()
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiV2FybmluZyBpbiByZWFkUkRTKGNvbiwgcmVmaG9vayA9IHJlZmhvb2spIDpcbiAgY2Fubm90IG9wZW4gZmlsZSAnZGF0YS9mdWxsRGF0YVJhdy5yZHMnOiBObyBzdWNoIGZpbGUgb3IgZGlyZWN0b3J5XG5FcnJvciBpbiByZWFkUkRTKGNvbiwgcmVmaG9vayA9IHJlZmhvb2spIDogY2Fubm90IG9wZW4gdGhlIGNvbm5lY3Rpb25cbiJ9 -->
-<pre><code>Warning in readRDS(con, refhook = refhook) :
-  cannot open file &#39;data/fullDataRaw.rds&#39;: No such file or directory
-Error in readRDS(con, refhook = refhook) : cannot open the connection</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Load the data dictionary</p>
@@ -1804,9 +1787,9 @@ Error in readRDS(con, refhook = refhook) : cannot open the connection</code></pr
 <pre class="r"><code>dict &lt;- read_csv(here(&quot;data/data_dictionary.csv&quot;))
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiUm93czogNTkxIENvbHVtbnM6IDRcbuKUgOKUgCBDb2x1bW4gc3BlY2lmaWNhdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbkRlbGltaXRlcjogXCIsXCJcbmNociAoMyk6IFJhdyBkYXRhIGNvbHVtbiBuYW1lLCBTaG9ydCBjb2x1bW4gbmFtZSwgVHlwZVxubGdsICgxKTogRGVzY3JpcHRpb25cblxu4oS5IFVzZSBgc3BlYygpYCB0byByZXRyaWV2ZSB0aGUgZnVsbCBjb2x1bW4gc3BlY2lmaWNhdGlvbiBmb3IgdGhpcyBkYXRhLlxu4oS5IFNwZWNpZnkgdGhlIGNvbHVtbiB0eXBlcyBvciBzZXQgYHNob3dfY29sX3R5cGVzID0gRkFMU0VgIHRvIHF1aWV0IHRoaXMgbWVzc2FnZS5cbiJ9 -->
+<!-- rnb-output-begin eyJkYXRhIjoiUm93czogNTkxIENvbHVtbnM6IDRcbuKUgOKUgCBDb2x1bW4gc3BlY2lmaWNhdGlvbiDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIBcbkRlbGltaXRlcjogXCIsXCJcbmNociAoMyk6IFJhdyBkYXRhIGNvbHVtbiBuYW1lLCBTaG9ydCBjb2x1bW4gbmFtZSwgVHlwZVxubGdsICgxKTogRGVzY3JpcHRpb25cblxu4oS5IFVzZSBgc3BlYygpYCB0byByZXRyaWV2ZSB0aGUgZnVsbCBjb2x1bW4gc3BlY2lmaWNhdGlvbiBmb3IgdGhpcyBkYXRhLlxu4oS5IFNwZWNpZnkgdGhlIGNvbHVtbiB0eXBlcyBvciBzZXQgYHNob3dfY29sX3R5cGVzID0gRkFMU0VgIHRvIHF1aWV0IHRoaXMgbWVzc2FnZS5cbiJ9 -->
 <pre><code>Rows: 591 Columns: 4
-── Column specification ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+── Column specification ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 Delimiter: &quot;,&quot;
 chr (3): Raw data column name, Short column name, Type
 lgl (1): Description
@@ -1816,10 +1799,41 @@ lgl (1): Description
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+</div>
+<div id="update-variable-types-in-d-to-what-we-want-indicated-in-dicttype" class="section level3">
+<h3>3. Update variable types in <code>d</code> to what we want indicated
+in <code>dict$Type</code></h3>
+<p>Merge the data dictionary with the dataset</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBcHBseSB0aGUgY29udmVyc2lvbiBiYXNlZCBvbiB0eXBlIG1hcHBpbmdcbmQgPC0gZCAlPiVcbiAgbXV0YXRlKGFjcm9zcyhcbiAgICBhbGxfb2YobmFtZXModHlwZV9tYXBwaW5nKSksIFxuICAgIH4gY29udmVydF9jb2x1bW4oLngsIHR5cGVfbWFwcGluZ1tjdXJfY29sdW1uKCldKVxuICApKVxuXG5gYGAifQ== -->
+<pre class="r"><code># Apply the conversion based on type mapping
+d &lt;- d %&gt;%
+  mutate(across(
+    all_of(names(type_mapping)), 
+    ~ convert_column(.x, type_mapping[cur_column()])
+  ))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gYG11dGF0ZSgpYDpcbuKEuSBJbiBhcmd1bWVudDogYGFjcm9zcyhhbGxfb2YobmFtZXModHlwZV9tYXBwaW5nKSksIH5jb252ZXJ0X2NvbHVtbigueCwgdHlwZV9tYXBwaW5nW2N1cl9jb2x1bW4oKV0pKWAuXG5DYXVzZWQgYnkgZXJyb3IgaW4gYGFjcm9zcygpYDpcbiEgQ2FuJ3QgY29tcHV0ZSBjb2x1bW4gYGNvdmlkZW5jZS5pZGAuXG5DYXVzZWQgYnkgZXJyb3IgaW4gYHBhcnNlX251bWVyaWMoKWA6XG4hIGNvdWxkIG5vdCBmaW5kIGZ1bmN0aW9uIFwicGFyc2VfbnVtZXJpY1wiXG5CYWNrdHJhY2U6XG4gIDEuIGQgJT4lIC4uLlxuIDEwLiBnbG9iYWwgY29udmVydF9jb2x1bW4oY292aWRlbmNlLmlkLCB0eXBlX21hcHBpbmdbY3VyX2NvbHVtbigpXSlcbiAxMS4gYmFzZTo6c3VwcHJlc3NXYXJuaW5ncyhwYXJzZV9udW1lcmljKGNvbHVtbikpXG4gMTIuIGJhc2U6OndpdGhDYWxsaW5nSGFuZGxlcnMoLi4uKVxuIn0= -->
+<pre><code>Error in `mutate()`:
+ℹ In argument: `across(all_of(names(type_mapping)), ~convert_column(.x, type_mapping[cur_column()]))`.
+Caused by error in `across()`:
+! Can&#39;t compute column `covidence.id`.
+Caused by error in `parse_numeric()`:
+! could not find function &quot;parse_numeric&quot;
+Backtrace:
+  1. d %&gt;% ...
+ 10. global convert_column(covidence.id, type_mapping[cur_column()])
+ 11. base::suppressWarnings(parse_numeric(column))
+ 12. base::withCallingHandlers(...)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAidHlwaW5nRGF0YSIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKVGhpcyBzY3JpcHQgZGVmaW5lcyB0aGUgY2xhc3Mgb2YgZWFjaCB2YXJpYWJsZSBpbiB0aGUgZGF0YXNldC4KCiMjIyAxLiBMb2FkIHJlcXVpcmVkIGxpYnJhcmllcwoKYGBge3J9CmxpYnJhcnkoaGVyZSkKbGlicmFyeSh0aWR5dmVyc2UpCmBgYAoKIyMjIDIuIEltcG9ydCB0aGUgZGF0YXNldAoKTG9hZCB0aGUgQ292aWRlbmNlIGRhdGFzZXQKCmBgYHtyfQoKZCA8LSByZWFkX3JkcyhoZXJlKCJkYXRhL2Z1bGxEYXRhUmF3LnJkcyIpKQoKYGBgCgpMb2FkIHRoZSBkYXRhIGRpY3Rpb25hcnkKCmBgYHtyfQoKZGljdCA8LSByZWFkX2NzdihoZXJlKCJkYXRhL2RhdGFfZGljdGlvbmFyeS5jc3YiKSkKCgpgYGAKCgo=</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAidHlwaW5nRGF0YSIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKVGhpcyBzY3JpcHQgZGVmaW5lcyB0aGUgY2xhc3Mgb2YgZWFjaCB2YXJpYWJsZSBpbiB0aGUgZGF0YXNldC4KCiMjIyAxLiBMb2FkIHJlcXVpcmVkIGxpYnJhcmllcwoKYGBge3J9CmxpYnJhcnkoaGVyZSkKbGlicmFyeSh0aWR5dmVyc2UpCmBgYAoKIyMjIDIuIEltcG9ydCB0aGUgZGF0YXNldAoKTG9hZCB0aGUgQ292aWRlbmNlIGRhdGFzZXQKCmBgYHtyfQoKc291cmNlKGhlcmUoImNvZGUvY2xlYW5EYXRhLlIiKSkKCiN0aGlzIGlzIG5vdCB3b3JraW5nIGluIHRoZSBzY3JpcHQsIGJ1dCB3b3JrcyBpbiB0aGUgY29uc29sZS4KI05lZWQgdG8gd29yayBvdXQgd2h5CiNkIDwtIGNsZWFuRGF0YSgpCgpgYGAKCkxvYWQgdGhlIGRhdGEgZGljdGlvbmFyeQoKYGBge3J9CgpkaWN0IDwtIHJlYWRfY3N2KGhlcmUoImRhdGEvZGF0YV9kaWN0aW9uYXJ5LmNzdiIpKQoKYGBgCgojIyMgMy4gVXBkYXRlIHZhcmlhYmxlIHR5cGVzIGluIGBkYCB0byB3aGF0IHdlIHdhbnQgaW5kaWNhdGVkIGluIGBkaWN0JFR5cGVgCgpNZXJnZSB0aGUgZGF0YSBkaWN0aW9uYXJ5IHdpdGggdGhlIGRhdGFzZXQKCmBgYHtyfQojIENyZWF0ZSBhIG5hbWVkIHZlY3RvciB0byBtYXAgY29sdW1uIHR5cGVzCnR5cGVfbWFwcGluZyA8LSBzZXROYW1lcyhkaWN0JFR5cGUsIGRpY3QkYFNob3J0IGNvbHVtbiBuYW1lYCkKCiMgRmlsdGVyIHR5cGVfbWFwcGluZyB0byBpbmNsdWRlIG9ubHkgY29sdW1ucyBwcmVzZW50IGluIGBkYAp0eXBlX21hcHBpbmcgPC0gdHlwZV9tYXBwaW5nW25hbWVzKHR5cGVfbWFwcGluZykgJWluJSBuYW1lcyhkKV0KCiMgRnVuY3Rpb24gdG8gc2FmZWx5IGNvbnZlcnQgY29sdW1ucwpjb252ZXJ0X2NvbHVtbiA8LSBmdW5jdGlvbihjb2x1bW4sIHR5cGUpIHsKICBpZiAodHlwZSA9PSAibnVtZXJpYyIpIHsKICAgIHN1cHByZXNzV2FybmluZ3MocGFyc2VfbnVtYmVyKGNvbHVtbikpCiAgfSBlbHNlIGlmICh0eXBlID09ICJjaGFyYWN0ZXIiKSB7CiAgICBwYXJzZV9jaGFyYWN0ZXIoY29sdW1uKQogIH0gZWxzZSBpZiAodHlwZSA9PSAibG9naWNhbCIpIHsKICAgIHBhcnNlX2xvZ2ljYWwoY29sdW1uKQogIH0gZWxzZSBpZiAodHlwZSA9PSAiaW50ZWdlciIpIHsKICAgIHN1cHByZXNzV2FybmluZ3MocGFyc2VfaW50ZWdlcihjb2x1bW4pKQogIH0gZWxzZSBpZiAodHlwZSA9PSAiZmFjdG9yIikgewogICAgcGFyc2VfZmFjdG9yKGNvbHVtbikKICB9IGVsc2UgewogICAgY29sdW1uICMgTGVhdmUgdW5jaGFuZ2VkIGlmIHRoZSB0eXBlIGlzbid0IHNwZWNpZmllZAogIH0KfQoKIyBBcHBseSB0aGUgY29udmVyc2lvbiBiYXNlZCBvbiB0eXBlIG1hcHBpbmcKZCA8LSBkICU+JQogIG11dGF0ZShhY3Jvc3MoCiAgICBhbGxfb2YobmFtZXModHlwZV9tYXBwaW5nKSksIAogICAgfiBjb252ZXJ0X2NvbHVtbigueCwgdHlwZV9tYXBwaW5nW2N1cl9jb2x1bW4oKV0pCiAgKSkKICAgICAKYGBgCgoKCgo=</div>
 
 
 
