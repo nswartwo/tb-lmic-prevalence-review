@@ -123,7 +123,7 @@ standardData <- function(rawData){
     write.csv(missingDF, here("data/missingDataToCheck.csv"), row.names = FALSE)
     
     ### Convert column types to correct format
-    type_mapping <- setNames(dict$Type, dict$`Short column name`)
+    type_mapping <- setNames(dict$Type, dict$Short.column.name)
     type_mapping <- type_mapping[names(type_mapping) %in% names(cleanDF)]
     
     ### Function to safely convert columns
