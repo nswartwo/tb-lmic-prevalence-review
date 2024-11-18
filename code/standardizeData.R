@@ -5,6 +5,7 @@
 
 standardData <- function(rawData){
     library(here)
+    library(tidyverse)
     ### Create two dataframes that will be updated at each cleaning step. 
     ### ### 1. Contains study ID, column name, and error. 
     missingDF <- data.frame("Study title" = NULL,
@@ -121,8 +122,37 @@ standardData <- function(rawData){
     ### Save missings dataframe as a csv
     write.csv(missingDF, here("data/missingDataToCheck.csv"), row.names = FALSE)
     
+    ### Convert column types to correct format
+    type_mapping <- setNames(dict$Type, dict$`Short column name`)
+    type_mapping <- type_mapping[names(type_mapping) %in% names(cleanDF)]
+    
+    ### Function to safely convert columns
+    convert_column <- function(column, type) {
+        if (type == "numeric") {
+            suppressWarnings(parse_number(column))
+        } else if (type == "character") {
+            parse_character(column)
+        } else if (type == "logical") {
+            parse_logical(column)
+        } else if (type == "integer") {
+            suppressWarnings(parse_integer(column))
+        } else if (type == "factor") {
+            parse_factor(column)
+        } else {
+            column # Leave unchanged if the type isn't specified
+        }
+    }
+    
+    #### Apply the conversion based on type mapping
+    cleanDF <- cleanDF %>%
+        mutate(across(
+            all_of(names(type_mapping)), 
+            ~ convert_column(.x, type_mapping[cur_column()])
+        ))
+    
     ### Create a list that contains the two dataframes:
-    standardizedDataSummary <- list(missingDF, 
-                                    cleanDF)
+    ### Name the list to make extraction easier (e.g. out$cleanDF now accessible)
+    standardizedDataSummary <- list(missDF = missingDF, 
+                                    cleanDF = cleanDF)
     return(standardizedDataSummary)
 }
