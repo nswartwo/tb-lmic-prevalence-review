@@ -8,6 +8,7 @@ Load required libraries
 ```{r}
 library(tidyverse)
 library(here)
+library(janitor)
 ```
 
 import the clean dataset
@@ -15,6 +16,15 @@ import the clean dataset
 ```{r}
 source(here("code/standardizeData.R"))
 stndDF <- standardData(fullDataRaw)$cleanDF
+
+
+```
+
+#Standardise column names
+
+```{r}
+stndDF <- stndDF %>%
+  rename_with(str_to_lower)
 
 
 ```
@@ -28,7 +38,7 @@ First make a dataset containing only those variables with want to separate out, 
 
 Also need to swap out some non-standard seprarator characters
 
-Also need to remove some "n/a"s and recode as missing
+Also need to remove some "n/a"s etc and recode as missing
 
 ```{r}
 
@@ -61,11 +71,40 @@ Now separate the confidence intervals into `.lower`, and `.higher`
 
 ```{r}
 
+# Identify all columns containing ".CI."
+ci_cols <- names(confvars2)[str_detect(names(confvars2), "\\.ci\\.")]
 
-confvars3 <- confvars2 %>%
-    separate_wider_delim(-covidence.id, delim = "-", names_sep = "_", cols_remove = TRUE) %>% #separate columns
-    rename_at(vars(contains("_1")), ~ paste0(., "lower"))
+# Use purrr::reduce() to iteratively apply separate()
+confvars_cleaned <- reduce(
+  ci_cols,
+  ~ .x %>%
+    separate(
+      col = .y,
+      into = c(
+        str_replace(.y, "\\.ci\\.", ".ci.lower."),
+        str_replace(.y, "\\.ci\\.", ".ci.upper.")
+      ),
+      sep = "-"
+    ),
+  .init = confvars2
+)
+
+```
+
+Convert all confidence interval columns to numeric
+
+```{r}
+
+confvars_cleaned <- confvars_cleaned %>%
+    mutate(across(contains(".ci."), as.numeric))
 
 
 ```
 
+Now join back onto the main dataset
+
+```{r}
+
+cleanDF <- left_join(stndDF, confvars_cleaned)
+
+```

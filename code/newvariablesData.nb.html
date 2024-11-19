@@ -1755,13 +1755,11 @@ display: none;
 <p>Load required libraries</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShoZXJlKVxuXG5gYGAifQ== -->
-<pre class="r"><code>library(here)
-</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5saWJyYXJ5KGhlcmUpXG5saWJyYXJ5KGphbml0b3IpXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyverse)
+library(here)
+library(janitor)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiaGVyZSgpIHN0YXJ0cyBhdCAvVXNlcnMvcGV0ZXIubWFjcGhlcnNvbi9MaWJyYXJ5L01vYmlsZSBEb2N1bWVudHMvY29tfmFwcGxlfkNsb3VkRG9jcy9Eb2N1bWVudHMvRG9jdW1lbnRzIC0gUGV0ZXLigJlzIE1hYyBtaW5pL1Byb2plY3RzL1RCX3NleF9kaWZmZXJlbmNlc18yXzIwMjQtMTEtMTMvV29yay9EYXRhL3RiLWxtaWMtcHJldmFsZW5jZS1yZXZpZXdcbiJ9 -->
-<pre><code>here() starts at /Users/peter.macpherson/Library/Mobile Documents/com~apple~CloudDocs/Documents/Documents - Peter’s Mac mini/Projects/TB_sex_differences_2_2024-11-13/Work/Data/tb-lmic-prevalence-review</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>import the clean dataset</p>
@@ -1776,12 +1774,25 @@ display: none;
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>#Standardise column names</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3RuZERGIDwtIHN0bmRERiAlPiVcbiAgcmVuYW1lX3dpdGgoc3RyX3RvX2xvd2VyKCkpXG5cbmBgYCJ9 -->
+<pre class="r"><code>stndDF &lt;- stndDF %&gt;%
+  rename_with(str_to_lower())
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gc3RyX3RvX2xvd2VyKCkgOiBhcmd1bWVudCBcInN0cmluZ1wiIGlzIG1pc3NpbmcsIHdpdGggbm8gZGVmYXVsdFxuIn0= -->
+<pre><code>Error in str_to_lower() : argument &quot;string&quot; is missing, with no default</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 <p>#Separate confidence intervals out into columns</p>
 <p>We will use consistence naming throughout for all variables</p>
 <p>First make a dataset containing only those variables with want to
 separate out, with the covidence ID.</p>
 <p>Also need to swap out some non-standard seprarator characters</p>
-<p>Also need to remove some “n/a”s and recode as missing</p>
+<p>Also need to remove some “n/a”s etc and recode as missing</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29uZnZhcnMgPC0gc3RuZERGICU+JVxuICAgIHNlbGVjdChjb3ZpZGVuY2UuaWQsXG4gICAgICAgICAgIGNvbnRhaW5zKFwiLmNpLlwiKSkgJT4lXG4gICAgbXV0YXRlKGFjcm9zcyhcbiAgICAgICAgLmNvbHMgPSAtY292aWRlbmNlLmlkLFxuICAgICAgICAuZm5zID0gfiBzdHJfcmVwbGFjZSguLCBcIuKAk1wiLCBcIi1cIikpKSAlPiVcbiAgICBtdXRhdGUoYWNyb3NzKFxuICAgICAgICAuY29scyA9IC1jb3ZpZGVuY2UuaWQsXG4gICAgICAgIC5mbnMgPSB+IGNhc2Vfd2hlbiguPT1cIm4vYVwiIH4gaXMubmEsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICBUUlVFIH4gLilcbiAgICApKVxuXG5gYGAifQ== -->
@@ -1839,9 +1850,24 @@ Backtrace:
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Convert all confidence interval columns to numeric</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now join back onto the main dataset</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5ERiA8LSBsZWZ0X2pvaW4oc3RuZERGLCBjb25mdmFyc19jbGVhbmVkKVxuXG5gYGAifQ== -->
+<pre class="r"><code>cleanDF &lt;- left_join(stndDF, confvars_cleaned)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZyB3aXRoIGBieSA9IGpvaW5fYnkoY292aWRlbmNlLmlkKWBcbiJ9 -->
+<pre><code>Joining with `by = join_by(covidence.id)`</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKTG9hZCByZXF1aXJlZCBsaWJyYXJpZXMKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShoZXJlKQpgYGAKCmltcG9ydCB0aGUgY2xlYW4gZGF0YXNldAoKYGBge3J9CnNvdXJjZShoZXJlKCJjb2RlL3N0YW5kYXJkaXplRGF0YS5SIikpCnN0bmRERiA8LSBzdGFuZGFyZERhdGEoZnVsbERhdGFSYXcpJGNsZWFuREYKCgpgYGAKCgojU2VwYXJhdGUgY29uZmlkZW5jZSBpbnRlcnZhbHMgb3V0IGludG8gY29sdW1ucwoKV2Ugd2lsbCB1c2UgY29uc2lzdGVuY2UgbmFtaW5nIHRocm91Z2hvdXQgZm9yIGFsbCB2YXJpYWJsZXMKCkZpcnN0IG1ha2UgYSBkYXRhc2V0IGNvbnRhaW5pbmcgb25seSB0aG9zZSB2YXJpYWJsZXMgd2l0aCB3YW50IHRvIHNlcGFyYXRlIG91dCwgd2l0aCB0aGUgY292aWRlbmNlIElELgoKQWxzbyBuZWVkIHRvIHN3YXAgb3V0IHNvbWUgbm9uLXN0YW5kYXJkIHNlcHJhcmF0b3IgY2hhcmFjdGVycwoKQWxzbyBuZWVkIHRvIHJlbW92ZSBzb21lICJuL2EicyBhbmQgcmVjb2RlIGFzIG1pc3NpbmcKCmBgYHtyfQoKY29uZnZhcnMgPC0gc3RuZERGICU+JQogICAgc2VsZWN0KGNvdmlkZW5jZS5pZCwKICAgICAgICAgICBjb250YWlucygiLmNpLiIpKSAlPiUKICAgIG11dGF0ZShhY3Jvc3MoCiAgICAgICAgLmNvbHMgPSAtY292aWRlbmNlLmlkLAogICAgICAgIC5mbnMgPSB+IHN0cl9yZXBsYWNlKC4sICLigJMiLCAiLSIpKSkgJT4lCiAgICBtdXRhdGUoYWNyb3NzKAogICAgICAgIC5jb2xzID0gLWNvdmlkZW5jZS5pZCwKICAgICAgICAuZm5zID0gfiBjYXNlX3doZW4oLj09Im4vYSIgfCAuPT0iTlIiIHwgLj09Ik4vQU4vQSIgfiBOQV9jaGFyYWN0ZXJfLAogICAgICAgICAgICAgICAgICAgICAgICAgICBUUlVFIH4gLikKICAgICkpCgpgYGAKClRoZXJlIGlzIG9uZSBzdHVkeSB3aGVyZSBjb25maWRlbmNlIGludGVydmFscyBhcmUgcHJlc2VudGVkIGZvciBtdWx0aXBsZSBzdHJhdGEgaW4gdGhlIHNhbWUgY2VsbCAoY292aWRlbmNlLmlkID0gMjY5NzIpIC1wdWxsIHRoaXMgb25lIG91dCBjdXJyZW50bHkgdW50aWwgZml4ZWQuCgoKYGBge3J9Cgpjb25mdmFyczIgPC0gY29uZnZhcnMgJT4lCiAgICBmaWx0ZXIoY292aWRlbmNlLmlkICE9MjY5NzIpCgoKYGBgCgpOb3cgc2VwYXJhdGUgdGhlIGNvbmZpZGVuY2UgaW50ZXJ2YWxzIGludG8gYC5sb3dlcmAsIGFuZCBgLmhpZ2hlcmAKCmBgYHtyfQoKCmNvbmZ2YXJzMyA8LSBjb25mdmFyczIgJT4lCiAgICBzZXBhcmF0ZV93aWRlcl9kZWxpbSgtY292aWRlbmNlLmlkLCBkZWxpbSA9ICItIiwgbmFtZXNfc2VwID0gIl8iLCBjb2xzX3JlbW92ZSA9IFRSVUUpICU+JSAjc2VwYXJhdGUgY29sdW1ucwogICAgcmVuYW1lX2F0KHZhcnMoY29udGFpbnMoIl8xIikpLCB+IHBhc3RlMCguLCAibG93ZXIiKSkKCgpgYGAKCg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKTG9hZCByZXF1aXJlZCBsaWJyYXJpZXMKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShoZXJlKQpsaWJyYXJ5KGphbml0b3IpCmBgYAoKaW1wb3J0IHRoZSBjbGVhbiBkYXRhc2V0CgpgYGB7cn0Kc291cmNlKGhlcmUoImNvZGUvc3RhbmRhcmRpemVEYXRhLlIiKSkKc3RuZERGIDwtIHN0YW5kYXJkRGF0YShmdWxsRGF0YVJhdykkY2xlYW5ERgoKCmBgYAoKI1N0YW5kYXJkaXNlIGNvbHVtbiBuYW1lcwoKYGBge3J9CnN0bmRERiA8LSBzdG5kREYgJT4lCiAgcmVuYW1lX3dpdGgoc3RyX3RvX2xvd2VyKQoKCmBgYAoKCiNTZXBhcmF0ZSBjb25maWRlbmNlIGludGVydmFscyBvdXQgaW50byBjb2x1bW5zCgpXZSB3aWxsIHVzZSBjb25zaXN0ZW5jZSBuYW1pbmcgdGhyb3VnaG91dCBmb3IgYWxsIHZhcmlhYmxlcwoKRmlyc3QgbWFrZSBhIGRhdGFzZXQgY29udGFpbmluZyBvbmx5IHRob3NlIHZhcmlhYmxlcyB3aXRoIHdhbnQgdG8gc2VwYXJhdGUgb3V0LCB3aXRoIHRoZSBjb3ZpZGVuY2UgSUQuCgpBbHNvIG5lZWQgdG8gc3dhcCBvdXQgc29tZSBub24tc3RhbmRhcmQgc2VwcmFyYXRvciBjaGFyYWN0ZXJzCgpBbHNvIG5lZWQgdG8gcmVtb3ZlIHNvbWUgIm4vYSJzIGV0YyBhbmQgcmVjb2RlIGFzIG1pc3NpbmcKCmBgYHtyfQoKY29uZnZhcnMgPC0gc3RuZERGICU+JQogICAgc2VsZWN0KGNvdmlkZW5jZS5pZCwKICAgICAgICAgICBjb250YWlucygiLmNpLiIpKSAlPiUKICAgIG11dGF0ZShhY3Jvc3MoCiAgICAgICAgLmNvbHMgPSAtY292aWRlbmNlLmlkLAogICAgICAgIC5mbnMgPSB+IHN0cl9yZXBsYWNlKC4sICLigJMiLCAiLSIpKSkgJT4lCiAgICBtdXRhdGUoYWNyb3NzKAogICAgICAgIC5jb2xzID0gLWNvdmlkZW5jZS5pZCwKICAgICAgICAuZm5zID0gfiBjYXNlX3doZW4oLj09Im4vYSIgfCAuPT0iTlIiIHwgLj09Ik4vQU4vQSIgfiBOQV9jaGFyYWN0ZXJfLAogICAgICAgICAgICAgICAgICAgICAgICAgICBUUlVFIH4gLikKICAgICkpCgpgYGAKClRoZXJlIGlzIG9uZSBzdHVkeSB3aGVyZSBjb25maWRlbmNlIGludGVydmFscyBhcmUgcHJlc2VudGVkIGZvciBtdWx0aXBsZSBzdHJhdGEgaW4gdGhlIHNhbWUgY2VsbCAoY292aWRlbmNlLmlkID0gMjY5NzIpIC1wdWxsIHRoaXMgb25lIG91dCBjdXJyZW50bHkgdW50aWwgZml4ZWQuCgoKYGBge3J9Cgpjb25mdmFyczIgPC0gY29uZnZhcnMgJT4lCiAgICBmaWx0ZXIoY292aWRlbmNlLmlkICE9MjY5NzIpCgoKYGBgCgpOb3cgc2VwYXJhdGUgdGhlIGNvbmZpZGVuY2UgaW50ZXJ2YWxzIGludG8gYC5sb3dlcmAsIGFuZCBgLmhpZ2hlcmAKCmBgYHtyfQoKIyBJZGVudGlmeSBhbGwgY29sdW1ucyBjb250YWluaW5nICIuQ0kuIgpjaV9jb2xzIDwtIG5hbWVzKGNvbmZ2YXJzMilbc3RyX2RldGVjdChuYW1lcyhjb25mdmFyczIpLCAiXFwuY2lcXC4iKV0KCiMgVXNlIHB1cnJyOjpyZWR1Y2UoKSB0byBpdGVyYXRpdmVseSBhcHBseSBzZXBhcmF0ZSgpCmNvbmZ2YXJzX2NsZWFuZWQgPC0gcmVkdWNlKAogIGNpX2NvbHMsCiAgfiAueCAlPiUKICAgIHNlcGFyYXRlKAogICAgICBjb2wgPSAueSwKICAgICAgaW50byA9IGMoCiAgICAgICAgc3RyX3JlcGxhY2UoLnksICJcXC5jaVxcLiIsICIuY2kubG93ZXIuIiksCiAgICAgICAgc3RyX3JlcGxhY2UoLnksICJcXC5jaVxcLiIsICIuY2kudXBwZXIuIikKICAgICAgKSwKICAgICAgc2VwID0gIi0iCiAgICApLAogIC5pbml0ID0gY29uZnZhcnMyCikKCmBgYAoKQ29udmVydCBhbGwgY29uZmlkZW5jZSBpbnRlcnZhbCBjb2x1bW5zIHRvIG51bWVyaWMKCmBgYHtyfQoKY29uZnZhcnNfY2xlYW5lZCA8LSBjb25mdmFyc19jbGVhbmVkICU+JQogICAgbXV0YXRlKGFjcm9zcyhjb250YWlucygiLmNpLiIpLCBhcy5udW1lcmljKSkKCgpgYGAKCk5vdyBqb2luIGJhY2sgb250byB0aGUgbWFpbiBkYXRhc2V0CgpgYGB7cn0KCmNsZWFuREYgPC0gbGVmdF9qb2luKHN0bmRERiwgY29uZnZhcnNfY2xlYW5lZCkKCmBgYA==</div>
 
 
 
