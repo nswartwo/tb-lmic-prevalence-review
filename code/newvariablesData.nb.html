@@ -1779,14 +1779,69 @@ display: none;
 <p>#Separate confidence intervals out into columns</p>
 <p>We will use consistence naming throughout for all variables</p>
 <p>First make a dataset containing only those variables with want to
-separate out, with the covidence ID</p>
+separate out, with the covidence ID.</p>
+<p>Also need to swap out some non-standard seprarator characters</p>
+<p>Also need to remove some “n/a”s and recode as missing</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29uZnZhcnMgPC0gc3RuZERGICU+JVxuICAgIHNlbGVjdChjb3ZpZGVuY2UuaWQsXG4gICAgICAgICAgIGNvbnRhaW5zKFwiLmNpLlwiKSkgJT4lXG4gICAgbXV0YXRlKGFjcm9zcyhcbiAgICAgICAgLmNvbHMgPSAtY292aWRlbmNlLmlkLFxuICAgICAgICAuZm5zID0gfiBzdHJfcmVwbGFjZSguLCBcIuKAk1wiLCBcIi1cIikpKSAlPiVcbiAgICBtdXRhdGUoYWNyb3NzKFxuICAgICAgICAuY29scyA9IC1jb3ZpZGVuY2UuaWQsXG4gICAgICAgIC5mbnMgPSB+IGNhc2Vfd2hlbiguPT1cIm4vYVwiIH4gaXMubmEsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICBUUlVFIH4gLilcbiAgICApKVxuXG5gYGAifQ== -->
+<pre class="r"><code>confvars &lt;- stndDF %&gt;%
+    select(covidence.id,
+           contains(&quot;.ci.&quot;)) %&gt;%
+    mutate(across(
+        .cols = -covidence.id,
+        .fns = ~ str_replace(., &quot;–&quot;, &quot;-&quot;))) %&gt;%
+    mutate(across(
+        .cols = -covidence.id,
+        .fns = ~ case_when(.==&quot;n/a&quot; ~ is.na,
+                           TRUE ~ .)
+    ))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gYG11dGF0ZSgpYDpcbuKEuSBJbiBhcmd1bWVudDogYGFjcm9zcyguLi4pYC5cbkNhdXNlZCBieSBlcnJvciBpbiBgYWNyb3NzKClgOlxuISBDYW4ndCBjb21wdXRlIGNvbHVtbiBgcHJldjEwMEsuQ0kuYmFjdGVyaW9sb2dpY2FsLnRiLm1hbGVgLlxuQ2F1c2VkIGJ5IGVycm9yIGluIGBjYXNlX3doZW4oKWA6XG4hIGAuLjEgKHJpZ2h0KWAgbXVzdCBiZSBhIHZlY3Rvciwgbm90IGEgcHJpbWl0aXZlIGZ1bmN0aW9uLlxuQmFja3RyYWNlOlxuICAxLiAuLi4gJT4lIC4uLlxuIDEwLiBkcGx5cjo6Y2FzZV93aGVuKC4uLilcbiJ9 -->
+<pre><code>Error in `mutate()`:
+ℹ In argument: `across(...)`.
+Caused by error in `across()`:
+! Can&#39;t compute column `prev100K.CI.bacteriological.tb.male`.
+Caused by error in `case_when()`:
+! `..1 (right)` must be a vector, not a primitive function.
+Backtrace:
+  1. ... %&gt;% ...
+ 10. dplyr::case_when(...)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>There is one study where confidence intervals are presented for
+multiple strata in the same cell (covidence.id = 26972) -pull this one
+out currently until fixed.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Now separate the confidence intervals into <code>.lower</code>, and
+<code>.higher</code></p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29uZnZhcnMzIDwtIGNvbmZ2YXJzMiAlPiVcbiAgICBzZXBhcmF0ZV93aWRlcl9kZWxpbSgtY292aWRlbmNlLmlkLCBkZWxpbSA9IFwiLVwiLCBuYW1lc19zZXAgPSBcIl9cIiwgY29sc19yZW1vdmUgPSBUUlVFKSAlPiUgI3NlcGFyYXRlIGNvbHVtbnNcbiAgICByZW5hbWVfaWYoY29udGFpbnMoXCJfMVwiKSwgfiBwYXN0ZTAoLiwgXCJsb3dlclwiKSlcblxuYGBgIn0= -->
+<pre class="r"><code>confvars3 &lt;- confvars2 %&gt;%
+    separate_wider_delim(-covidence.id, delim = &quot;-&quot;, names_sep = &quot;_&quot;, cols_remove = TRUE) %&gt;% #separate columns
+    rename_if(contains(&quot;_1&quot;), ~ paste0(., &quot;lower&quot;))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3I6XG4hIGBjb250YWlucygpYCBtdXN0IGJlIHVzZWQgd2l0aGluIGEgKnNlbGVjdGluZyogZnVuY3Rpb24uXG7ihLkgU2VlIFx1MDAxYl04O3BhY2thZ2UgPSB0aWR5c2VsZWN0OnRvcGljID0gZmFxLXNlbGVjdGlvbi1jb250ZXh0O2lkZTpoZWxwXHUwMDA3P3RpZHlzZWxlY3Q6OmZhcS1zZWxlY3Rpb24tY29udGV4dFx1MDAxYl04OztcdTAwMDcgZm9yIGRldGFpbHMuXG5CYWNrdHJhY2U6XG4gMS4gLi4uICU+JSByZW5hbWVfaWYoY29udGFpbnMoXCJfMVwiKSwgfiBwYXN0ZTAoLiwgXCJsb3dlclwiKSlcbiA0LiB0aWR5c2VsZWN0Ojpjb250YWlucyhcIl8xXCIpXG4gNi4gdGlkeXNlbGVjdDo6cGVla192YXJzKGZuID0gXCJjb250YWluc1wiKVxuIn0= -->
+<pre><code>Error:
+! `contains()` must be used within a *selecting* function.
+ℹ See ]8;package = tidyselect:topic = faq-selection-context;ide:help?tidyselect::faq-selection-context]8;; for details.
+Backtrace:
+ 1. ... %&gt;% rename_if(contains(&quot;_1&quot;), ~ paste0(., &quot;lower&quot;))
+ 4. tidyselect::contains(&quot;_1&quot;)
+ 6. tidyselect::peek_vars(fn = &quot;contains&quot;)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKTG9hZCByZXF1aXJlZCBsaWJyYXJpZXMKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShoZXJlKQpgYGAKCmltcG9ydCB0aGUgY2xlYW4gZGF0YXNldAoKYGBge3J9CnNvdXJjZShoZXJlKCJjb2RlL3N0YW5kYXJkaXplRGF0YS5SIikpCnN0bmRERiA8LSBzdGFuZGFyZERhdGEoZnVsbERhdGFSYXcpJGNsZWFuREYKCgpgYGAKCgojU2VwYXJhdGUgY29uZmlkZW5jZSBpbnRlcnZhbHMgb3V0IGludG8gY29sdW1ucwoKV2Ugd2lsbCB1c2UgY29uc2lzdGVuY2UgbmFtaW5nIHRocm91Z2hvdXQgZm9yIGFsbCB2YXJpYWJsZXMKCkZpcnN0IG1ha2UgYSBkYXRhc2V0IGNvbnRhaW5pbmcgb25seSB0aG9zZSB2YXJpYWJsZXMgd2l0aCB3YW50IHRvIHNlcGFyYXRlIG91dCwgd2l0aCB0aGUgY292aWRlbmNlIElECgpgYGB7cn0KCmNvbmZ2YXJzIDwtIHN0bmRERiAlPiUKICAgIHNlbGVjdChjb3ZpZGVuY2UuaWQsCiAgICAgICAgICAgY29udGFpbnMoIi5jaS4iKSkKCgoKCmBgYAoKCg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKTG9hZCByZXF1aXJlZCBsaWJyYXJpZXMKCmBgYHtyfQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShoZXJlKQpgYGAKCmltcG9ydCB0aGUgY2xlYW4gZGF0YXNldAoKYGBge3J9CnNvdXJjZShoZXJlKCJjb2RlL3N0YW5kYXJkaXplRGF0YS5SIikpCnN0bmRERiA8LSBzdGFuZGFyZERhdGEoZnVsbERhdGFSYXcpJGNsZWFuREYKCgpgYGAKCgojU2VwYXJhdGUgY29uZmlkZW5jZSBpbnRlcnZhbHMgb3V0IGludG8gY29sdW1ucwoKV2Ugd2lsbCB1c2UgY29uc2lzdGVuY2UgbmFtaW5nIHRocm91Z2hvdXQgZm9yIGFsbCB2YXJpYWJsZXMKCkZpcnN0IG1ha2UgYSBkYXRhc2V0IGNvbnRhaW5pbmcgb25seSB0aG9zZSB2YXJpYWJsZXMgd2l0aCB3YW50IHRvIHNlcGFyYXRlIG91dCwgd2l0aCB0aGUgY292aWRlbmNlIElELgoKQWxzbyBuZWVkIHRvIHN3YXAgb3V0IHNvbWUgbm9uLXN0YW5kYXJkIHNlcHJhcmF0b3IgY2hhcmFjdGVycwoKQWxzbyBuZWVkIHRvIHJlbW92ZSBzb21lICJuL2EicyBhbmQgcmVjb2RlIGFzIG1pc3NpbmcKCmBgYHtyfQoKY29uZnZhcnMgPC0gc3RuZERGICU+JQogICAgc2VsZWN0KGNvdmlkZW5jZS5pZCwKICAgICAgICAgICBjb250YWlucygiLmNpLiIpKSAlPiUKICAgIG11dGF0ZShhY3Jvc3MoCiAgICAgICAgLmNvbHMgPSAtY292aWRlbmNlLmlkLAogICAgICAgIC5mbnMgPSB+IHN0cl9yZXBsYWNlKC4sICLigJMiLCAiLSIpKSkgJT4lCiAgICBtdXRhdGUoYWNyb3NzKAogICAgICAgIC5jb2xzID0gLWNvdmlkZW5jZS5pZCwKICAgICAgICAuZm5zID0gfiBjYXNlX3doZW4oLj09Im4vYSIgfCAuPT0iTlIiIHwgLj09Ik4vQU4vQSIgfiBOQV9jaGFyYWN0ZXJfLAogICAgICAgICAgICAgICAgICAgICAgICAgICBUUlVFIH4gLikKICAgICkpCgpgYGAKClRoZXJlIGlzIG9uZSBzdHVkeSB3aGVyZSBjb25maWRlbmNlIGludGVydmFscyBhcmUgcHJlc2VudGVkIGZvciBtdWx0aXBsZSBzdHJhdGEgaW4gdGhlIHNhbWUgY2VsbCAoY292aWRlbmNlLmlkID0gMjY5NzIpIC1wdWxsIHRoaXMgb25lIG91dCBjdXJyZW50bHkgdW50aWwgZml4ZWQuCgoKYGBge3J9Cgpjb25mdmFyczIgPC0gY29uZnZhcnMgJT4lCiAgICBmaWx0ZXIoY292aWRlbmNlLmlkICE9MjY5NzIpCgoKYGBgCgpOb3cgc2VwYXJhdGUgdGhlIGNvbmZpZGVuY2UgaW50ZXJ2YWxzIGludG8gYC5sb3dlcmAsIGFuZCBgLmhpZ2hlcmAKCmBgYHtyfQoKCmNvbmZ2YXJzMyA8LSBjb25mdmFyczIgJT4lCiAgICBzZXBhcmF0ZV93aWRlcl9kZWxpbSgtY292aWRlbmNlLmlkLCBkZWxpbSA9ICItIiwgbmFtZXNfc2VwID0gIl8iLCBjb2xzX3JlbW92ZSA9IFRSVUUpICU+JSAjc2VwYXJhdGUgY29sdW1ucwogICAgcmVuYW1lX2F0KHZhcnMoY29udGFpbnMoIl8xIikpLCB+IHBhc3RlMCguLCAibG93ZXIiKSkKCgpgYGAKCg==</div>
 
 
 

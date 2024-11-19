@@ -24,17 +24,48 @@ stndDF <- standardData(fullDataRaw)$cleanDF
 
 We will use consistence naming throughout for all variables
 
-First make a dataset containing only those variables with want to separate out, with the covidence ID
+First make a dataset containing only those variables with want to separate out, with the covidence ID.
+
+Also need to swap out some non-standard seprarator characters
+
+Also need to remove some "n/a"s and recode as missing
 
 ```{r}
 
 confvars <- stndDF %>%
     select(covidence.id,
-           contains(".ci."))
+           contains(".ci.")) %>%
+    mutate(across(
+        .cols = -covidence.id,
+        .fns = ~ str_replace(., "–", "-"))) %>%
+    mutate(across(
+        .cols = -covidence.id,
+        .fns = ~ case_when(.=="n/a" | .=="NR" | .=="N/AN/A" ~ NA_character_,
+                           TRUE ~ .)
+    ))
+
+```
+
+There is one study where confidence intervals are presented for multiple strata in the same cell (covidence.id = 26972) -pull this one out currently until fixed.
 
 
+```{r}
+
+confvars2 <- confvars %>%
+    filter(covidence.id !=26972)
 
 
 ```
 
+Now separate the confidence intervals into `.lower`, and `.higher`
+
+```{r}
+
+
+confvars3 <- confvars2 %>%
+    separate_wider_delim(-covidence.id, delim = "-", names_sep = "_", cols_remove = TRUE) %>% #separate columns
+    rename_at(vars(contains("_1")), ~ paste0(., "lower"))
+
+
+```
 
