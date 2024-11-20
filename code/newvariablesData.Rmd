@@ -160,7 +160,11 @@ symptomvars_clean <- symptomvars %>%
   #remove the ≥ symbols from variable names
   rename_with(~ gsub("≥", "greater.or.equal.to", .x), contains("≥")) %>%
   #remove unnecessary text from `other.symptom` column 
-  mutate(other.symptom = str_remove(other.symptom, "Other: "))
+  mutate(other.symptom = str_remove(other.symptom, "Other: ")) %>%
+  #convert boolean screening variables to yes/no factors
+  mutate(across(c(symptom.screen.was.not.performed:sputum.production), ~
+                    case_when(.==0 ~ "No",
+                              .==1 ~ "Yes")))
   
 ```
 
