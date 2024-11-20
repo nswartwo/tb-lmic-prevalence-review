@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "New variables"
 output: html_notebook
 ---
 
@@ -8,7 +8,6 @@ Load required libraries
 ```{r}
 library(tidyverse)
 library(here)
-library(janitor)
 ```
 
 import the clean dataset
@@ -31,6 +30,8 @@ stndDF <- stndDF %>%
 
 
 #Separate confidence intervals out into columns
+
+https://github.com/nswartwo/tb-lmic-prevalence-review/issues/8
 
 We will use consistence naming throughout for all variables
 
@@ -108,3 +109,67 @@ Now join back onto the main dataset
 cleanDF <- left_join(stndDF, confvars_cleaned)
 
 ```
+
+
+### TB symptom variables
+
+Now we will separate out the TB symptom variables https://github.com/nswartwo/tb-lmic-prevalence-review/issues/9
+
+Select out the columns that we need
+
+```{r}
+
+symptomvars <- cleanDF %>%
+    select(covidence.id, screening.symptoms)
+
+
+```
+
+Separate the rows out into multiple columns
+
+```{r}
+
+symptomvars_clean <- symptomvars %>%
+  # Separate rows by symptoms
+  separate_rows(screening.symptoms, sep = ";") %>%
+  # Clean up whitespace and standardize text
+  mutate(screening.symptoms = str_trim(screening.symptoms)) %>%
+  # Create a column for "Other" symptoms and separate them from the rest
+  mutate(
+    other_symptom = if_else(str_starts(screening.symptoms, "Other:"), screening.symptoms, NA_character_),
+    screening.symptoms = if_else(!str_starts(screening.symptoms, "Other:"), screening.symptoms, NA_character_)
+  ) %>%
+  # Combine "Other" symptoms into a single character column
+  group_by(covidence.id) %>%
+  summarise(
+    other_symptom = paste(na.omit(other_symptom), collapse = "; "),
+    screening.symptoms = list(na.omit(screening.symptoms)),
+    .groups = "drop"
+  ) %>%
+  # Flatten symptom lists and unnest
+  unnest_longer(screening.symptoms) %>%
+  mutate(present = 1) %>%
+  pivot_wider(names_from = screening.symptoms, values_from = present, values_fill = 0) %>%
+  #reorder the columns for ease of use
+  select(covidence.id, `Symptom screen was not performed`, `Cough ≥ 2 weeks`, `Cough ≥ 3 weeks`, `Cough of other or unknown duration`,
+         Haemoptysis, `Chest pain`, Fever, `Night sweats`, `Weight loss`, `Sputum production`, `other_symptom`) %>%
+  #now sort out column names to standard format
+  rename_with(str_to_lower) %>% 
+  rename_with(~ gsub(" ",".", .x), contains(" ")) %>% 
+  rename_with(~ gsub("_",".", .x), contains("_")) %>%
+  #remove the ≥ symbols from variable names
+  rename_with(~ gsub("≥", "greater.or.equal.to", .x), contains("≥")) %>%
+  #remove unnecessary text from `other.symptom` column 
+  mutate(other.symptom = str_remove(other.symptom, "Other: "))
+  
+```
+
+Now join back onto the clean dataset
+
+```{r}
+
+cleanDF <- left_join(cleanDF, symptomvars_clean)
+
+
+```
+
