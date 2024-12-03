@@ -32,7 +32,7 @@ standardData <- function(rawData){
     ### Clean responses ###
     
     ### Clean all responses for leading and trailing spaces
-    cleanDF <- sapply(cleanDF, function(x) gsub("^\\s+.*|.*\\s+$", "", x))
+    cleanDF <- sapply(cleanDF, function(x) gsub("^\\s+|\\s+$", "", x))
     
     ### Remove all newline characters from titles so we can match
     cleanDF[,"title.extracted"] <- gsub("[\r\n]", "", cleanDF[,"title.extracted"])
