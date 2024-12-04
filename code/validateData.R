@@ -31,15 +31,56 @@ validateData <- function(standardizedData){
                     which(colnames(validDF) == "data.availability.comments")-1)
     
     ### Crude first check; should examine more closely to ensure the data 
-    ### extacted is not just totals as there was confusion early in the 
+    ### extracted is not just totals as there was confusion early in the 
     ### study. 
     
-    if(any(rowSums(is.na(validDF[,stratIndex[1]:stratIndex[length(stratIndex)]])) < 
-       ncol(validDF[,stratIndex[1]:stratIndex[length(stratIndex)]]))){
+    # if(any(rowSums(is.na(validDF[,stratIndex[1]:stratIndex[length(stratIndex)]])) < 
+    #    ncol(validDF[,stratIndex[1]:stratIndex[length(stratIndex)]]))){
+    #     print("At least one stratification extracted for all papers.")
+    # } else {
+    #     print("No stratifications extracted.")
+    # }
+    
+    # if(validDF[,paste()])
+    stratCount <- 0 
+    for(strat in strats){
+        index <-  which(validDF[,paste0("report.", strat)] == "Yes" &
+                  ### Check for stratified prevalence 100K 
+                   (validDF[,paste0("prev100K.bacteriological.tb.", strat, ".total")] | 
+                   validDF[,paste0("prev100K.smear.positive.tb.", strat, ".total")] |
+                   validDF[,paste0("prev100K.all.prevalent.tb.", strat, ".total")] |
+                   ### Check for adjusted stratfied prevalence 100K
+                   validDF[,paste0("adj.prev100K.bacteriological.tb.", strat, ".total")] | 
+                   validDF[,paste0("adj.prev100K.smear.positive.tb.", strat, ".total")] |
+                   validDF[,paste0("adj.prev100K.all.prevalent.tb.", strat, ".total")] |
+                   ### Check for tb counts 
+                   validDF[,paste0("n.bacteriological.tb.", strat, ".total")] | 
+                   validDF[,paste0("n.smear.positive.tb.", strat, ".total")] |
+                   validDF[,paste0("n.prevalent.tb.", strat, ".total")]) != TRUE)
+
+        if (length(index > 0)){
+            ### Add errors to errorDF
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("report.", strat), 
+                                                            length(index)),
+                                        "Error message" = rep(paste("Selected that", strat, "stratified results reported, but none extracted."), 
+                                                              length(index))))
+        } else {
+            stratCount <- stratCount + 1
+        }
+        
+        index <- NA
+        
+    }
+    
+    if(stratCount == 5){
         print("At least one stratification extracted for all papers.")
     } else {
         print("No stratifications extracted.")
-    }
+    }           
+                
 
     ### Confirm that Covidence ID is unique 
     if(length(unique(validDF$covidence.id)) == nrow(validDF)){
