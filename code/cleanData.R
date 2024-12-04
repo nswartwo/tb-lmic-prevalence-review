@@ -16,6 +16,9 @@ cleanData <- function(){
     vldDF <- validateData(stndDF)[[2]]
     
     ### Call in logicalData function 
+    source(here("code/logicalData.R"))
+    ### Currently returns only an error matrix  
+    lgcErrorDF <- logicalData(vldDF)
     
     ### Call in function to create new variables
     
