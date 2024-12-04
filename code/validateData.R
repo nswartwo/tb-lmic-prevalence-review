@@ -48,11 +48,11 @@ validateData <- function(standardizedData){
                   ### Check for stratified prevalence 100K 
                    (validDF[,paste0("prev100K.bacteriological.tb.", strat, ".total")] | 
                    validDF[,paste0("prev100K.smear.positive.tb.", strat, ".total")] |
-                   validDF[,paste0("prev100K.all.prevalent.tb.", strat, ".total")] |
+                   validDF[,paste0("prev100K.prevalent.tb.", strat, ".total")] |
                    ### Check for adjusted stratfied prevalence 100K
                    validDF[,paste0("adj.prev100K.bacteriological.tb.", strat, ".total")] | 
                    validDF[,paste0("adj.prev100K.smear.positive.tb.", strat, ".total")] |
-                   validDF[,paste0("adj.prev100K.all.prevalent.tb.", strat, ".total")] |
+                   validDF[,paste0("adj.prev100K.prevalent.tb.", strat, ".total")] |
                    ### Check for tb counts 
                    validDF[,paste0("n.bacteriological.tb.", strat, ".total")] | 
                    validDF[,paste0("n.smear.positive.tb.", strat, ".total")] |
