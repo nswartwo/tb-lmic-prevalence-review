@@ -166,7 +166,7 @@ age_data_clean <- age_data_numeric %>%
 
 #tidy-up a bit
 age_data_clean <- age_data_clean %>%
-    select(covidence.id, age.grp, age.grp.number, value)
+    select(covidence.id, age.grp, age.grp.number, variable,value)
 
 
 ```
