@@ -1,0 +1,174 @@
+---
+title: "Ages"
+output: html_notebook
+---
+
+Required libraries
+
+```{r}
+library(here)
+library(tidyverse)
+library(janitor)
+```
+
+Select out the variables we need to sort
+
+Run the source files first to get the cleanDF
+
+```{r}
+
+temp <- df$cleanDF %>%
+    select(
+        covidence.id,
+        report.age.grp:adj.prev100K.CI.prevalent.tb.age.grp.total)
+```
+
+Looks at the "reports age group data" variable
+
+```{r}
+
+temp %>%
+    tabyl(report.age.grp)
+
+#There are two NAs here, but these rows contain data: fix
+temp <- temp %>%
+    mutate(report.age.grp = case_when(
+        report.age.grp=="NA" ~ "Yes",
+        TRUE ~ report.age.grp
+    ))
+
+#Need to check that all the `data` rows have data/missing for where report.age.grp indicates "yes" or "no"
+library(dplyr)
+
+# 1. Check condition for report.age.grp == "No"
+check_no <- temp %>%
+  filter(report.age.grp == "No") %>%
+  select(covidence.id, matches("n\\.|prev100K|adj\\.prev100K")) %>%
+  rowwise() %>%
+  mutate(all_missing = all(across(matches("n\\.|prev100K|adj\\.prev100K"), is.na))) %>%
+  ungroup() %>%
+  filter(!all_missing) # Keep problematic records where not all are missing
+
+# 2. Check condition for report.age.grp == "Yes"
+check_yes <- temp %>%
+  filter(report.age.grp == "Yes") %>%
+  select(covidence.id, matches("n\\.|prev100K|adj\\.prev100K")) %>%
+  rowwise() %>%
+  mutate(any_nonmissing = any(across(matches("n\\.|prev100K|adj\\.prev100K"), ~ !is.na(.)))) %>%
+  ungroup() %>%
+  filter(!any_nonmissing) # Keep problematic records where none are non-missing
+
+# Combine and print results
+check_results <- list(
+  "Problematic records for report.age.grp == 'No'" = check_no,
+  "Problematic records for report.age.grp == 'Yes'" = check_yes
+)
+
+check_results
+
+#the three "no's" actually have data. The 1 "yes" doesn't have data. 
+#Need to correct these in covidence.
+#In the meantime, will convert these here.
+
+temp <- temp %>%
+    mutate(report.age.grp = case_when(
+        covidence.id == "26975" ~ "Yes",
+        covidence.id == "26933" ~ "Yes",
+        covidence.id == "26924" ~ "Yes",
+        covidence.id == "21429" ~ "No",
+        TRUE ~ report.age.grp
+    ))
+
+```
+
+Now, we only need to deal with those studies that report age stratified data. Filter down to these here
+
+```{r}
+
+age_data <- temp %>%
+    filter(report.age.grp == "Yes")
+
+```
+
+There are lots of records where age groups are not entered. This is likely where standard age groups (aligned to the data extraction form columns) were extracted. Need to input these age group labels for these here.
+
+```{r}
+# Define standard age group labels that need to be filled in
+standard_age_groups <- tribble(
+    ~age.grp.1.range, ~age.grp.2.range, ~age.grp.3.range, ~age.grp.4.range,
+    ~age.grp.5.range, ~age.grp.6.range, ~age.grp.7.range, ~age.grp.total.range, 
+    "0-14", "15-24", "25-34", "35-44", "45-54", "55-64", "65+", "total") %>%
+    pivot_longer(everything())
+
+#filter down to get the records where all age.grp records are mising
+missing_age_groups <- age_data %>%
+  select(covidence.id, starts_with("age.grp.") & ends_with("range")) %>%
+  filter(if_all(starts_with("age.grp.") & ends_with("range"), is.na))  # Check if all are NA
+
+#join on the standard age.grp labels
+age_filled <- missing_age_groups %>%
+    pivot_longer(-covidence.id) %>%
+    select(-value) %>%
+    left_join(standard_age_groups) %>%
+    pivot_wider()
+
+#now replace the correct cells in `age_data` with these updated age groups
+#Update missing age labels in the main dataset
+age_data_updated <- age_data %>%
+  left_join(age_filled, by = "covidence.id", suffix = c("", ".updated")) %>%
+  mutate(
+    across(
+      starts_with("age.grp.") & ends_with("range"), 
+      ~ coalesce(.x, get(paste0(cur_column(), ".updated")))
+    )
+  ) %>%
+  select(-ends_with(".updated"))
+
+#age.grp.total.range columns should always be "total"
+age_data_updated <- age_data_updated %>%
+    mutate(age.grp.total.range = "total")
+
+```
+
+
+
+
+Now get the age stratified data into a more manageable format. We will basically pivot the age range, and then numeric data longer, then left join.
+
+```{r}
+
+# Separate age range and numeric data, and pivot age groups to longer
+age_ranges <- age_data_updated %>%
+  select(covidence.id, starts_with("age.grp.") & ends_with("range")) %>%
+    pivot_longer(cols = -covidence.id) %>%
+    mutate(age.grp.number = str_extract(name, "1|2|3|4|5|6|7|total")) %>%
+    mutate(value = case_when(
+        age.grp.number=="total" ~ "total",
+        TRUE ~ value
+    )) %>%
+    select(covidence.id, age.grp = value, age.grp.number)
+
+# Pivot the numeric data longer for eligible, participants, etc.
+age_data_numeric <- age_data_updated %>%
+  select(covidence.id, starts_with("n.") | starts_with("prev100K.") | starts_with("adj.prev100K.")) %>%
+    mutate(across(starts_with("n.") | starts_with("prev100K.") | starts_with("adj.prev100K."), as.numeric)) %>%
+  pivot_longer(
+    cols = -covidence.id, 
+    names_to = c("variable", "age.grp.number"),
+    names_pattern = "(.*)\\.age\\.grp\\.(\\d+|total)",  
+    values_to = "value"
+  ) %>%
+  mutate(age.grp.number = as.character(age.grp.number))
+
+# Join the numeric data with the age range data (age_groups)
+age_data_clean <- age_data_numeric %>%
+  left_join(age_ranges, by = c("covidence.id", "age.grp.number"))
+
+#tidy-up a bit
+age_data_clean <- age_data_clean %>%
+    select(covidence.id, age.grp, age.grp.number, value)
+
+
+```
+
+
