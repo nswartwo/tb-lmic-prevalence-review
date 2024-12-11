@@ -8,6 +8,7 @@ Load required libraries
 ```{r}
 library(tidyverse)
 library(here)
+library(janitor)
 ```
 
 import the clean dataset
@@ -167,6 +168,55 @@ symptomvars_clean <- symptomvars %>%
                               .==1 ~ "Yes")))
   
 ```
+
+Other symptoms column. Here we will create new boolean variables for other screening criteria.
+
+What have we got here?
+
+```{r}
+
+symptomvars_clean %>%
+    tabyl(other.symptom)
+
+```
+
+Record to boolean variables
+
+```{r}
+
+symptomvars_clean <- symptomvars_clean %>%
+    mutate(breathlessness = case_when(
+        grepl("Breath", other.symptom, ignore.case=TRUE) ~ "Yes",
+        TRUE ~ "No")) %>%
+    mutate(previous.current.tb.treatment = case_when(
+        grepl("treat|ATT", other.symptom, ignore.case=TRUE) ~ "Yes",
+        TRUE ~ "No"))
+
+```
+
+
+```{r}
+symptomvars_clean <- symptomvars_clean %>%
+    mutate(cough.of.other.or.unknown.duration = case_when(
+        grepl("cough", other.symptom, ignore.case=TRUE) ~ "Yes",
+        TRUE ~ cough.of.other.or.unknown.duration))
+
+```
+
+
+Add `symptom.screening.` prefix to all of these variables
+
+```{r}
+
+symptomvars_clean <- symptomvars_clean %>%
+    rename_with(
+        .cols = -covidence.id,
+        .fn = ~ paste0("symptom.screening.", .x))
+
+```
+
+Sort out a few where other cough durations are indicated in `other.symptoms`, but `cough.of.other.or.unknown.duration` is currently `no`
+
 
 Now join back onto the clean dataset
 
