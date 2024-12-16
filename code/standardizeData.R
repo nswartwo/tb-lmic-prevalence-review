@@ -34,23 +34,24 @@ standardData <- function(rawData){
     ### Clean all responses for leading and trailing spaces
     cleanDF <- sapply(cleanDF, function(x) gsub("^\\s+|\\s+$", "", x))
     
+    ### Set all "NR" to NA
+    # cleanDF <- sapply(cleanDF, function(x) gsub("^NR$", "d", x))
+    
     ### Remove all newline characters from titles so we can match
     cleanDF[,"title.extracted"] <- gsub("[\r\n]", "", cleanDF[,"title.extracted"])
-
+    
     ### Convert to a dataframe now that the column names are unique 
     ### and we are done with the sapply clean up 
     ### (returns a character matrix.)
     cleanDF <- as.data.frame(cleanDF)
     
+    ### Set all NR, n/a N/AN/A to missing
+    cleanDF <- as.data.frame(sapply(cleanDF, function(x) gsub("NR", NA_character_, x, perl = TRUE)))
+    cleanDF <- as.data.frame(sapply(cleanDF, function(x) gsub("n/a", NA_character_, x, perl = TRUE)))
+    cleanDF <- as.data.frame(sapply(cleanDF, function(x) gsub("N/AN/A", NA_character_, x, perl = TRUE)))
+    
     ### Check free responses for opportunities of standardization 
-    ### ### Cough of unknown duration ### ### 
-    
-    
-    ### Correct cough values will always be at the front of the string and 
-    ### capitalized. Look for instances of "Cough" or "cough" later in the 
-    ### string. 
-    
-    # unique(cleanDF$screening.symptoms[grep(".+'Cough'", cleanDF$screening.symptoms, perl=TRUE)])
+    ### ### Symptoms are handled in a separate script. ### ###
     
     ### ### Study title ### ###
     ### Make all entries sentence case
@@ -65,6 +66,13 @@ standardData <- function(rawData){
     cleanDF$correspond.author <- gsub('\\.', '', cleanDF$correspond.author, perl = TRUE)
     cleanDF$correspond.author <- gsub(",([A-Z])", ", \\1", cleanDF$correspond.author, perl = TRUE)
     cleanDF$correspond.author <- gsub("(^[a-zA-Z]+) ([a-zA-Z]+$)", "\\1, \\2", cleanDF$correspond.author, perl = TRUE)
+    
+    
+    ### ### Confidence intervals ### ### 
+    ### Remove the non-standard separator character. 
+    # Which are matches 
+    ci.index <- grep("ci\\.", colnames(cleanDF))
+    cleanDF[, ci.index] <- sapply(cleanDF[, ci.index], function(x) gsub("–", "-", x, perl = TRUE)) 
     
     ### Remove the columns that Covidence inserted for each stratification
     ### These column names start with "results."
