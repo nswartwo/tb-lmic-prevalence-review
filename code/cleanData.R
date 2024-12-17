@@ -36,8 +36,9 @@ cleanData <- function(){
                          errorDF = vldDF[["errors"]])
 
     ### Create a summary of all the cleaning and the "cleanest dataset".
-    cleanDataSummary("missings" = stndDF[["missings"]], 
-                     "errors" = lgcDF[["errors"]], 
-                     "clean data" = lgcDF[["clean data"]])
+    cleanDataSummary <- list("missings" = stndDF[["missings"]], 
+                             "errors" = lgcDF[["errors"]], 
+                             "clean data" = lgcDF[["clean data"]])
+    
     return(cleanDataSummary)
 }
