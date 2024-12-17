@@ -14,10 +14,11 @@ logicalData <- function(validData,
     
     logicDF <- validData
     
-    ###########################################################################
-    ### Numerical checks ######################################################
-    ###########################################################################
+    ##########################################################################|
+    ##### Numerical checks ####################################################
+    ##########################################################################|
    
+    ######### Publication vs. Study Year ######################################
     ### Confirm publication year is greater than or equal to study year. 
     ### Requires the creation of variables study.start.year and study.end.year
     ### Initialize these new variables. 
@@ -58,6 +59,8 @@ logicalData <- function(validData,
                           "Error message" = rep("Study year is after publication year", length(which(logicDF$publication.year < logicDF$study.end.year)))
     ) )    
     
+    ######### Stratification checks ###########################################
+    
     ### Stratification specific numeric checks. These only need to be done for 
     ### the stratifications for which the data were collected. 
     print("Checking stratification values.")
@@ -70,33 +73,122 @@ logicalData <- function(validData,
                     ### Add in where to end the last stratification
                     which(colnames(logicDF) == "data.availability.comments")-1)
     
+    ### Create a vector of the strings that uniquely identify counts 
+    countsStrings <- c("eligible", "participants", "presumptive.tb", "symptoms", 
+                       "abnormal.xray", "sputum.sample", "radiologic.tb", 
+                       "bacteriological.tb", "smear.positive.tb", 
+                       "culture.positive.tb", "prevalent.tb")
+    
+    ### Originally wrote in condensed loop form, but think this is more readable.
+    
     for(strat in strats){
         
-        ### Check that target population >= eligible population
-        which((logicDF[,"total.target.pop"] >= 
-        logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))]) == FALSE)
+        ######################################################################|
+        ### Check that target population >= eligible population ###############
         
-        ### Check that eligible population is >= participant population
-        which((logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))] >= 
-        logicDF[,grep(pattern = paste0("participants.", strat, ".total"), x = colnames(logicDF))]) == FALSE)
+        index <- which((logicDF[,"total.target.pop"] < 
+                         logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))]))
         
-        ### Check that sum of stratified counts match total counts 
-        which((logicDF[,grep(pattern = paste0("n.", strat, ".total"), x = colnames(logicDF))] == 
-               logicDF[,grep(pattern = paste0("participants.", strat, ".total"), x = colnames(logicDF))]) == FALSE)
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep("total.target.pop", 
+                                                            length(index)),
+                                        "Error message" = rep("Total target population less than eligible population", 
+                                                              length(index))))
+        }
         
-        which(logicDF$n.eligible.male + logicDF$n.eligible.female != logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))])
-        which(logicDF$n.eligible.male + logicDF$n.eligible.female != logicDF$n.eligible.sex.total)
+        ### Reset the indices 
+        index <- NA
+        
+        ######################################################################|
+        ####### Check that eligible population is >= participant population ###
+        
+        index <- which((logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))] < 
+                         logicDF[,grep(pattern = paste0("participants.", strat, ".total"), x = colnames(logicDF))]))
+        
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("eligible.", strat, ".total"), 
+                                                            length(index)),
+                                        "Error message" = rep("Eligible population less than participant count", 
+                                                              length(index))))
+        }
+        
+        ### Reset the indices 
+        index <- NA
+        
+        ######################################################################|
+        ####### Check presumptive TB >= abnormal chest xray #######
+        
+        index <- which((logicDF[,grep(pattern = paste0("n.presumptive.tb.", strat, ".total"), x = colnames(logicDF))] < 
+                        logicDF[,grep(pattern = paste0("n.abnormal.xray.", strat, ".total"), x = colnames(logicDF))]))
+        
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("n.presumptive.tb.", strat, ".total"),
+                                                            length(index)),
+                                        "Error message" = rep("Presumptive TB less than abnormal xray count", 
+                                                              length(index))))
+        }
+        
+        ### Reset the indices 
+        index <- NA
+        
+        ######################################################################|
+        ####### Check presumptive TB >= symptoms ##############################
+        
+        index <- which((logicDF[,grep(pattern = paste0("n.presumptive.tb.", strat, ".total"), x = colnames(logicDF))] < 
+                            logicDF[,grep(pattern = paste0("n.symptoms.", strat, ".total"), x = colnames(logicDF))]))
+        
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("n.presumptive.tb.", strat, ".total"),
+                                                            length(index)),
+                                        "Error message" = rep("Presumptive TB less than symptom positive count", 
+                                                              length(index))))
+        }
+        
+        ### Reset the indices 
+        index <- NA
+        
+        ######################################################################|
+        ####### Check presumptive TB > cases ##################################
+        
+        index <- which((logicDF[,grep(pattern = paste0("n.presumptive.tb.", strat, ".total"), x = colnames(logicDF))] < 
+                        logicDF[,grep(pattern = paste(paste0("n.", countsStrings[6:10], ".", strat, ".total"), collapse = "|"),
+                                x = colnames(logicDF))]))
+        
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("n.presumptive.tb.", strat, ".total"),
+                                                            length(index)),
+                                        "Error message" = rep("Presumptive TB less than tb case count", 
+                                                              length(index))))
+        }
+        
+        ### Reset the indices 
+        index <- NA
+        
     }
     
-
-    ### Check that presumptive TB >= symptoms and/or chest x-ray >= cases 
-    ### (of various types).
-    
-    ### Identify the relevant columns 
-    presumpIndex <- grep(pattern = "n.presumptive.tb", x = colnames(logicDF))
-    symptomIndex <- grep(pattern = "n.symptoms", x = colnames(logicDF))
-    xrayIndex <- grep(pattern = "n.abnormal.xray", x = colnames(logicDF))
-   
+    ##########################################################################|
+    ######### Stratified vs. Total Counts #####################################
+    ##########################################################################|
     
     print("Checking stratified counts against totals.")
     # countsStrings <- unique(unlist(strsplit(colnames(logicDF)[grepl("^n[.].+total$", colnames(logicDF))], split = "[.]")))
@@ -106,11 +198,10 @@ logicalData <- function(validData,
                        "culture.positive.tb", "prevalent.tb")
     
     for(n in countsStrings){
-        print(n)
         ### Stratified counts match total counts (with in each stratification).
         index <- which(logicDF[,paste0("n.", n, ".female")] + logicDF[,paste0("n.", n, ".male")] != logicDF[,paste0("n.", n, ".sex.total")])
         
-        print("Checking sex counts.")
+        # print("Checking sex counts.")
         ### Sex stratification
         if (length(index > 0)){
             ### Add errors to errorDF
@@ -127,7 +218,7 @@ logicalData <- function(validData,
         index <- NA
         
         ### Rurality stratification
-        print("Checking rurality counts.")
+        # print("Checking rurality counts.")
         index <- which(logicDF[,paste0("n.", n, ".rural")] + logicDF[,paste0("n.", n, ".urban")] != logicDF[,paste0("n.", n, ".rurality.total")])
         
         if (length(index > 0)){
@@ -145,7 +236,7 @@ logicalData <- function(validData,
         index <- NA
         
         ### HIV stratification
-        print("Checking HIV counts.")
+        # print("Checking HIV counts.")
         index <- which(logicDF[,paste0("n.", n, ".hiv.positive")] + logicDF[,paste0("n.", n, ".hiv.negative")] != logicDF[,paste0("n.", n, ".hiv.total")])
         
         if (length(index > 0)){
@@ -163,7 +254,7 @@ logicalData <- function(validData,
         index <- NA
         
         ### Age stratification
-        print("Checking age.grp counts.")
+        # print("Checking age.grp counts.")
         index <- which(rowSums(cbind(logicDF[,paste0("n.", n, ".age.grp.1")], 
                        logicDF[,paste0("n.", n, ".age.grp.2")], 
                        logicDF[,paste0("n.", n, ".age.grp.3")], 
@@ -188,7 +279,7 @@ logicalData <- function(validData,
         index <- NA
         
         ### Rurality and sex stratification
-        print("Checking rurality and sex counts.")
+        # print("Checking rurality and sex counts.")
         index <- which(logicDF[,paste0("n.", n, ".female.rural")] + 
                        logicDF[,paste0("n.", n, ".female.urban")] + 
                        logicDF[,paste0("n.", n, ".male.rural")] + 
@@ -209,17 +300,35 @@ logicalData <- function(validData,
         ### Reset the indices 
         index <- NA
         
-        ### Totals should be within +/- 10% across all stratification
+        ### Totals should be similar across all stratifications
+        ### Will pull all nonzero differences for double checks.
         ### (except HIV; see below).
         
+        for(string in countsStrings){
+            tmpDF <- logicDF[,grep(pattern = paste(paste0("n.", string, ".", strats, ".total"), collapse = "|"), x = colnames(logicDF))]
+            index <- which(apply(X = tmpDF, MARGIN = 1, FUN = function(x) diff(range(x, na.rm = TRUE))) > 0)
+            
+            ### Add errors to errorDF
+            if (length(index > 0)){
+                errorDF <- rbind(errorDF, 
+                                 data.frame("Study title" = logicDF$title.covidence[index],
+                                            "Study ID" = logicDF$covidence.id[index],
+                                            "Column name" = rep(paste0("n.", string, ".total"), 
+                                                                length(index)),
+                                            "Error message" = rep("Extracted totals are not equal across stratifications of data.\n
+                                                                  Check all totals against each other.", 
+                                                                  length(index))))
+            }
+            
+            ### Reset the indices 
+            index <- NA
+        }
         
-        
-        ### Sum of stratified counts should be within +/- 10% across all stratification
-        ### (except HIV; see below).
+        ######### HIV vs. other stratifications ###############################
         
         ### Confirm that counts for the HIV stratum is less than or equal
         ### to totals in other strata (if provided)
-        print("Checking that HIV totals less than others.")
+        if (n == countsStrings[1]) print("Checking that HIV totals less than others.")
         if (length(which(logicDF[,paste0("n.", n, ".hiv.total")] > logicDF[,paste0("n.", n, ".sex.total")])) > 0) {
             ### Add errors to errorDF
             errorDF <- rbind(errorDF, 
@@ -281,19 +390,19 @@ logicalData <- function(validData,
         }
     }
     
+    ######### Extracted vs. calculated prevalence #############################
+    
     ### When crude population and prevalence counts are available, 
     ### calculate crude prevalence and compare with extracted crude prevalence. 
-    ### Check that these are within 5% of one another. 
+    ### Check that these are within 10% of one another. 
     prevalenceStrings <- c("bacteriological", "smear.positive", "prevalent")
     
     print("Checking extracted prevalence against calculated prevalence.")
     for(prev in prevalenceStrings){
-        print(prev)
         for(strat in strats){
-            print(strat)
             index <-  which(abs(logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")] - 
                                 ((logicDF[,paste0("n.", prev, ".tb.", strat,".total")] / logicDF[,paste0("n.participants.", strat,".total")])*1e5) / 
-                                 logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")]) > .05)
+                                 logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")]) > .10)
             
             if (length(index > 0)){
                 ### Add errors to errorDF
@@ -302,17 +411,17 @@ logicalData <- function(validData,
                                             "Study ID" = logicDF$covidence.id[index],
                                             "Column name" = rep(paste0("prev100k.", prev, ".tb.", strat, ".total"), 
                                                                 length(index)),
-                                            "Error message" = rep(paste(prev, "tb prevalence total is greater than 5% different than calculated prevalence 100k."), 
+                                            "Error message" = rep(paste(prev, "tb prevalence total is greater than 10% different than calculated prevalence 100k."), 
                                                                   length(index))))
             }
         }
     }
         
-    ###########################################################################
+    ##########################################################################|
     ### Consistency checks ####################################################
-    ########################################################################### 
+    ##########################################################################|
     
-    ###  If the survey is marked to be "only rural" or "only urban", 
+    ### If the survey is marked to be "only rural" or "only urban", 
     ### confirm that the checkbox indicating stratified results is marked no 
     ### and no urban/rural stratified results are extracted.
     
@@ -452,9 +561,11 @@ logicalData <- function(validData,
     ### Reset the indices 
     index <- NA
     
-    ### Given there are 8 questions, consider a threshold of 3+ indications of high 
+    ##########################################################################|
+    ###### Check the quality assessment questions #############################
+    ### Given there are 8 questions, consider a threshold of 5+ indications of high 
     ### bias negates the possibility of an ultimate "low bias assessment". Similarly,
-    ### 3+ indications of low bias negates the possibility of an ultimate 
+    ### 5+ indications of low bias negates the possibility of an ultimate 
     ### "high bias assessment".
     
     ### Set the quality indices 
@@ -462,7 +573,7 @@ logicalData <- function(validData,
     
     index <- 
     ### Three low risk items but overall high bias
-    which(rowSums(logicDF[,qualityIndex[1:8]] == "Yes (low risk)") > 3 & 
+    which(rowSums(logicDF[,qualityIndex[1:8]] == "Yes (low risk)") > 5 & 
           grepl("High risk", logicDF[,qualityIndex[9]]))
     
     if(length(index) > 0){
@@ -472,7 +583,7 @@ logicalData <- function(validData,
                                     "Study ID" = logicDF$covidence.id[index],
                                     "Column name" = rep("study.quality.summary", 
                                                         length(index)),
-                                    "Error message" = rep("More than 3 low risk items but overall high bias", 
+                                    "Error message" = rep("More than 5 low risk items but overall high bias", 
                                                           length(index))))
     }
     
@@ -481,7 +592,7 @@ logicalData <- function(validData,
     
     index <- 
     ### Three high risk items but overall low bias
-    which(rowSums(logicDF[,qualityIndex[1:8]] == "No (high risk)") > 3 & 
+    which(rowSums(logicDF[,qualityIndex[1:8]] == "No (high risk)") > 5 & 
           grepl("Low risk", logicDF[,qualityIndex[9]]))
     
     if(length(index) > 0){
@@ -491,12 +602,45 @@ logicalData <- function(validData,
                                     "Study ID" = logicDF$covidence.id[index],
                                     "Column name" = rep("study.quality.summary", 
                                                         length(index)),
-                                    "Error message" = rep("More than 3 high risk items but overall low bias", 
+                                    "Error message" = rep("More than 5 high risk items but overall low bias", 
                                                           length(index))))
     }
     
     ### Reset the indices 
     index <- NA
+    
+    ##########################################################################|
+    ###### Check the binary reporting variable and correct values #############
+    ##########################################################################|
+    print("Updating reporting binary based on reported values.")
+    
+    stratIndex <- c(grep("report.",colnames(logicDF)),
+                    ### Add in where to end the last stratification
+                    which(colnames(logicDF) == "data.availability.comments")-1)
+    
+    ### Crude first check; should examine more closely to ensure the data 
+    ### extracted is not just totals as there was confusion early in the 
+    ### study. 
+    
+    for (indx in 1:(length(stratIndex)-1)){
+        ### We are only interested in TB data so narrow the potential indices
+        range.indx <- (stratIndex[indx] + 1):(stratIndex[indx+1]-1)
+        tb.indx <- range.indx[grep(".tb", colnames(logicDF)[range.indx])]
+        
+        ### If TB data extracted set to yes
+        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE)==0) 
+        logicDF[index, stratIndex[indx]] <- "No"
+        
+        ### Reset the indices 
+        index <- NA
+        
+        ### If no TB data extracted set to no
+        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE) > 0) 
+        logicDF[index, stratIndex[indx]] <- "Yes"
+        
+        ### Reset the indices
+        index <- NA
+    }
 
     ### Create a list that contains the two dataframes:
     logicDataSummary <- list("clean data" = logicDF, 
