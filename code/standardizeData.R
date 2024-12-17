@@ -160,7 +160,7 @@ standardData <- function(rawData){
     
     ### Create a list that contains the two dataframes:
     ### Name the list to make extraction easier (e.g. out$cleanDF now accessible)
-    standardizedDataSummary <- list(missDF = missingDF, 
-                                    cleanDF = cleanDF)
+    standardizedDataSummary <- list("missings" = missingDF, 
+                                    "clean data" = cleanDF)
     return(standardizedDataSummary)
 }

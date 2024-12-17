@@ -6,16 +6,12 @@
 ### to be called from within the cleanData() function. 
 
 
-logicalData <- function(validData){
-    ### Create two dataframes that will be updated at each cleaning step. 
-    ### ### 1. Contains study ID, column name, and error. 
-    errorDF <- data.frame("Study title" = NULL,
-                          "Study ID" = NULL,
-                          "Column name" = NULL,
-                          "Error message" = NULL) 
+logicalData <- function(validData, 
+                        errorDF){
+    ### Create a dataframes that will be updated at each cleaning step. 
+    ### ### Will contains the clean dataset.
+    ### ### Initialized with the standardizedData dataframe
     
-    ### ### 2. Will contains the clean dataset.
-    ### ###    Initialized with the standardizedData dataframe
     logicDF <- validData
     
     ###########################################################################
@@ -295,18 +291,18 @@ logicalData <- function(validData){
         print(prev)
         for(strat in strats){
             print(strat)
-            index <-  which(abs(logicDF[,paste0("prev100K.", prev, ".tb.", strat,".total")] - 
+            index <-  which(abs(logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")] - 
                                 ((logicDF[,paste0("n.", prev, ".tb.", strat,".total")] / logicDF[,paste0("n.participants.", strat,".total")])*1e5) / 
-                                 logicDF[,paste0("prev100K.", prev, ".tb.", strat,".total")]) > .05)
+                                 logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")]) > .05)
             
             if (length(index > 0)){
                 ### Add errors to errorDF
                 errorDF <- rbind(errorDF, 
                                  data.frame("Study title" = logicDF$title.covidence[index],
                                             "Study ID" = logicDF$covidence.id[index],
-                                            "Column name" = rep(paste0("prev100K.", prev, ".tb.", strat, ".total"), 
+                                            "Column name" = rep(paste0("prev100k.", prev, ".tb.", strat, ".total"), 
                                                                 length(index)),
-                                            "Error message" = rep(paste(prev, "tb prevalence total is greater than 5% different than calculated prevalence 100K."), 
+                                            "Error message" = rep(paste(prev, "tb prevalence total is greater than 5% different than calculated prevalence 100k."), 
                                                                   length(index))))
             }
         }
@@ -501,7 +497,11 @@ logicalData <- function(validData){
     
     ### Reset the indices 
     index <- NA
+
+    ### Create a list that contains the two dataframes:
+    logicDataSummary <- list("clean data" = logicDF, 
+                             "errors" = errorDF)
     
-    return(errorDF)
-    
+    return(logicDataSummary)
+
 }

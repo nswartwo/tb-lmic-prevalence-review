@@ -1,20 +1,15 @@
 ### This script contains a single function, validateData() that takes in the
-### datafame produced by the standardizedData() function and performs a 
+### datafame produced by the newVariables() function and performs a 
 ### number of data cleaning steps to validate the data. 
 ### It will return a list with two data frames: the first contains
 ### information about errors and the second contains the clean-er dataset. 
 
-validateData <- function(standardizedData){
-    ### Create two dataframes that will be updated at each cleaning step. 
-    ### ### 1. Contains study ID, column name, and error. 
-    errorDF <- data.frame("Study title" = NULL,
-                          "Study ID" = NULL,
-                          "Column name" = NULL,
-                          "Error message" = NULL) 
-    
-    ### ### 2. Will contains the clean dataset.
-    ### ###    Initialized with the standardizedData dataframe
-    validDF <- standardizedData
+validateData <- function(newVariablesData,
+                         errorDF){
+    ### Create a dataframes that will be updated at each cleaning step. 
+    ### ### Contains the clean dataset.
+    ### ### Initialized with the newVariablesData dataframe
+    validDF <- newVariablesData
     
     ### Check that the publication year is between  1993 - 2024
     if(any(na.omit(unique(as.numeric(validDF$publication.year))) < 1993)){
@@ -45,14 +40,14 @@ validateData <- function(standardizedData){
     stratCount <- 0 
     for(strat in strats){
         index <-  which(validDF[,paste0("report.", strat)] == "Yes" &
-                  ### Check for stratified prevalence 100K 
-                   (validDF[,paste0("prev100K.bacteriological.tb.", strat, ".total")] | 
-                   validDF[,paste0("prev100K.smear.positive.tb.", strat, ".total")] |
-                   validDF[,paste0("prev100K.prevalent.tb.", strat, ".total")] |
-                   ### Check for adjusted stratfied prevalence 100K
-                   validDF[,paste0("adj.prev100K.bacteriological.tb.", strat, ".total")] | 
-                   validDF[,paste0("adj.prev100K.smear.positive.tb.", strat, ".total")] |
-                   validDF[,paste0("adj.prev100K.prevalent.tb.", strat, ".total")] |
+                  ### Check for stratified prevalence 100k 
+                   (validDF[,paste0("prev100k.bacteriological.tb.", strat, ".total")] | 
+                   validDF[,paste0("prev100k.smear.positive.tb.", strat, ".total")] |
+                   validDF[,paste0("prev100k.prevalent.tb.", strat, ".total")] |
+                   ### Check for adjusted stratfied prevalence 100k
+                   validDF[,paste0("adj.prev100k.bacteriological.tb.", strat, ".total")] | 
+                   validDF[,paste0("adj.prev100k.smear.positive.tb.", strat, ".total")] |
+                   validDF[,paste0("adj.prev100k.prevalent.tb.", strat, ".total")] |
                    ### Check for tb counts 
                    validDF[,paste0("n.bacteriological.tb.", strat, ".total")] | 
                    validDF[,paste0("n.smear.positive.tb.", strat, ".total")] |
@@ -92,8 +87,8 @@ validateData <- function(standardizedData){
     ### Could be more thorough if updating the dataset or adapting to a new one.
     
     ### Create a list that contains the two dataframes:
-    validatedDataSummary <- list(errorDF, 
-                                    validDF)
+    validatedDataSummary <- list("clean data" = validDF, 
+                                 "errors" = errorDF)
     
     return(validatedDataSummary)
 }
