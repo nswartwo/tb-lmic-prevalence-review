@@ -476,7 +476,7 @@ Does this study report results by both sex and urban/rural stratification?,repor
 7.7.3. People with presumptive TB Male - Urban,n.presumptive.tb.male.urban,integer,
 7.7.3. People with presumptive TB Female - Urban,n.presumptive.tb.female.urban,integer,
 7.7.3. People with presumptive TB Male - Rural,n.presumptive.tb.male.rural,integer,
-7.7.3. People with presumptive TB Female - Rural,n.presumptive.tb.female.rural,factor,
+7.7.3. People with presumptive TB Female - Rural,n.presumptive.tb.female.rural,integer,
 7.7.3. People with presumptive TB Total,n.presumptive.tb.sex.rurality.total,integer,
 7.7.4. People with TB symptoms  Male - Urban,n.symptoms.male.urban,integer,
 7.7.4. People with TB symptoms  Female - Urban,n.symptoms.female.urban,integer,
