@@ -8,7 +8,7 @@ cleanData <- function(){
     library(here)
     
     ### Create an error dataframe to populate throughout the steps
-    errorList <- data.frame("Study title" = NULL,
+    errorDF <- data.frame("Study title" = NULL,
                           "Study ID" = NULL,
                           "Column name" = NULL,
                           "Error message" = NULL) 
