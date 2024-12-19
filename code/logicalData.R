@@ -300,13 +300,13 @@ logicalData <- function(validData,
         ### Reset the indices 
         index <- NA
         
-        ### Totals should be similar across all stratifications
+        ### Totals should be similar (within 5%) across all stratifications
         ### Will pull all nonzero differences for double checks.
         ### (except HIV; see below).
         
         for(string in countsStrings){
             tmpDF <- logicDF[,grep(pattern = paste(paste0("n.", string, ".", strats, ".total"), collapse = "|"), x = colnames(logicDF))]
-            index <- which(apply(X = tmpDF, MARGIN = 1, FUN = function(x) diff(range(x, na.rm = TRUE))) > 0)
+            index <- which(apply(X = tmpDF, MARGIN = 1, FUN = function(x) diff(range(x, na.rm = TRUE))/range(x, na.rm = TRUE)) > 0.05)
             
             ### Add errors to errorDF
             if (length(index > 0)){
@@ -315,7 +315,8 @@ logicalData <- function(validData,
                                             "Study ID" = logicDF$covidence.id[index],
                                             "Column name" = rep(paste0("n.", string, ".total"), 
                                                                 length(index)),
-                                            "Error message" = rep("Extracted totals are not equal across stratifications of data.\n
+                                            "Error message" = rep("Difference in extracted totals are greater than 10%\n
+                                                                  across stratifications of data.\n
                                                                   Check all totals against each other.", 
                                                                   length(index))))
             }
