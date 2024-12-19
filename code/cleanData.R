@@ -8,7 +8,7 @@ cleanData <- function(){
     library(here)
     
     ### Create an error dataframe to populate throughout the steps
-    errorDF <- data.frame("Study title" = NULL,
+    errorList <- data.frame("Study title" = NULL,
                           "Study ID" = NULL,
                           "Column name" = NULL,
                           "Error message" = NULL) 
@@ -18,27 +18,27 @@ cleanData <- function(){
     
     ### Call in the standardizeData function
     source(here("code/standardizeData.R"))
-    stndDF <- standardData(rawData)
+    stndList <- standardData(rawData)
     
     ### Call in the newVariables function
     source(here("code/createNewVariables.R"))
-    newDF <- newVariables(stndDF = stndDF[["clean data"]], 
+    newList <- newVariables(stndDF = stndList[["clean data"]], 
                           errorDF = errorDF)
     
     ### Call in the validateData function
     source(here("code/validateData.R"))
-    vldDF <- validateData(newVariablesData = newDF[["clean data"]],
-                          errorDF = newDF[["errors"]])
+    vldList <- validateData(newVariablesData = newList[["clean data"]],
+                          errorDF = newList[["errors"]])
     
     ### Call in logicalData function 
     source(here("code/logicalData.R"))
-    lgcDF <- logicalData(validData = vldDF[["clean data"]], 
-                         errorDF = vldDF[["errors"]])
+    lgcList <- logicalData(validData = vldList[["clean data"]], 
+                            errorDF = vldList[["errors"]])
 
     ### Create a summary of all the cleaning and the "cleanest dataset".
-    cleanDataSummary <- list("missings" = stndDF[["missings"]], 
-                             "errors" = lgcDF[["errors"]], 
-                             "clean data" = lgcDF[["clean data"]])
+    cleanDataSummary <- list("missings" = stndList[["missings"]], 
+                             "errors" = lgcList[["errors"]], 
+                             "clean data" = lgcList[["clean data"]])
     
     return(cleanDataSummary)
 }
