@@ -613,7 +613,7 @@ logicalData <- function(validData,
     ##########################################################################|
     ###### Check the binary reporting variable and correct values #############
     ##########################################################################|
-    print("Updating reporting binary based on reported values.")
+    print("Checking reporting binary based on reported values.")
     
     stratIndex <- c(grep("report.",colnames(logicDF)),
                     ### Add in where to end the last stratification
@@ -624,20 +624,60 @@ logicalData <- function(validData,
     ### study. 
     
     for (indx in 1:(length(stratIndex)-1)){
-        ### We are only interested in TB data so narrow the potential indices
-        range.indx <- (stratIndex[indx] + 1):(stratIndex[indx+1]-1)
-        tb.indx <- range.indx[grep(".tb", colnames(logicDF)[range.indx])]
+        ### We are only interested in a subset of the indices so we need 
+        ### to narrow these down. Doing this operation stepwise for readability
+        ### And because we will only run these cleaning scripts a couple of
+        ### times so readability is higher priority than efficiency. 
         
-        ### If TB data extracted set to yes
-        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE)==0) 
-        logicDF[index, stratIndex[indx]] <- "No"
+        ### Narrow to stratification of interest
+        range.indx <- (stratIndex[indx] + 1):(stratIndex[indx+1]-1)
+        ### Remove the totals (i.e. we want stratified data!)
+        str.indx <- range.indx[-(grep("tb\\S+total", colnames(logicDF)[range.indx]))]
+        ### Now look for actually TB columns, not just eligible or participants
+        tb.indx <- str.indx[grep(".tb", colnames(logicDF)[str.indx])]
+        
+        ### If stratified TB data not extracted but report variable marked
+        ### as yes. Note, we need at least two entries for it to be stratified
+        ### This will be imperfect with the age stratification as it has 
+        ### variable numbers of stratifications. 
+        
+        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE) < 2 & 
+                           logicDF[,stratIndex[indx]] != "No")
+        
+        ### Add errors to errorDF
+        if(length(index) > 0){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(colnames(logicDF)[stratIndex[indx]], 
+                                                            length(index)),
+                                        "Error message" = rep("Report variable not marked no, but no stratified data.", 
+                                                              length(index))))
+        }
+        
+        # Code to force update - not what I think we want 
+        # logicDF[index, stratIndex[indx]] <- "No"
         
         ### Reset the indices 
         index <- NA
         
-        ### If no TB data extracted set to no
-        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE) > 0) 
-        logicDF[index, stratIndex[indx]] <- "Yes"
+        ### Stratified data detected but report variable not marked yes.
+        index <- which(rowSums(is.na(logicDF[,tb.indx])==FALSE) > 1 & 
+                           logicDF[,stratIndex[indx]] != "Yes") 
+        
+        ### Add errors to errorDF
+        if(length(index) > 0){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(colnames(logicDF)[stratIndex[indx]], 
+                                                            length(index)),
+                                        "Error message" = rep("Report variable not marked yes, but stratified data detected.", 
+                                                              length(index))))
+        }
+        
+        # Code to force update - not what I think we want 
+        # logicDF[index, stratIndex[indx]] <- "Yes"
         
         ### Reset the indices
         index <- NA
