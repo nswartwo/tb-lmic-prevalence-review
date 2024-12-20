@@ -17,7 +17,7 @@ logicalData <- function(validData,
     ##########################################################################|
     ##### Numerical checks ####################################################
     ##########################################################################|
-   
+    
     ######### Publication vs. Study Year ######################################
     ### Confirm publication year is greater than or equal to study year. 
     ### Requires the creation of variables study.start.year and study.end.year
@@ -28,11 +28,11 @@ logicalData <- function(validData,
     
     ### Split the string based on the "-" character 
     yearSplit <- strsplit(logicDF$study.years, "-")
-
+    
     ### If length of the split is 1, set the start and end year to 
     ### the first sub-element.
     logicDF[which(sapply(yearSplit,length)==1), "study.start.year"] <-
-    logicDF[which(sapply(yearSplit,length)==1), "study.end.year"] <-
+        logicDF[which(sapply(yearSplit,length)==1), "study.end.year"] <-
         as.numeric(sapply(yearSplit[which(sapply(yearSplit,length)==1)],"[[",1))
     
     ### If length of the split is 2, set the start year to the first 
@@ -49,14 +49,14 @@ logicalData <- function(validData,
                           "Study ID" = logicDF$covidence.id[which(sapply(yearSplit,length) > 2)],
                           "Column name" = rep("study.years", length(which(sapply(yearSplit,length) > 2))),
                           "Error message" = rep("More than two years listed", length(which(sapply(yearSplit,length) > 2)))
-                        ) ### close dataframe
-                           
+    ) ### close dataframe
+    
     ### Check that the publication year is greater than or equal to end year 
-        ### Add the errors to the errorDF 
+    ### Add the errors to the errorDF 
     errorDF <- rbind(errorDF, data.frame("Study title" = logicDF$title.covidence[which(logicDF$publication.year < logicDF$study.end.year)],
-                          "Study ID" = logicDF$covidence.id[which(logicDF$publication.year < logicDF$study.end.year)],
-                          "Column name" = rep("study.years", length(which(logicDF$publication.year < logicDF$study.end.year))),
-                          "Error message" = rep("Study year is after publication year", length(which(logicDF$publication.year < logicDF$study.end.year)))
+                                         "Study ID" = logicDF$covidence.id[which(logicDF$publication.year < logicDF$study.end.year)],
+                                         "Column name" = rep("study.years", length(which(logicDF$publication.year < logicDF$study.end.year))),
+                                         "Error message" = rep("Study year is after publication year", length(which(logicDF$publication.year < logicDF$study.end.year)))
     ) )    
     
     ######### Stratification checks ###########################################
@@ -87,7 +87,7 @@ logicalData <- function(validData,
         ### Check that target population >= eligible population ###############
         
         index <- which((logicDF[,"total.target.pop"] < 
-                         logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))]))
+                            logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))]))
         
         ### Add errors to errorDF
         if (length(index > 0)){
@@ -107,7 +107,7 @@ logicalData <- function(validData,
         ####### Check that eligible population is >= participant population ###
         
         index <- which((logicDF[,grep(pattern = paste0("eligible.", strat, ".total"), x = colnames(logicDF))] < 
-                         logicDF[,grep(pattern = paste0("participants.", strat, ".total"), x = colnames(logicDF))]))
+                            logicDF[,grep(pattern = paste0("participants.", strat, ".total"), x = colnames(logicDF))]))
         
         ### Add errors to errorDF
         if (length(index > 0)){
@@ -127,7 +127,7 @@ logicalData <- function(validData,
         ####### Check presumptive TB >= abnormal chest xray #######
         
         index <- which((logicDF[,grep(pattern = paste0("n.presumptive.tb.", strat, ".total"), x = colnames(logicDF))] < 
-                        logicDF[,grep(pattern = paste0("n.abnormal.xray.", strat, ".total"), x = colnames(logicDF))]))
+                            logicDF[,grep(pattern = paste0("n.abnormal.xray.", strat, ".total"), x = colnames(logicDF))]))
         
         ### Add errors to errorDF
         if (length(index > 0)){
@@ -167,8 +167,8 @@ logicalData <- function(validData,
         ####### Check presumptive TB > cases ##################################
         
         index <- which((logicDF[,grep(pattern = paste0("n.presumptive.tb.", strat, ".total"), x = colnames(logicDF))] < 
-                        logicDF[,grep(pattern = paste(paste0("n.", countsStrings[6:10], ".", strat, ".total"), collapse = "|"),
-                                x = colnames(logicDF))]))
+                            logicDF[,grep(pattern = paste(paste0("n.", countsStrings[6:10], ".", strat, ".total"), collapse = "|"),
+                                          x = colnames(logicDF))]))
         
         ### Add errors to errorDF
         if (length(index > 0)){
@@ -213,7 +213,7 @@ logicalData <- function(validData,
                                         "Error message" = rep("Extracted total is not equal to sum of extracted stratified data.", 
                                                               length(index))))
         }
-
+        
         ### Reset the indices 
         index <- NA
         
@@ -256,13 +256,13 @@ logicalData <- function(validData,
         ### Age stratification
         # print("Checking age.grp counts.")
         index <- which(rowSums(cbind(logicDF[,paste0("n.", n, ".age.grp.1")], 
-                       logicDF[,paste0("n.", n, ".age.grp.2")], 
-                       logicDF[,paste0("n.", n, ".age.grp.3")], 
-                       logicDF[,paste0("n.", n, ".age.grp.4")],
-                       logicDF[,paste0("n.", n, ".age.grp.5")], 
-                       logicDF[,paste0("n.", n, ".age.grp.6")], 
-                       logicDF[,paste0("n.", n, ".age.grp.7")]), na.rm =TRUE) !=
-                       logicDF[,paste0("n.", n, ".age.grp.total")])
+                                     logicDF[,paste0("n.", n, ".age.grp.2")], 
+                                     logicDF[,paste0("n.", n, ".age.grp.3")], 
+                                     logicDF[,paste0("n.", n, ".age.grp.4")],
+                                     logicDF[,paste0("n.", n, ".age.grp.5")], 
+                                     logicDF[,paste0("n.", n, ".age.grp.6")], 
+                                     logicDF[,paste0("n.", n, ".age.grp.7")]), na.rm =TRUE) !=
+                           logicDF[,paste0("n.", n, ".age.grp.total")])
         
         if (length(index > 0)){
             ### Add errors to errorDF
@@ -281,10 +281,10 @@ logicalData <- function(validData,
         ### Rurality and sex stratification
         # print("Checking rurality and sex counts.")
         index <- which(logicDF[,paste0("n.", n, ".female.rural")] + 
-                       logicDF[,paste0("n.", n, ".female.urban")] + 
-                       logicDF[,paste0("n.", n, ".male.rural")] + 
-                       logicDF[,paste0("n.", n, ".male.urban")]  !=
-                       logicDF[,paste0("n.", n, ".sex.rurality.total")])
+                           logicDF[,paste0("n.", n, ".female.urban")] + 
+                           logicDF[,paste0("n.", n, ".male.rural")] + 
+                           logicDF[,paste0("n.", n, ".male.urban")]  !=
+                           logicDF[,paste0("n.", n, ".sex.rurality.total")])
         
         if (length(index > 0)){
             ### Add errors to errorDF
@@ -304,26 +304,26 @@ logicalData <- function(validData,
         ### Will pull all nonzero differences for double checks.
         ### (except HIV; see below).
         
-        for(string in countsStrings){
-            tmpDF <- logicDF[,grep(pattern = paste(paste0("n.", string, ".", strats, ".total"), collapse = "|"), x = colnames(logicDF))]
-            index <- which(apply(X = tmpDF, MARGIN = 1, FUN = function(x) diff(range(x, na.rm = TRUE))/range(x, na.rm = TRUE)) > 0.05)
-            
-            ### Add errors to errorDF
-            if (length(index > 0)){
-                errorDF <- rbind(errorDF, 
-                                 data.frame("Study title" = logicDF$title.covidence[index],
-                                            "Study ID" = logicDF$covidence.id[index],
-                                            "Column name" = rep(paste0("n.", string, ".total"), 
-                                                                length(index)),
-                                            "Error message" = rep("Difference in extracted totals are greater than 10%\n
+        tmpDF <- logicDF[,grep(pattern = paste(paste0("n.", n, ".", strats[-3], ".total"), collapse = "|"), x = colnames(logicDF))]
+        
+        index <- which(rowSums(is.na(tmpDF)) == dim(tmpDF)[2] & 
+                           apply(X = tmpDF, MARGIN = 1, FUN = function(x) diff(range(x, na.rm = TRUE))/range(x, na.rm = TRUE)) > 0.05)
+        
+        ### Add errors to errorDF
+        if (length(index > 0)){
+            errorDF <- rbind(errorDF, 
+                             data.frame("Study title" = logicDF$title.covidence[index],
+                                        "Study ID" = logicDF$covidence.id[index],
+                                        "Column name" = rep(paste0("n.", n, ".total"), 
+                                                            length(index)),
+                                        "Error message" = rep("Difference in extracted totals are greater than 5%\n
                                                                   across stratifications of data.\n
                                                                   Check all totals against each other.", 
-                                                                  length(index))))
-            }
-            
-            ### Reset the indices 
-            index <- NA
+                                                              length(index))))
         }
+        
+        ### Reset the indices 
+        index <- NA
         
         ######### HIV vs. other stratifications ###############################
         
@@ -334,7 +334,7 @@ logicalData <- function(validData,
             ### Add errors to errorDF
             errorDF <- rbind(errorDF, 
                              data.frame("Study title" = logicDF$title.covidence[which(logicDF[,paste0("n.", n, ".hiv.total")] > 
-                                                                                      logicDF[,paste0("n.", n, ".sex.total")])],
+                                                                                          logicDF[,paste0("n.", n, ".sex.total")])],
                                         "Study ID" = logicDF$covidence.id[which(logicDF[,paste0("n.", n, ".hiv.total")] > 
                                                                                     logicDF[,paste0("n.", n, ".sex.total")])],
                                         "Column name" = rep(".hiv.total", 
@@ -359,7 +359,7 @@ logicalData <- function(validData,
                                                               length(which(logicDF[,paste0("n.", n, ".hiv.total")] > 
                                                                                logicDF[,paste0("n.", n, ".rurality.total")])))))
         }
-    
+        
         if (length(which(logicDF[,paste0("n.", n, ".hiv.total")] > logicDF[,paste0("n.", n, ".age.grp.total")])) > 0){
             ### Add errors to errorDF
             errorDF <- rbind(errorDF, 
@@ -402,8 +402,8 @@ logicalData <- function(validData,
     for(prev in prevalenceStrings){
         for(strat in strats){
             index <-  which(abs(logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")] - 
-                                ((logicDF[,paste0("n.", prev, ".tb.", strat,".total")] / logicDF[,paste0("n.participants.", strat,".total")])*1e5) / 
-                                 logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")]) > .10)
+                                    ((logicDF[,paste0("n.", prev, ".tb.", strat,".total")] / logicDF[,paste0("n.participants.", strat,".total")])*1e5) / 
+                                    logicDF[,paste0("prev100k.", prev, ".tb.", strat,".total")]) > .10)
             
             if (length(index > 0)){
                 ### Add errors to errorDF
@@ -417,7 +417,7 @@ logicalData <- function(validData,
             }
         }
     }
-        
+    
     ##########################################################################|
     ### Consistency checks ####################################################
     ##########################################################################|
@@ -427,19 +427,19 @@ logicalData <- function(validData,
     ### and no urban/rural stratified results are extracted.
     
     if(length(which(logicDF$study.rurality %in% c("Rural only", "Urban only") &
-          logicDF$report.rurality == "Yes")) > 0){
+                    logicDF$report.rurality == "Yes")) > 0){
         ### Add errors to errorDF
         errorDF <- rbind(errorDF, 
                          data.frame("Study title" = logicDF$title.covidence[which(logicDF$study.rurality %in% c("Rural only", "Urban only") &
-                                                                                  logicDF$report.rurality == "Yes")],
+                                                                                      logicDF$report.rurality == "Yes")],
                                     "Study ID" = logicDF$covidence.id[which(logicDF$study.rurality %in% c("Rural only", "Urban only") &
-                                                                            logicDF$report.rurality == "Yes")],
+                                                                                logicDF$report.rurality == "Yes")],
                                     "Column name" = rep("study.rurality", 
                                                         length(which(logicDF$study.rurality %in% c("Rural only", "Urban only") &
-                                                                     logicDF$report.rurality == "Yes"))),
+                                                                         logicDF$report.rurality == "Yes"))),
                                     "Error message" = rep("Study rurality does not match extracted data", 
                                                           length(which(logicDF$study.rurality %in% c("Rural only", "Urban only") &
-                                                                       logicDF$report.rurality == "Yes")))))
+                                                                           logicDF$report.rurality == "Yes")))))
         
     }
     
@@ -450,12 +450,12 @@ logicalData <- function(validData,
     ### SYMPTOM SCREENING 
     ### Set the indices 
     index <-
-    ### Symptom screen not performed but symptoms listed 
-    which(!grepl(pattern = "symptom", x = logicDF$screening.tests, ignore.case = TRUE) &
-          !is.na(logicDF$screening.symptoms) |
-    ### Symptom screen performed but symptoms not listed 
-    grepl(pattern = "symptom", x = logicDF$screening.tests, ignore.case = TRUE) &
-    is.na(logicDF$screening.symptoms))
+        ### Symptom screen not performed but symptoms listed 
+        which(!grepl(pattern = "symptom", x = logicDF$screening.tests, ignore.case = TRUE) &
+                  !is.na(logicDF$screening.symptoms) |
+                  ### Symptom screen performed but symptoms not listed 
+                  grepl(pattern = "symptom", x = logicDF$screening.tests, ignore.case = TRUE) &
+                  is.na(logicDF$screening.symptoms))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -474,12 +474,12 @@ logicalData <- function(validData,
     ### CHEST XRAY 
     ### Set the indices 
     index <-
-    ### X-Ray screening not performed but how abnormality was define is listed
-    which(!grepl(pattern = "X-ray", x = logicDF$screening.tests, ignore.case = TRUE) &
-          logicDF$positive.xray.definition != "Chest X-ray was not used" |
-    ### X-Ray screening performed but how abnormality was define is not listed
-    grepl(pattern = "X-ray", x = logicDF$screening.tests, ignore.case = TRUE) &
-        (logicDF$positive.xray.definition == "Chest X-ray was not used" | is.na(logicDF$positive.xray.definition)))
+        ### X-Ray screening not performed but how abnormality was define is listed
+        which(!grepl(pattern = "X-ray", x = logicDF$screening.tests, ignore.case = TRUE) &
+                  logicDF$positive.xray.definition != "Chest X-ray was not used" |
+                  ### X-Ray screening performed but how abnormality was define is not listed
+                  grepl(pattern = "X-ray", x = logicDF$screening.tests, ignore.case = TRUE) &
+                  (logicDF$positive.xray.definition == "Chest X-ray was not used" | is.na(logicDF$positive.xray.definition)))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -502,10 +502,10 @@ logicalData <- function(validData,
     ### SPUTUM SMEAR
     ### Set the indices 
     index <-
-    ### Subset of smear used but no details provided and vice-versa
-    which(grepl(pattern = "Subset", x = logicDF$smear.samples, ignore.case = TRUE) ==
-          is.na(logicDF$other.smear.samples))
-
+        ### Subset of smear used but no details provided and vice-versa
+        which(grepl(pattern = "Subset", x = logicDF$smear.samples, ignore.case = TRUE) ==
+                  is.na(logicDF$other.smear.samples))
+    
     if(length(index) > 0){
         ### Add errors to errorDF
         errorDF <- rbind(errorDF, 
@@ -523,9 +523,9 @@ logicalData <- function(validData,
     ### XPERT SAMPLES
     ### Set the indices 
     index <-
-    ### Subset of smear used but no details provided and vice-versa
-    which(grepl(pattern = "Subset", x = logicDF$xpert.samples, ignore.case = TRUE) ==
-              is.na(logicDF$other.xpert.samples))
+        ### Subset of smear used but no details provided and vice-versa
+        which(grepl(pattern = "Subset", x = logicDF$xpert.samples, ignore.case = TRUE) ==
+                  is.na(logicDF$other.xpert.samples))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -544,9 +544,9 @@ logicalData <- function(validData,
     ### CULTURE SAMPLES
     ### Set the indices 
     index <-
-    ### Subset of smear used but no details provided and vice-versa
-    which(grepl(pattern = "Subset", x = logicDF$culture.samples, ignore.case = TRUE) ==
-              is.na(logicDF$other.culture.samples))
+        ### Subset of smear used but no details provided and vice-versa
+        which(grepl(pattern = "Subset", x = logicDF$culture.samples, ignore.case = TRUE) ==
+                  is.na(logicDF$other.culture.samples))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -573,9 +573,9 @@ logicalData <- function(validData,
     qualityIndex <- grep("study.quality", colnames(logicDF))
     
     index <- 
-    ### Three low risk items but overall high bias
-    which(rowSums(logicDF[,qualityIndex[1:8]] == "Yes (low risk)") > 5 & 
-          grepl("High risk", logicDF[,qualityIndex[9]]))
+        ### Three low risk items but overall high bias
+        which(rowSums(logicDF[,qualityIndex[1:8]] == "Yes (low risk)") > 5 & 
+                  grepl("High risk", logicDF[,qualityIndex[9]]))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -592,9 +592,9 @@ logicalData <- function(validData,
     index <- NA
     
     index <- 
-    ### Three high risk items but overall low bias
-    which(rowSums(logicDF[,qualityIndex[1:8]] == "No (high risk)") > 5 & 
-          grepl("Low risk", logicDF[,qualityIndex[9]]))
+        ### Three high risk items but overall low bias
+        which(rowSums(logicDF[,qualityIndex[1:8]] == "No (high risk)") > 5 & 
+                  grepl("Low risk", logicDF[,qualityIndex[9]]))
     
     if(length(index) > 0){
         ### Add errors to errorDF
@@ -682,11 +682,11 @@ logicalData <- function(validData,
         ### Reset the indices
         index <- NA
     }
-
+    
     ### Create a list that contains the two dataframes:
     logicDataSummary <- list("clean data" = logicDF, 
                              "errors" = errorDF)
     
     return(logicDataSummary)
-
+    
 }
