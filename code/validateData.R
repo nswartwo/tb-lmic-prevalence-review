@@ -36,6 +36,7 @@ validateData <- function(newVariablesData,
     #     print("No stratifications extracted.")
     # }
     
+    strats <- unique(sub("^report.", "", grep("^report.", colnames(validDF), value = TRUE)))
     # if(validDF[,paste()])
     stratCount <- 0 
     for(strat in strats){
