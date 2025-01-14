@@ -40,5 +40,8 @@ cleanData <- function(){
                              "errors" = lgcList[["errors"]], 
                              "clean data" = lgcList[["clean data"]])
     
+    ### Save errors dataframe as a csv
+    write.csv(lgcList[["errors"]], here("data/errorDataToCheck.csv"), row.names = FALSE)
+    
     return(cleanDataSummary)
 }
