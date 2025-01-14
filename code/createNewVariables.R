@@ -7,10 +7,31 @@
 
 newVariables <- function(stndDF,
                          errorDF){
+    
+    ##########################################################################|
+    #####                               Setup                             #####
+    ##########################################################################|
+    
     ### load the required libraries 
     library(tidyverse)
     library(here)
     library(janitor)
+    
+    ##########################################################################|
+    #####              Create new age data variables and clean           #####
+    ##########################################################################|
+    
+    source(here("code/ageData.R"))
+    ageDF <- ageData(stndDF)
+    
+    ### Replace the age data in the stndDF 
+    ageIndx <- grep("age.grp", colnames(stndDF))
+    
+    ### Split dataframe so we can place age in middle 
+    stndDFTop <- stndDF[,1:(ageIndx[1]-1)]
+    stndDFBottom <- stndDF[,(max(ageIndx)+1):ncol(stndDF)]
+    
+    stndDF <- cbind(stndDFTop, ageDF[,-1], stndDFBottom)
     
     ##########################################################################|
     #####           Separate confidence intervals out into columns        #####
