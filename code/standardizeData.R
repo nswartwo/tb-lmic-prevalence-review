@@ -113,15 +113,17 @@ standardData <- function(rawData){
                  nMissing))
     
     ### Find the missings 
-    missList <-sapply(cleanDF, function(x) grep("^$", x, perl = TRUE))
-    missList <- missList[lengths(missList) > 0]
+    missList <- sapply(cleanDF, function(x) grep("^$", x, perl = TRUE))
+
     
     ### Convert to a dataframe
     for (col in 1:length(missList)){
-        tempDF <- data.frame("Study title" = cleanDF[missList[[col]], "title.extracted"], 
-                             "Study ID" = cleanDF[missList[[col]], "covidence.id"], 
-                             "Column name" = names(missList)[col])
-        missingDF <- rbind(missingDF, tempDF)
+        if (length(missList[[col]] > 0)){
+            tempDF <- data.frame("Study title" = cleanDF[missList[[col]], "title.covidence"], 
+                                 "Study ID" = cleanDF[missList[[col]], "covidence.id"], 
+                                 "Column name" = names(missList)[col])
+            missingDF <- rbind(missingDF, tempDF)
+        }
     }
     
     ### Reorder by title
@@ -135,28 +137,32 @@ standardData <- function(rawData){
     type_mapping <- type_mapping[names(type_mapping) %in% names(cleanDF)]
     
     ### Function to safely convert columns
-    convert_column <- function(column, type) {
-        if (type == "numeric") {
-            suppressWarnings(parse_number(column))
-        } else if (type == "character") {
-            parse_character(column)
-        } else if (type == "logical") {
-            parse_logical(column)
-        } else if (type == "integer") {
-            suppressWarnings(parse_integer(column))
-        } else if (type == "factor") {
-            parse_factor(column)
-        } else {
-            column # Leave unchanged if the type isn't specified
-        }
-    }
+    # convert_column <- function(column, type) {
+    #     if (type == "numeric") {
+    #         suppressWarnings(parse_number(column))
+    #     } else if (type == "character") {
+    #         parse_character(column)
+    #     } else if (type == "logical") {
+    #         parse_logical(column)
+    #     } else if (type == "integer") {
+    #         suppressWarnings(parse_integer(column))
+    #     } else if (type == "factor") {
+    #         parse_factor(column)
+    #     } else {
+    #         column # Leave unchanged if the type isn't specified
+    #     }
+    # }
     
     #### Apply the conversion based on type mapping
-    cleanDF <- cleanDF %>%
-        mutate(across(
-            all_of(names(type_mapping)), 
-            ~ convert_column(.x, type_mapping[cur_column()])
-        ))
+    # cleanDF0 <- cleanDF %>%
+    #     mutate(across(
+    #         all_of(names(type_mapping)),
+    #         ~ convert_column(.x, type_mapping[cur_column()])
+    #     ))
+    # 
+    types <- paste(map_chr(type_mapping, ~str_sub(., 1,1)), collapse = "")
+    
+    cleanDF <- type_convert(cleanDF, types, guess_integer = F)
     
     ### Create a list that contains the two dataframes:
     ### Name the list to make extraction easier (e.g. out$cleanDF now accessible)
