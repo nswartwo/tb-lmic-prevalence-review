@@ -122,7 +122,7 @@ standardData <- function(rawData){
     ### Find the missings 
     missList <- sapply(cleanDF, function(x) grep("^$", x, perl = TRUE))
 
-    
+    if (sum(unlist(lapply(missList, length))) > 0){
     ### Convert to a dataframe
     for (col in 1:length(missList)){
         if (length(missList[[col]] > 0)){
@@ -139,6 +139,7 @@ standardData <- function(rawData){
     ### Save missings dataframe as a csv
     write.csv(missingDF, here("data/missingDataToCheck.csv"), row.names = FALSE)
     
+    }
     ### Convert column types to correct format
     type_mapping <- setNames(dict$Type, dict$Short.column.name)
     type_mapping <- type_mapping[names(type_mapping) %in% names(cleanDF)]
