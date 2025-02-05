@@ -40,6 +40,9 @@ standardData <- function(rawData){
     ### Remove all newline characters from titles so we can match
     cleanDF[,"title.extracted"] <- gsub("[\r\n]", "", cleanDF[,"title.extracted"])
     
+    ### Remove all commmas from numbers
+    cleanDF <- sapply(as.data.frame(cleanDF), function(x) gsub('(?<=\\d),(?=\\d)', "", x, perl = TRUE))
+    
     ### Convert to a dataframe now that the column names are unique 
     ### and we are done with the sapply clean up 
     ### (returns a character matrix.)
@@ -137,32 +140,32 @@ standardData <- function(rawData){
     type_mapping <- type_mapping[names(type_mapping) %in% names(cleanDF)]
     
     ### Function to safely convert columns
-    # convert_column <- function(column, type) {
-    #     if (type == "numeric") {
-    #         suppressWarnings(parse_number(column))
-    #     } else if (type == "character") {
-    #         parse_character(column)
-    #     } else if (type == "logical") {
-    #         parse_logical(column)
-    #     } else if (type == "integer") {
-    #         suppressWarnings(parse_integer(column))
-    #     } else if (type == "factor") {
-    #         parse_factor(column)
-    #     } else {
-    #         column # Leave unchanged if the type isn't specified
-    #     }
-    # }
+    convert_column <- function(column, type) {
+        if (type == "numeric") {
+            suppressWarnings(parse_number(column))
+        } else if (type == "character") {
+            parse_character(column)
+        } else if (type == "logical") {
+            parse_logical(column)
+        } else if (type == "integer") {
+            suppressWarnings(parse_integer(column))
+        } else if (type == "factor") {
+            parse_factor(column)
+        } else {
+            column # Leave unchanged if the type isn't specified
+        }
+    }
     
     #### Apply the conversion based on type mapping
-    # cleanDF0 <- cleanDF %>%
-    #     mutate(across(
-    #         all_of(names(type_mapping)),
-    #         ~ convert_column(.x, type_mapping[cur_column()])
-    #     ))
+    cleanDF <- cleanDF %>%
+        mutate(across(
+            all_of(names(type_mapping)),
+            ~ convert_column(.x, type_mapping[cur_column()])
+        ))
+
+    # types <- paste(map_chr(type_mapping, ~str_sub(., 1,1)), collapse = "")
     # 
-    types <- paste(map_chr(type_mapping, ~str_sub(., 1,1)), collapse = "")
-    
-    cleanDF <- type_convert(cleanDF, types, guess_integer = F)
+    # cleanDF1 <- type_convert(cleanDF, types, guess_integer = F)
     
     ### Create a list that contains the two dataframes:
     ### Name the list to make extraction easier (e.g. out$cleanDF now accessible)
