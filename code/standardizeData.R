@@ -109,6 +109,10 @@ standardData <- function(rawData){
     cleanDF[, commIndex] <- sapply(cleanDF[, commIndex], function(x) gsub("^$",NA, x, perl = TRUE)) 
     
     
+    ### We cannot update the study ID as this is from Covidence
+    ### Remove these from the DF 
+    cleanDF$study.id <- sapply(cleanDF$study.id, function(x) gsub("^$",NA, x, perl = TRUE)) 
+    
     ### Now that we've removed the expectant missings, we can examine the
     ### remaining missings that need to be addressed. 
     nMissing <- sum(sapply(cleanDF, function(x) grepl("^$", x, perl = TRUE)))
@@ -130,7 +134,7 @@ standardData <- function(rawData){
     }
     
     ### Reorder by title
-    missingDF <- missingDF[order(missingDF$Study.title),]
+    missingDF <- missingDF[order(missingDF$Study.title),]    
 
     ### Save missings dataframe as a csv
     write.csv(missingDF, here("data/missingDataToCheck.csv"), row.names = FALSE)
