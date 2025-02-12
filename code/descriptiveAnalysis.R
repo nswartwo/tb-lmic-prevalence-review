@@ -124,9 +124,72 @@ ggplot(symptoms %>% filter(use == "Yes"), aes(x = symptom)) + geom_bar() + theme
     geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
     ggtitle("Number of prevalence studies by symptoms screened")
 
-##### Multivariate analysis #####
+cleanDF %>% 
+mutate(positive.xray.definition = ifelse(grepl("Other", positive.xray.definition), "Other", as.character(positive.xray.definition))) %>%
+ggplot(aes(x = positive.xray.definition)) + 
+geom_bar() + theme_minimal() + 
+geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+coord_flip() +
+    
+ggtitle("Number of prevalence studies by screening algorithm")
 
-##### TO DO: BY TIME AND REGION #####
+##### INCLUDE PPL ON TB TX #####    
+ggplot(cleanDF, aes(x = include.current.tb.tx)) + geom_bar() + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+    ggtitle("TB prevalence definition includes people on TB treatment")
+
+##### INCLUDE CONTACT TRACING #####    
+ggplot(cleanDF, aes(x = contact.investigation)) + geom_bar() + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+    ggtitle("TB prevalence definition includes people idenitifed through contact tracing")
+
+##### DIAGNOSTIC ALGORITHM #####  
+cleanDF %>% 
+dplyr::select("smear.used", "xpert.used", "culture.used") %>% 
+mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither")) %>% 
+pivot_longer(everything()) %>% 
+filter(value == "Yes") %>% 
+ggplot(aes(name)) + geom_bar(stat = "count") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+    ggtitle("TB diagnostic method")
+
+cleanDF %>% 
+    dplyr::select("covidence.id", "smear.used", "xpert.used", "culture.used") %>% 
+    mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither")) %>% 
+    reshape2::melt(id.vars = "covidence.id", variable.name = "test.used") %>%  
+    filter(value == "Yes") %>%
+    ggplot() + geom_point(aes(x = as.factor(covidence.id), y = test.used, color = test.used), shape = 15, size = 2) + 
+    theme_void() +
+    theme(legend.position="bottom", axis.text.x=element_blank(), 
+          axis.ticks.x=element_blank()) + coord_fixed(ratio = .8) + 
+    ggtitle("Combination of TB diagnostic methods")
+
+cleanDF %>% 
+    dplyr::select("covidence.id", "smear.used", "xpert.used", "culture.used") %>% 
+    mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither"), 
+           "All methods used" = ifelse(xpert.used == "Yes" & smear.used == "Yes" & culture.used == "Yes", "Yes", "No"), 
+           "Smear and Xpert Used" = ifelse(xpert.used == "Yes" & smear.used == "Yes" & culture.used == "No", "Yes", "No"), 
+           "Culture and Xpert Used" = ifelse(xpert.used == "Yes" & smear.used == "No" & culture.used == "Yes", "Yes", "No"), 
+           "Smear and Culture Used" = ifelse(xpert.used == "No" & smear.used == "Yes" & culture.used == "Yes", "Yes", "No"), 
+           "Only smear used"  = ifelse(xpert.used == "No" & smear.used == "Yes" & culture.used == "No", "Yes", "No"), 
+           "Only Xpert used"  = ifelse(xpert.used == "Yes" & smear.used == "No" & culture.used == "No", "Yes", "No"), 
+           "Only culture used"  = ifelse(xpert.used == "No" & smear.used == "No" & culture.used == "Yes", "Yes", "No")) %>% 
+    select (! ends_with(".used")) %>%
+    select (! covidence.id) %>%
+    pivot_longer(everything()) %>% 
+    filter(value == "Yes") %>% 
+    ggplot(aes(name)) + geom_bar() + 
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+    theme_minimal() + coord_flip()
+    theme(legend.position="bottom") + 
+    ggtitle("Combination of TB diagnostic methods")
+    
+        
+
+##### BY TIME AND REGION #####
 timeRegion <- left_join(x = cleanDF, y = regionWB, by="study.country") %>% 
               select(study.start.year, World.regions.according.to.WB, study.country) %>% 
               group_by(study.start.year) %>% 
@@ -162,6 +225,7 @@ ggplot(timeRegion, aes(x=publication.year)) +
     theme(panel.grid.minor = element_blank(), legend.position = "bottom") + 
     ggtitle("Study publication years by World Bank region") + 
     guides(color = guide_legend(nrow = 2))
+
 
 dev.off()
 
