@@ -18,6 +18,13 @@ newVariables <- function(stndDF,
     library(janitor)
     
     ##########################################################################|
+    #####              Create new tribal indicator variable               #####
+    ##########################################################################|
+    tribalPops <- read.csv(here("data/tribalSurveys.csv"))
+
+    stndDF <- stndDF %>% left_join(tribalPops[,c("covidence.id", "tribal.pop")], by = "covidence.id")
+    
+    ##########################################################################|
     #####              Create new age data variables and clean           #####
     ##########################################################################|
     
