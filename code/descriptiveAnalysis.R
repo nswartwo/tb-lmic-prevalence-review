@@ -9,10 +9,11 @@ library(reshape2)
 library(ggplot2)
 library(gt)
 library(maps)
+library(ggpubr)
 
 ### Setup palette 
 myPal <- c( "#44AA99", "#882255", "#332288", "#117733", "#6699CC", "#CC6677",
-            "#AA4499", "#999933", "#661100","#88CCEE", "#DDCC77", "#888888")
+            "#AA4499", "#999933", "#A41034","#88CCEE", "#DDCC77", "#888888")
 
 ##############################################################################|
 ##### Create the clean dataset ################################################
@@ -344,6 +345,133 @@ cleanDF %>%
     theme(legend.position = "bottom",
           panel.grid.minor = element_blank()) + 
     geom_text(aes(label = round(ratio.participants.ur,2)), hjust = - .2, colour = "black")
+
+dev.off()
+
+##############################################################################|
+##### RISK OF BIAS SUMMARY ####################################################
+##############################################################################|
+### Standardize the study quality/risk of bias data 
+riskData <- cleanDF %>% select(contains("study.quality")) %>% 
+    select(! "study.quality.comments") %>% 
+    mutate("study.quality.representative" = ifelse(grepl("Unknown", study.quality.representative), 
+                                                   "Unknown",  as.character(study.quality.representative))) %>% 
+    mutate(bias.risk = case_when(grepl("High", study.quality.summary) ~ "High risk of bias", 
+                                 grepl("Low", study.quality.summary) ~ "Low risk of bias",
+                                 grepl("Moderate", study.quality.summary) | grepl("Medium", study.quality.summary) ~ "Moderate risk of bias",
+                                 grepl("N/A", study.quality.summary) ~ "Unknown"))
+
+levels(riskData$study.quality.random.selection)[2] <- "Unknown"
+levels(riskData$study.quality.nonresponse)[3] <- "Unknown"
+levels(riskData$study.quality.direct.data.collect)[2] <- "Unknown"
+levels(riskData$study.quality.case.definition)[2] <- "Unknown"
+levels(riskData$study.quality.valid.instrument)[3] <- "Unknown"
+levels(riskData$study.quality.same.data.collect)[2] <- "Unknown"
+levels(riskData$study.quality.numerator.denominator)[3] <- "Unknown"
+
+### Open PDF 
+
+pdf("output/riskOfBias.pdf", width = 8.5, height = 11.5)
+
+risk1 <- riskData %>% 
+        mutate(study.quality.representative = fct_relevel(study.quality.representative, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+        ggplot() + 
+        geom_bar(aes(study.quality.representative, fill = bias.risk), position = "stack") + 
+        theme_minimal() + theme(legend.position = "bottom",
+                                panel.grid.minor = element_blank(),
+                                panel.grid.major = element_blank()) + coord_flip() +
+        labs(y="", x="") + 
+        scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+        # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+        ggtitle("Was the study’s sample population a true or close representation of the target population?")
+
+risk2 <- riskData %>% 
+    mutate(study.quality.random.selection = fct_relevel(study.quality.random.selection, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+    ggplot() + 
+    geom_bar(aes(study.quality.random.selection, fill = bias.risk), position = "stack") + 
+    theme_minimal() + theme(legend.position = "bottom",
+                            panel.grid.minor = element_blank(),
+                            panel.grid.major = element_blank()) + coord_flip() +
+    labs(y="", x="") + 
+    scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+    # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+    ggtitle("Was some form of random selection used to select the sample or was a census undertaken?")
+
+risk3 <- riskData %>% 
+    mutate(study.quality.nonresponse = fct_relevel(study.quality.nonresponse, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+    ggplot() + 
+    geom_bar(aes(study.quality.nonresponse, fill = bias.risk), position = "stack") + 
+    theme_minimal() + theme(legend.position = "bottom",
+                            panel.grid.minor = element_blank(),
+                            panel.grid.major = element_blank()) + coord_flip() +
+    labs(y="", x="") + 
+    scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+    # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+    ggtitle("Was the likelihood of non-response bias minimal?")
+
+risk4 <- riskData %>% 
+    mutate(study.quality.direct.data.collect = fct_relevel(study.quality.direct.data.collect, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+    ggplot() + 
+    geom_bar(aes(study.quality.direct.data.collect, fill = bias.risk), position = "stack") + 
+    theme_minimal() + theme(legend.position = "bottom",
+                            panel.grid.minor = element_blank(),
+                            panel.grid.major = element_blank()) + coord_flip() +
+    labs(y="", x="") + 
+    scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+    # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+    ggtitle("Were data collected directly from subjects (as opposed to a proxy)?")
+
+risk5 <- riskData %>% 
+        mutate(study.quality.case.definition = fct_relevel(study.quality.case.definition, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+        ggplot() + 
+        geom_bar(aes(study.quality.case.definition, fill = bias.risk), position = "stack") + 
+        theme_minimal() + theme(legend.position = "bottom",
+                                panel.grid.minor = element_blank(),
+                                panel.grid.major = element_blank()) + coord_flip() +
+        labs(y="", x="") + 
+        scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+        # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+        ggtitle("Was an acceptable case definition used in the study?")
+
+risk6 <- riskData %>% 
+        mutate(study.quality.valid.instrument = fct_relevel(study.quality.valid.instrument, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+        ggplot() + 
+        geom_bar(aes(study.quality.valid.instrument, fill = bias.risk), position = "stack") + 
+        theme_minimal() + theme(legend.position = "bottom",
+                                panel.grid.minor = element_blank(),
+                                panel.grid.major = element_blank()) + coord_flip() +
+        labs(y="", x="") + 
+        scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+        # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+        ggtitle("Was the study instrument that measured the parameter of interest shown to have reliability and validity?")
+
+risk7 <- riskData %>% 
+        mutate(study.quality.same.data.collect = fct_relevel(study.quality.same.data.collect, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+        ggplot() + 
+        geom_bar(aes(study.quality.same.data.collect, fill = bias.risk), position = "stack") + 
+        theme_minimal() + theme(legend.position = "bottom",
+                                panel.grid.minor = element_blank(),
+                                panel.grid.major = element_blank()) + coord_flip() +
+        labs(y="", x="") + 
+        scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+        # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
+        ggtitle("Was the same mode of data collection used for all subjects?")
+
+risk8 <- riskData %>% 
+        mutate(study.quality.same.data.collect = fct_relevel(study.quality.same.data.collect, c("Unknown", "No (high risk)", "Yes (low risk)"))) %>%
+        ggplot(aes(x = study.quality.same.data.collect)) + 
+        geom_bar(aes(fill = bias.risk), position = "stack") + 
+        theme_minimal() + theme(legend.position = "bottom",
+                                panel.grid.minor = element_blank(),
+                                panel.grid.major = element_blank()) + coord_flip() +
+        labs(y="", x="") + 
+        scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
+        geom_text(aes(label = after_stat(count)), position = "stack", stat = "count", hjust = 1.2, colour = "white") +
+        ggtitle("Were the numerator and denominator for the parameter of interest appropriate?")
+
+ggarrange(risk1, risk2, risk3, risk4,
+          risk5, risk6, risk7, risk8,
+          ncol=1, nrow=8, common.legend = TRUE, legend="bottom")
 
 dev.off()
 
