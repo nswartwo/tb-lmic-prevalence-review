@@ -10,15 +10,32 @@ library(ggplot2)
 library(gt)
 library(maps)
 
-### Create the clean dataset 
+### Setup palette 
+myPal <- c( "#44AA99", "#882255", "#332288", "#117733", "#6699CC", "#CC6677",
+            "#AA4499", "#999933", "#661100","#88CCEE", "#DDCC77", "#888888")
+
+##############################################################################|
+##### Create the clean dataset ################################################
+##############################################################################|
 cleanDF0 <- cleanData()[["clean data"]]
 
-### Read in the World Bank Region data 
-regionWB <- read.csv("data/world-regions-according-to-the-world-bank.csv")[,c(1,4)] %>% rename(study.country = Entity)
+##############################################################################|
+##### Read in the naming schema for figures ###################################
+##############################################################################|
 
-##### GEOGRAPHY #####
-##### Rename some countries 
+figID <- read.csv(here("data/titlesForFigures.csv"))
+colnames(figID)[1] <- "covidence.id"
+cleanDF0 <- cleanDF0 %>% left_join(figID[,c("covidence.id", "figure.id")], by = "covidence.id") %>% 
+            mutate(figure.id.yr = paste(figure.id, study.start.year))
 
+##############################################################################|
+##### Read in the World Bank Region data ######################################
+##############################################################################|
+regionWHO <- read.csv("data/who-regions.csv")[,c(1,4)] %>% 
+             rename(study.country = Entity)
+
+### Rename some countries to match the WHO CSV.
+### For labeling these will remain as extracted. 
 cleanDF <- cleanDF0 
 cleanDF[which(cleanDF$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
 cleanDF[which(cleanDF$study.country == "The Gambia"), "study.country"] <- "Gambia"
@@ -26,148 +43,217 @@ cleanDF[which(cleanDF$study.country == "United Republic of Tanzania"), "study.co
 cleanDF[which(cleanDF$study.country == "Lao PDR"), "study.country"] <- "Laos"
 cleanDF[which(cleanDF$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
+### Join the WHO data 
+cleanDF <- cleanDF %>% left_join(regionWHO)
 
-#### Open PDF 
+##############################################################################|
+##### DESCRIPTIVE PLOTS #######################################################
+##############################################################################|
+### Open PDF 
 pdf("output/descriptiveAnalysis.pdf", width = 11.5, height = 8.5)
 
-###### COUNTRY 
-##### Count the county instances
-nCountry <- cleanDF %>% count(study.country)
-# nCountry <- nCountry[-which(nCountry$study.country == "Viet Nam"), ]
-# nCountry[which(nCountry$study.country == "Vietnam"), "n"] <- nCountry[which(nCountry$study.country == "Vietnam"), "n"] + 4
+##### PLOTS BY GEOGRAPHY ######################################################
 
-##### Setup a map 
+### COUNTRY 
+### Count the county instances
+nCountry <- cleanDF %>% 
+            count(study.country) %>% 
+            left_join(regionWHO) 
+
+### Setup a world map 
 world_map <- map_data("world")
 world_map <- subset(world_map, region != "Antarctica")
 
-##### Make a heat map 
+### Make a heat map of prevalence studies by country 
 ggplot(nCountry) +
     geom_map(
         dat = world_map, map = world_map, aes(map_id = region),
-        fill = "lightgrey", color = "black", size = 0.25
-    ) +
-    geom_map(map = world_map, aes(map_id = study.country, fill = n), size = 0.25) +
-    scale_fill_gradient(low = "#fff7bc", high = "#cc4c02", name = "Number of prevalence surveys") +
+        fill = "lightgrey", color = "black", size = 0.25) +
+    geom_map(map = world_map, aes(map_id = study.country, fill = n)) +
+    scale_fill_gradient(low = "#fff7bc", high = "#cc4c02",
+                        name = "Number of prevalence surveys") +
     expand_limits(x = world_map$long, y = world_map$lat) + 
-    theme_minimal() + theme(legend.position="bottom")
+    theme_void() + theme(legend.position = "inside",
+                            legend.position.inside = c(.2,.2)) + 
+    ggtitle ("Number of prevalence surveys by country")
 
-##### Also make a bar plot 
-ggplot(nCountry) + geom_col(aes(x=study.country, y=n, fill = n)) + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    scale_fill_gradient(low = "#fff7bc", high = "#cc4c02", name = "Number of prevalence surveys")  + 
-    geom_text(aes(x=study.country, y=n, label = n), hjust = -0.2) + 
+### Bar plot of countries by total survey count
+ggplot(nCountry) + geom_col(aes(x=study.country, y=n), color = "black") + 
+                   theme_minimal() + coord_flip() + 
+                   theme(legend.position = "inside",
+                         legend.position.inside = c(.85,.15), 
+                         legend.background = element_rect(color = "white"),
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    geom_text(aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
+    labs(y = "Survey country", "Number of prevalence surveys") + 
     ggtitle("Number of prevalence surveys by country")
 
-##### WORLD BANK REGION
-nRegion <- left_join(x = cleanDF, y = regionWB, by="study.country") %>% count(World.regions.according.to.WB)
+### Also make a bar plot colored by WHO Region
+ggplot(nCountry) + 
+    geom_col(aes(x=study.country, y=n, fill = World.regions.according.to.WHO), color = "black") + 
+    theme_minimal() +
+    coord_flip() + theme(legend.position = "inside",
+                         legend.position.inside = c(.85,.15), 
+                         legend.background = element_rect(color = "white"),
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    geom_text(aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
+    scale_fill_manual(values=myPal, name = "WHO Region") + 
+    labs(x = "Survey country", y="Number of prevalence surveys") + 
+    ggtitle("Number of prevalence surveys by country")
 
-ggplot(nRegion) + geom_col(aes(x=World.regions.according.to.WB, y=n, fill = n)) + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    scale_fill_gradient(low = "#fff7bc", high = "#cc4c02", name = "Number of prevalence surveys")  + 
-    geom_text(aes(x=World.regions.according.to.WB, y=n, label = n), hjust = -0.2) + 
+##### WHO REGION
+nRegion <- cleanDF %>% 
+           count(World.regions.according.to.WHO)
+
+ggplot(nRegion) + 
+    geom_col(aes(x=World.regions.according.to.WHO, y=n), color = "black") + 
+    theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    geom_text(aes(x=World.regions.according.to.WHO, y=n, label = n), hjust = 2, color ="white") + 
+    labs(x = "Survey region", y="Number of prevalence surveys") + 
     ggtitle("Number of prevalence surveys by World Bank region")
 
-##### STRATIFICATIONS #####
+##### PLOTS BY PREVALENCE STRATIFICATIONS #####################################
 reportStrats0 <- cleanDF %>% select("covidence.id", "study.country", 
                                    colnames(cleanDF)[grep("report", colnames(cleanDF))])
 
 reportStrats <- reshape2::melt(reportStrats0, id.vars = c("covidence.id", "study.country"), 
                                value.name = "report", variable.name = "stratification") 
 
-ggplot(reportStrats %>% filter(report == "Yes"), aes(x = stratification)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+### Surveys by which prevalence stratifications were reported
+ggplot(reportStrats %>% filter(report == "Yes"), aes(x = stratification)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Prevalence stratification") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.2, colour = "white") +
     ggtitle("Number of prevalence surveys by stratification")
 
-
-###### SCOPE OF PREVALENCE REVIEW  #####
-ggplot(cleanDF, aes(x = study.geography)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - 1, colour = "black") +
+### Scope of prevalence review  
+ggplot(cleanDF, aes(x = study.geography)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Scope of prevalence review") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.2, colour = "white") +
     ggtitle("Number of prevalence surveys by representativeness")
 
 
 ###### TO DO: WHAT TYPE OF PREVALENCE DATA ###### 
-prevData0 <- cleanDF %>% select("covidence.id", colnames(cleanDF)[grep("^prev100k", colnames(cleanDF))])
-adjPrevData <- cleanDF %>% select(colnames(cleanDF)[grep("adj.prev100k", colnames(cleanDF))])
+prevData0 <- cleanDF %>% 
+             select("covidence.id", colnames(cleanDF)[grep("^prev100k", colnames(cleanDF))])
+adjPrevData <- cleanDF %>% 
+             select(colnames(cleanDF)[grep("adj.prev100k", colnames(cleanDF))])
 
 
-###### TEMPORAL VARIABLES ######
-ggplot(cleanDF, aes(x = publication.year)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - 1, colour = "black") +
+##### PLOTS BY TIME ###########################################################
+### Surveys by publication year
+ggplot(cleanDF, aes(x = publication.year)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Publication year") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.1, colour = "white") +
     ggtitle("Number of prevalence surveys by publication year")
 
-ggplot(cleanDF, aes(x = study.start.year)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - 1, colour = "black") +
-    ggtitle("Number of prevalence surveys by study start year") 
+### Surveys by start year
+ggplot(cleanDF, aes(x = study.start.year)) + 
+    geom_bar(color = "black") + 
+    # geom_bar(aes(fill = World.regions.according.to.WHO), color = "black") + 
+    theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Survey start year") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.1, colour = "white") +
+    ggtitle("Number of prevalence surveys by start year")
 
-ggplot(cleanDF, aes(x = study.end.year)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - 1, colour = "black") +
-    ggtitle("Number of prevalence surveys by study end year") 
 
-##### SCREENING ALGORITHM #####
-ggplot(cleanDF, aes(x = screening.tests)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+
+##### PLOTS BY SCREENING ALGORITHM ############################################
+### Total studies by screening algorithm 
+cleanDF %>% 
+mutate(simple.screen.tests = ifelse(grepl("Other:", screening.tests)==TRUE, "Other", as.character(screening.tests))) %>% 
+ggplot(aes(x = simple.screen.tests)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Screening algorithm") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.1, colour = "white") +
     ggtitle("Number of prevalence surveys by screening algorithm")
 
+### Surveys by symptom screening
 symptoms0 <- cleanDF %>% select("covidence.id", "study.country", 
-                                    colnames(cleanDF)[grep("symptom", colnames(cleanDF))])
-
+                         colnames(cleanDF)[grep("symptom.screening.", colnames(cleanDF))])
+colnames(symptoms0) <- gsub("symptom.screening.", "", colnames(symptoms0))
 symptoms <- reshape2::melt(symptoms0, id.vars = c("covidence.id", "study.country"), 
                                value.name = "use", variable.name = "symptom") 
 
-ggplot(symptoms %>% filter(use == "Yes"), aes(x = symptom)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+ggplot(symptoms %>% filter(use == "Yes"), aes(x = symptom)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "Symptom included") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
     ggtitle("Number of prevalence surveys by symptoms screened")
 
+### Survey definition of abnormal xray definition
 cleanDF %>% 
 mutate(positive.xray.definition = ifelse(grepl("Other", positive.xray.definition), "Other", as.character(positive.xray.definition))) %>%
 ggplot(aes(x = positive.xray.definition)) + 
-geom_bar() + theme_minimal() + 
-geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
-coord_flip() +
-    
-ggtitle("Number of prevalence surveys by definition of abnormal chest xray")
+geom_bar(color = "black") + theme_minimal() + 
+geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
+coord_flip() + theme(panel.grid.minor = element_blank(),
+                     panel.grid.major = element_blank()) +
+labs(y = "Number of prevalence surveys", x = "Abnormal chest X-ray definition") +
+ggtitle("Number of prevalence surveys by definition of abnormal chest X-ray")
 
-##### INCLUDE PPL ON TB TX #####    
-ggplot(cleanDF, aes(x = include.current.tb.tx)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+##### PLOTS BY PREVALENCE DEFINITION ##########################################
+### Definition includes people currently on tb treament 
+ggplot(cleanDF, aes(x = include.current.tb.tx)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
     ggtitle("TB prevalence definition includes people on TB treatment")
 
 ##### INCLUDE CONTACT TRACING #####    
-ggplot(cleanDF, aes(x = contact.investigation)) + geom_bar() + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+cleanDF %>% mutate(contact.investigation = ifelse(grepl("Other:", contact.investigation)==TRUE, "Unknown", as.character(contact.investigation))) %>% 
+ggplot(aes(x = contact.investigation)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.1, colour = "white") +
     ggtitle("TB prevalence definition includes people idenitifed through contact tracing")
 
-##### DIAGNOSTIC ALGORITHM #####  
+##### DIAGNOSTIC ALGORITHM ####################################################
 cleanDF %>% 
 dplyr::select("smear.used", "xpert.used", "culture.used") %>% 
 mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither")) %>% 
 pivot_longer(everything()) %>% 
 filter(value == "Yes") %>% 
-ggplot(aes(name)) + geom_bar(stat = "count") + theme_minimal() +
-    coord_flip() + theme(legend.position="bottom") +
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
+ggplot(aes(name)) + geom_bar(stat = "count", color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
     ggtitle("TB diagnostic method")
 
-cleanDF %>% 
-    dplyr::select("covidence.id", "smear.used", "xpert.used", "culture.used") %>% 
-    mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither")) %>% 
-    reshape2::melt(id.vars = "covidence.id", variable.name = "test.used") %>%  
-    filter(value == "Yes") %>%
-    ggplot() + geom_point(aes(x = as.factor(covidence.id), y = test.used, color = test.used), shape = 15, size = 2) + 
-    theme_void() +
-    theme(legend.position="bottom", axis.text.x=element_blank(), 
-          axis.ticks.x=element_blank()) + coord_fixed(ratio = .8) + 
-    ggtitle("Combination of TB diagnostic methods")
-
+### Combination of diagnostic methods
 cleanDF %>% 
     dplyr::select("covidence.id", "smear.used", "xpert.used", "culture.used") %>% 
     mutate("xpert.used" = ifelse(xpert.used != "Neither", "Yes", "Neither"), 
@@ -182,79 +268,82 @@ cleanDF %>%
     select (! covidence.id) %>%
     pivot_longer(everything()) %>% 
     filter(value == "Yes") %>% 
-    ggplot(aes(name)) + geom_bar() + 
-    geom_text(aes(label = after_stat(count)), stat = "count", hjust = - .5, colour = "black") +
-    theme_minimal() + coord_flip()
-    theme(legend.position="bottom") + 
+    ggplot(aes(name)) + geom_bar(color = "black") + 
+    theme_minimal() + coord_flip() +
+    theme(legend.position="bottom",
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank()) +
+         labs(y = "Number of prevalence surveys", x = "") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
     ggtitle("Combination of TB diagnostic methods")
     
-        
-
-##### BY TIME AND REGION #####
-timeRegion <- left_join(x = cleanDF, y = regionWB, by="study.country") %>% 
-              select(study.start.year, World.regions.according.to.WB, study.country) %>% 
+##### BY TIME AND REGION ####################################################
+timeRegion <- cleanDF %>% 
+              select(study.start.year, World.regions.according.to.WHO, study.country) %>% 
               group_by(study.start.year) %>% 
-              count(World.regions.according.to.WB)
+              count(World.regions.according.to.WHO)
 
 ggplot(timeRegion, aes(x=study.start.year)) + 
-    geom_point(aes(y=World.regions.according.to.WB, color=World.regions.according.to.WB, size = n)) + 
+    geom_point(aes(y=World.regions.according.to.WHO, color=World.regions.according.to.WHO, size = n)) + 
     theme_minimal() + 
-    theme(panel.grid.minor = element_blank(), legend.position = "bottom") + 
-    ggtitle("Study start years by World Bank region") + 
+    theme(legend.position = "bottom",
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          legend.title = element_blank()) +
+    ggtitle("Survey start years by World Bank region") + 
+    labs(y="", x="") + 
     guides(color = guide_legend(nrow = 2))
 
-timeRegion <- left_join(x = cleanDF, y = regionWB, by="study.country") %>% 
-    select(study.end.year, World.regions.according.to.WB, study.country) %>% 
-    group_by(study.end.year) %>% 
-    count(World.regions.according.to.WB)
-
-ggplot(timeRegion, aes(x=study.end.year)) + 
-    geom_point(aes(y=World.regions.according.to.WB, color=World.regions.according.to.WB, size = n)) + 
-    theme_minimal() +
-    theme(panel.grid.minor = element_blank(), legend.position = "bottom") + 
-    ggtitle("Study end years by World Bank region") + 
-    guides(color = guide_legend(nrow = 2))
-
-timeRegion <- left_join(x = cleanDF, y = regionWB, by="study.country") %>% 
-    select(publication.year, World.regions.according.to.WB, study.country) %>% 
+timeRegion <- cleanDF %>% 
     group_by(publication.year) %>% 
-    count(World.regions.according.to.WB) 
+    count(World.regions.according.to.WHO) 
 
 ggplot(timeRegion, aes(x=publication.year)) + 
-    geom_point(aes(y=World.regions.according.to.WB, color=World.regions.according.to.WB, size = n)) + 
+    geom_point(aes(y=World.regions.according.to.WHO, color=World.regions.according.to.WHO, size = n)) + 
     theme_minimal() +
-    theme(panel.grid.minor = element_blank(), legend.position = "bottom") + 
+    theme(legend.position = "bottom",
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          legend.title = element_blank()) +
+    labs(y="", x="") + 
     ggtitle("Study publication years by World Bank region") + 
     guides(color = guide_legend(nrow = 2))
 
-
+##### PARTICIPANT RATIOS ####################################################
 ##### Male to female ratio of participants ##### 
 cleanDF %>% 
-mutate(ratio.participants.mf = n.participants.male / n.participants.female, 
-       countryYear = paste(study.country, publication.year, covidence.id)) %>% 
-filter(is.na(ratio.participants.mf) == FALSE) %>%
-arrange(ratio.participants.mf) %>%
-mutate(countryYear=factor(countryYear, levels=countryYear)) %>%
-ggplot(aes(y = countryYear, x = ratio.participants.mf)) +
-geom_point() + 
-    theme_minimal() + 
-ggtitle("Male to female ratio of participants") + 
-    geom_text(aes(label = round(ratio.participants.mf,2)), hjust = - .5, colour = "black")
+    mutate(ratio.participants.mf = n.participants.male / n.participants.female) %>% 
+    filter(is.na(ratio.participants.mf) == FALSE) %>%
+    arrange(ratio.participants.mf) %>%
+    mutate(figure.id.yr=factor(figure.id.yr, levels=figure.id.yr)) %>%
+    ggplot(aes(y = figure.id.yr, x = ratio.participants.mf, color = ratio.participants.mf < 1)) +
+    geom_point() + 
+    theme_minimal(base_size = 8) + 
+    scale_color_manual(labels = c("More male participants", "More female participants"), 
+                       values = c("#44AA99","#882255"), name = "") +
+    ggtitle("Male to female ratio of participants") + 
+    labs(x = "Male to female ratio", y = "") +
+    theme(legend.position = "bottom",
+          panel.grid.minor = element_blank()) + 
+    geom_text(aes(label = round(ratio.participants.mf,2)), hjust = - .5, colour = "black", size = 3)
 
 
 ##### Urban to rural ratio of participants ##### 
 cleanDF %>% 
-    mutate(ratio.participants.ur = n.participants.urban / n.participants.rural, 
-           countryYear = paste(study.country, publication.year, covidence.id)) %>% 
+    mutate(ratio.participants.ur = n.participants.urban / n.participants.rural) %>% 
     filter(is.na(ratio.participants.ur) == FALSE) %>%
     arrange(ratio.participants.ur) %>%
-    mutate(countryYear=factor(countryYear, levels=countryYear)) %>%
-    ggplot(aes(y = countryYear, x = ratio.participants.ur)) +
+    mutate(figure.id.yr=factor(figure.id.yr, levels=figure.id.yr)) %>%
+    ggplot(aes(y = figure.id.yr, x = ratio.participants.ur, color = ratio.participants.ur < 1)) +
     geom_point(size = 2) + 
-    theme_minimal() + ggtitle("Urban to rural ratio of participants") + 
-    geom_text(aes(label = round(ratio.participants.ur,2)), hjust = - .5, colour = "black")
-
-
+    theme_minimal() + 
+    scale_color_manual(labels = c("More urban participants", "More rural participants"), 
+                       values = c("#882255", "#44AA99"), name = "") +
+    ggtitle("Crude urban to rural ratio of participants") + 
+    labs(x = "Urban to rural ratio", y = "") +
+    theme(legend.position = "bottom",
+          panel.grid.minor = element_blank()) + 
+    geom_text(aes(label = round(ratio.participants.ur,2)), hjust = - .2, colour = "black")
 
 dev.off()
 
@@ -335,4 +424,90 @@ hivTbl <- hivTbl %>% t() %>% as.data.frame() %>%
     fmt_number(drop_trailing_zeros = TRUE); hivTbl
 
 gtsave(data = hivTbl, filename = "output/hivTable.pdf") 
+
+##### Totals by AGE #####
+ageTbl0 <- cleanDF %>% 
+    filter(age.grp.1.range == "15-24",
+           age.grp.5.range == "55-64") %>% 
+    dplyr::select(starts_with("n.") & contains("age.grp") & !contains("age.grp.0")) %>% 
+    colSums(na.rm=TRUE)
+
+ageTbl <- matrix(ageTbl0,8,length(ageTbl0)/8, byrow = FALSE)[-8,]
+
+ageTbl[6,] <- ageTbl[6,] + ageTbl[7,]; ageTbl <- ageTbl[-7,]
+
+rownames(ageTbl) <- c("15-24 years (N)", "25-34 years (N)",
+                      "35-44 years (N)", "45-54 years (N)",
+                      "55-64 years (N)", "65+ years (N)")
+
+
+ageTbl <- ageTbl %>% t() %>% as.data.frame() %>% 
+    mutate("Description" = unique(sapply(names(ageTbl0), function(x) sub("[^.]+\\.([^.]+)\\..*", "\\1", x))),
+           "Total (N)" = `15-24 years (N)` + `25-34 years (N)` + `35-44 years (N)` + 
+                         `45-54 years (N)` + `55-64 years (N)` + `65+ years (N)`, 
+           "15-24 years (%)" = round(`15-24 years (N)`/`Total (N)`*100,1), 
+           "25-34 years (%)" = round(`25-34 years (N)`/`Total (N)`*100,1),
+           "35-44 years (%)" = round(`35-44 years (N)`/`Total (N)`*100,1), 
+           "45-54 years (%)" = round(`45-54 years (N)`/`Total (N)`*100,1),
+           "55-64 years (%)" = round(`55-64 years (N)`/`Total (N)`*100,1), 
+           "65+ years (%)" = round(`65+ years (N)`/`Total (N)`*100,1)) %>% 
+    dplyr::select(Description, contains("years"), `Total (N)`) %>%
+    na.omit() %>%
+    gt() %>% 
+    tab_header(
+        title = paste("Age distribution totals across 64 TB prevalence surveys with standard age groups")) %>%
+    fmt_number(drop_trailing_zeros = TRUE); ageTbl
+
+gtsave(data = ageTbl, filename = "output/ageTable.pdf") 
+
+##### Study specific CSV export #####
+### We will use these to create formatted tables in word.
+
+### Sex studies 
+sexSurveys <- cleanDF %>% filter(report.sex == "Yes")
+studySexDetails <- data.frame("Survey ID" = sexSurveys$figure.id, 
+                              "WHO region" = sexSurveys$World.regions.according.to.WHO,
+                              "Year(s) of study" = sexSurveys$study.years,
+                              "Female participants (N)" = sexSurveys$n.participants.female,
+                              "Female TB positive (N)" = sexSurveys$n.bacteriological.tb.female, 
+                              "Male participants (N)" = sexSurveys$n.participants.male,
+                              "Male TB positive (N)" = sexSurveys$n.bacteriological.tb.male, 
+                              "Total participants (N)" = sexSurveys$n.participants.female + sexSurveys$n.participants.male,
+                              "Total TB positive (N)" = sexSurveys$n.bacteriological.tb.female + sexSurveys$n.bacteriological.tb.male, 
+                              check.names = FALSE)
+
+write.csv(studySexDetails, file = here("output/sexStudyTable.csv"))              
+
+### Rurality studies 
+ruralitySurveys <- cleanDF %>% filter(report.rurality == "Yes")
+studyRuralityDetails <- data.frame("Survey ID" = ruralitySurveys$figure.id, 
+                              "WHO region" = ruralitySurveys$World.regions.according.to.WHO,
+                              "Year(s) of study" = ruralitySurveys$study.years,
+                              "Urban participants (N)" = ruralitySurveys$n.participants.urban,
+                              "Urban TB positive (N)" = ruralitySurveys$n.bacteriological.tb.urban,
+                              "Rural participants (N)" = ruralitySurveys$n.participants.rural,
+                              "Rural TB positive (N)" = ruralitySurveys$n.bacteriological.tb.rural,
+                              "Total participants (N)" = ruralitySurveys$n.participants.urban + ruralitySurveys$n.participants.rural,
+                              "Total TB positive (N)" = ruralitySurveys$n.bacteriological.tb.urban + ruralitySurveys$n.bacteriological.tb.rural,
+                              check.names = FALSE)
+
+write.csv(studyRuralityDetails, file = here("output/ruralityStudyTable.csv"))  
+                           
+### HIV studies 
+hivSurveys <- cleanDF %>% filter(report.hiv == "Yes")
+studyHIVDetails <- data.frame("Survey ID" = hivSurveys$figure.id, 
+                              "WHO region" = hivSurveys$World.regions.according.to.WHO,
+                              "Year(s) of study" = hivSurveys$study.years,
+                              "HIV+ participants (N)" = hivSurveys$n.participants.hiv.positive,
+                              "HIV+ TB positive (N)" = hivSurveys$n.bacteriological.tb.hiv.positive, 
+                              "HIV- participants (N)" = hivSurveys$n.participants.hiv.negative,
+                              "HIV- TB positive (N)" = hivSurveys$n.bacteriological.tb.hiv.negative, 
+                              "Total participants (N)" = hivSurveys$n.participants.hiv.positive + hivSurveys$n.participants.hiv.negative,
+                              "Total TB positive (N)" = hivSurveys$n.bacteriological.tb.hiv.positive + hivSurveys$n.bacteriological.tb.hiv.negative, 
+                              check.names = FALSE)
+
+write.csv(studyHIVDetails, file = here("output/hivStudyTable.csv"))  
+
+
+
 
