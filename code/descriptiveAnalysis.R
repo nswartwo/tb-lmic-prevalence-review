@@ -466,7 +466,7 @@ risk8 <- riskData %>%
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") + 
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
-        geom_text(aes(label = after_stat(count)), position = "stack", stat = "count", hjust = 1.2, colour = "white") +
+        # geom_text(aes(label = after_stat(count)), position = "stack", stat = "count", hjust = 1.2, colour = "white") +
         ggtitle("Were the numerator and denominator for the parameter of interest appropriate?")
 
 ggarrange(risk1, risk2, risk3, risk4,
