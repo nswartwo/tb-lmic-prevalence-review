@@ -40,6 +40,11 @@ newVariables <- function(stndDF,
     
     stndDF <- cbind(stndDFTop, ageDF[,-1], stndDFBottom)
     
+    ### Create binary indicator of whether children are included in the study 
+    ### population. 
+    source(here("code/ageRangeIndicator.R"))
+    stndDF <- ageRangeInd(stndDF)
+    
     ##########################################################################|
     #####           Separate confidence intervals out into columns        #####
     ##########################################################################|

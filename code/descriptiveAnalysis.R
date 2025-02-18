@@ -18,6 +18,7 @@ myPal <- c( "#44AA99", "#882255", "#332288", "#117733", "#6699CC", "#CC6677",
 ##############################################################################|
 ##### Create the clean dataset ################################################
 ##############################################################################|
+source(here("code/cleanData.R"))
 cleanDF0 <- cleanData()[["clean data"]]
 
 ##############################################################################|
@@ -219,7 +220,17 @@ labs(y = "Number of prevalence surveys", x = "Abnormal chest X-ray definition") 
 ggtitle("Number of prevalence surveys by definition of abnormal chest X-ray")
 
 ##### PLOTS BY PREVALENCE DEFINITION ##########################################
-### Definition includes people currently on tb treament 
+### Definition includes children 
+ggplot(cleanDF, aes(x = children.in.totals)) + 
+    geom_bar(color = "black") + theme_minimal() +
+    coord_flip() + theme(legend.position="bottom",
+                         panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank()) +
+    labs(y = "Number of prevalence surveys", x = "") +
+    geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
+    ggtitle("TB prevalence definition includes people on TB treatment")
+
+### Definition includes people currently on tb treatment 
 ggplot(cleanDF, aes(x = include.current.tb.tx)) + 
     geom_bar(color = "black") + theme_minimal() +
     coord_flip() + theme(legend.position="bottom",
