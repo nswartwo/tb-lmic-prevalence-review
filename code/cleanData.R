@@ -36,7 +36,7 @@ cleanData <- function(saveFile = FALSE){
                             errorDF = vldList[["errors"]])
 
     ### Remove the duplicate study 
-    cleanData <- vldList[["clean data"]] %>% filter(covidence.id != 26904)
+    cleanData <- lgcList[["clean data"]] %>% filter(covidence.id != 26904)
     
     ### Create a summary of all the cleaning and the "cleanest dataset".
     cleanDataSummary <- list("missings" = stndList[["missings"]], 
@@ -48,7 +48,8 @@ cleanData <- function(saveFile = FALSE){
     
     ### Save clean data to RDS file 
     if (saveFile == TRUE){
-    saveRDS(cleanData, file = here("data/fullDataClean.rds"))}
+        saveRDS(cleanData, file = here("data/fullDataClean.rds"))
+    }
     
     return(cleanDataSummary)
 }
