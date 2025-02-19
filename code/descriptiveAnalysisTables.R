@@ -69,7 +69,7 @@ sexTbl <- sexTbl %>% t() %>% as.data.frame() %>%
         title = paste("Sex distribution totals across", sum(cleanDF$report.sex=="Yes"),  "TB prevalence surveys")) %>%
     fmt_number(drop_trailing_zeros = TRUE); sexTbl
 
-gtsave(data = sexTbl, filename = "output/sexTable.pdf") 
+gtsave(data = sexTbl, filename = "output/descriptive/sexTable.pdf") 
 
 
 ##### Totals by rurality #####
@@ -95,7 +95,7 @@ ruralityTbl <- ruralityTbl %>% t() %>% as.data.frame() %>%
         title = paste("Rurality distribution totals across", sum(cleanDF$report.rurality=="Yes"), "TB prevalence surveys")) %>%
     fmt_number(drop_trailing_zeros = TRUE); 
 
-gtsave(data = ruralityTbl, filename = "output/ruralityTable.pdf") 
+gtsave(data = ruralityTbl, filename = "output/descriptive/ruralityTable.pdf") 
 
 
 ##### Totals by HIV #####
@@ -120,7 +120,7 @@ hivTbl <- hivTbl %>% t() %>% as.data.frame() %>%
         title = paste("HIV status distribution totals across", sum(cleanDF$report.hiv=="Yes"),  "TB prevalence surveys")) %>%
     fmt_number(drop_trailing_zeros = TRUE); hivTbl
 
-gtsave(data = hivTbl, filename = "output/hivTable.pdf") 
+gtsave(data = hivTbl, filename = "output/descriptive/hivTable.pdf") 
 
 ##### Totals by AGE #####
 ageTbl0 <- cleanDF %>% 
@@ -155,7 +155,7 @@ ageTbl <- ageTbl %>% t() %>% as.data.frame() %>%
         title = paste("Age distribution totals across 64 TB prevalence surveys with standard age groups")) %>%
     fmt_number(drop_trailing_zeros = TRUE); ageTbl
 
-gtsave(data = ageTbl, filename = "output/ageTable.pdf") 
+gtsave(data = ageTbl, filename = "output/descriptive/ageTable.pdf") 
 
 ##### Study specific CSV export #####
 ### We will use these to create formatted tables in word.
@@ -173,7 +173,7 @@ studySexDetails <- data.frame("Survey ID" = sexSurveys$figure.id,
                               "Total TB positive (N)" = sexSurveys$n.bacteriological.tb.female + sexSurveys$n.bacteriological.tb.male, 
                               check.names = FALSE)
 
-write.csv(studySexDetails, file = here("output/sexStudyTable.csv"))              
+write.csv(studySexDetails, file = here("output/descriptive/sexStudyTable.csv"))              
 
 ### Rurality studies 
 ruralitySurveys <- cleanDF %>% filter(report.rurality == "Yes")
@@ -188,7 +188,7 @@ studyRuralityDetails <- data.frame("Survey ID" = ruralitySurveys$figure.id,
                                    "Total TB positive (N)" = ruralitySurveys$n.bacteriological.tb.urban + ruralitySurveys$n.bacteriological.tb.rural,
                                    check.names = FALSE)
 
-write.csv(studyRuralityDetails, file = here("output/ruralityStudyTable.csv"))  
+write.csv(studyRuralityDetails, file = here("output/descriptive/ruralityStudyTable.csv"))  
 
 ### HIV studies 
 hivSurveys <- cleanDF %>% filter(report.hiv == "Yes")
@@ -203,7 +203,7 @@ studyHIVDetails <- data.frame("Survey ID" = hivSurveys$figure.id,
                               "Total TB positive (N)" = hivSurveys$n.bacteriological.tb.hiv.positive + hivSurveys$n.bacteriological.tb.hiv.negative, 
                               check.names = FALSE)
 
-write.csv(studyHIVDetails, file = here("output/hivStudyTable.csv"))  
+write.csv(studyHIVDetails, file = here("output/descriptive/hivStudyTable.csv"))  
 
 
 

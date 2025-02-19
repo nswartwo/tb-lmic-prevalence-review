@@ -1,0 +1,49 @@
+"","Survey ID","WHO region","Year(s) of study","Urban participants (N)","Urban TB positive (N)","Rural participants (N)","Rural TB positive (N)","Total participants (N)","Total TB positive (N)"
+"1","Sudan (National) ","Eastern Mediterranean (WHO)","2013-2014",29912,NA,53290,NA,83202,NA
+"2","India (Kanpur Nagar District)","South-East Asia (WHO)","2008-2010",NA,NA,NA,NA,NA,NA
+"3","India (Banda District) ","South-East Asia (WHO)","2008-2010",NA,NA,NA,NA,NA,NA
+"4","India (Gujarat State) ","South-East Asia (WHO)","2011-2012",32940,102,39068,156,72008,258
+"5","India (Wardha District)","South-East Asia (WHO)","2007-2009",14030,19,36302,67,50332,86
+"6","China (National) ","Western Pacific (WHO)","2000",NA,NA,NA,NA,NA,NA
+"7","Thailand (National) ","South-East Asia (WHO)","2012",NA,21,NA,121,NA,142
+"8","Viet Nam (National)","Western Pacific (WHO)","2006-2007",26357,72,67822,197,94179,269
+"9","Malawi (National)","Africa (WHO)","2013-2014",3654,29,27925,103,31579,132
+"10","Bangladesh (National) ","South-East Asia (WHO)","2007-2009",26046,NA,26052,NA,52098,NA
+"11","China (Shandong Province)","Western Pacific (WHO)","2010",26101,NA,28178,NA,54279,NA
+"12","China (National) ","Western Pacific (WHO)","2010",NA,NA,NA,NA,NA,NA
+"13","Phillipines (National)","Western Pacific (WHO)","1997",NA,NA,NA,NA,NA,NA
+"14","Phillipines (National)","Western Pacific (WHO)","2007",8331,NA,11635,NA,19966,NA
+"15","Ethiopia (Dabat District) ","Africa (WHO)","2010",5027,NA,18563,NA,23590,NA
+"16","Indonesia (National) ","South-East Asia (WHO)","2004",23150,NA,27004,NA,50154,NA
+"17","India (Faridabad District) ","South-East Asia (WHO)","2008-2009",57338,40,41261,60,98599,100
+"18","India (Jabalpur District)","South-East Asia (WHO)","2009-2010",NA,NA,NA,NA,NA,NA
+"19","Pakistan (National) ","Eastern Mediterranean (WHO)","2010-2011",47809,117,58104,224,105913,341
+"20","Kenya (Karemo)","Africa (WHO)",NA,275,1,4729,15,5004,16
+"21","The Gambia (National)","Africa (WHO)","2012-2013",17546,37,25554,34,43100,71
+"22","Tanzania (National)","Africa (WHO)","2011-2012",6340,17,30889,102,37229,119
+"23","Zambia (National) ","Africa (WHO)","2013-2014",16057,NA,30042,NA,46099,NA
+"24","Nigeria (National)","Africa (WHO)","2012",NA,NA,NA,NA,NA,NA
+"25","Myanmar (National) ","South-East Asia (WHO)","2009-2010",11254,103,40113,208,51367,311
+"26","Ethiopia (National)","Africa (WHO)","2010-2011",7490,NA,34952,NA,42442,NA
+"27","Lao Pdr (National)","Western Pacific (WHO)","2010-2011",10209,42,29003,195,39212,237
+"28","Ethiopia (Tigray)","Africa (WHO)","2011",4624,17,7551,13,12175,30
+"29","Zambia (Lusaka Province)","Africa (WHO)","2005",NA,51,NA,28,NA,79
+"30","India (Mohali District) ","South-East Asia (WHO)","2008-2010",34161,NA,51609,NA,85770,NA
+"31","Uganda (National) ","Africa (WHO)","2014-2015",17338,80,23816,80,41154,160
+"32","Namibia (National)","Africa (WHO)","2017-2018",12178,54,17317,65,29495,119
+"33","Philippines (National) ","Western Pacific (WHO)","2016",21526,244,25163,222,46689,466
+"34","Mongolia (National)","Western Pacific (WHO)","2014-2015",27112,142,23197,106,50309,248
+"35","Eswatini (National)","Africa (WHO)","2018-2019",1196,NA,8742,NA,9938,NA
+"36","Myanmar (National) ","South-East Asia (WHO)","2017-2018",24137,136,42343,186,66480,322
+"37","Lesotho (National)","Africa (WHO)","2019",8230,40,12490,85,20720,125
+"38","DPR Korea (National)","South-East Asia (WHO)","2015-2016",34413,194,23123,143,57536,337
+"39","Kenya (National)","Africa (WHO)","2015-2016",19444,NA,43606,NA,63050,NA
+"40","Bangladesh (National) ","South-East Asia (WHO)","2015-2016",34814,107,63896,171,98710,278
+"41","Indonesia (National) ","South-East Asia (WHO)","2013-2014",31871,228,36073,198,67944,426
+"42","Zimbabwe (National)","Africa (WHO)","2014",9097,31,24639,76,33736,107
+"43","China (Multiple Areas)","Western Pacific (WHO)","2013",12933,14,21336,48,34269,62
+"44","Viet Nam (National)","Western Pacific (WHO)","2017-2018",18656,90,43107,131,61763,221
+"45","China (Xinjiang Uyghur Region)","Western Pacific (WHO)","2010-2011",8405,NA,12104,NA,20509,NA
+"46","Ethiopia (Hetosa District) ","Africa (WHO)","2013",5903,9,27170,36,33073,45
+"47","Ghana (National)","Africa (WHO)","2013",33122,NA,28604,NA,61726,NA
+"48","The Gambia (National)","Africa (WHO)","2011-2013",17546,NA,25554,NA,43100,NA

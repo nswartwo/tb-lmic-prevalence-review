@@ -66,7 +66,7 @@ cleanDF <- cleanDF %>% left_join(regionWHO)
 ##### DESCRIPTIVE PLOTS #######################################################
 ##############################################################################|
 ### Open PDF 
-filename <- here(paste0("output/descriptiveAnalysis", fileSuffix, ".pdf"))
+filename <- here(paste0("output/descriptive/descriptiveAnalysis", fileSuffix, ".pdf"))
 pdf(file = filename, width = 11.5, height = 8.5)
 
 ##### PLOTS BY GEOGRAPHY ######################################################
@@ -418,7 +418,7 @@ levels(riskData$study.quality.same.data.collect)[2] <- "Unknown"
 levels(riskData$study.quality.numerator.denominator)[3] <- "Unknown"
 
 ### Open PDF
-filename2 <- here(paste0("output/riskOfBias", fileSuffix, ".pdf"))
+filename2 <- here(paste0("output/descriptive/riskOfBias", fileSuffix, ".pdf"))
 pdf(file = filename2, width = 8.5, height = 11.5)
 
 risk1 <- riskData %>%

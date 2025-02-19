@@ -1,0 +1,108 @@
+"","Survey ID","WHO region","Year(s) of study","Female participants (N)","Female TB positive (N)","Male participants (N)","Male TB positive (N)","Total participants (N)","Total TB positive (N)"
+"1","Sudan (National) ","Eastern Mediterranean (WHO)","2013-2014",47155,NA,36047,NA,83202,NA
+"2","India (Tiruvallur District)","South-East Asia (WHO)","2001-2003",43867,NA,41607,NA,85474,NA
+"3","India (Tiruvallur District)","South-East Asia (WHO)","2006-2008",47259,NA,44996,NA,92255,NA
+"4","India (Tiruvallur District)","South-East Asia (WHO)","2004-2006",45936,NA,43477,NA,89413,NA
+"5","India (Kanpur Nagar District)","South-East Asia (WHO)","2008-2010",NA,NA,NA,NA,NA,NA
+"6","India (Banda District) ","South-East Asia (WHO)","2008-2010",NA,NA,NA,NA,NA,NA
+"7","India (Gujarat State) ","South-East Asia (WHO)","2011-2012",44276,97,43254,238,87530,335
+"8","India (Wardha District)","South-East Asia (WHO)","2007-2009",25204,25,25128,61,50332,86
+"9","China (National) ","Western Pacific (WHO)","2000",NA,NA,NA,NA,NA,NA
+"10","India (Saharia Tribal) ","South-East Asia (WHO)","2015-2015",5075,46,4700,149,9775,195
+"11","India (Assam State) ","South-East Asia (WHO)","2008-2010",847,NA,563,NA,1410,NA
+"12","South Africa (Western Cape Province, a)","Africa (WHO)","2005",2056,41,1480,38,3536,79
+"13","Thailand (National) ","South-East Asia (WHO)","2012",NA,44,NA,98,NA,142
+"14","Viet Nam (National)","Western Pacific (WHO)","2006-2007",51567,57,42603,212,94170,269
+"15","Ethiopia (Shebedino District)","Africa (WHO)","2012-2013",6180,NA,8907,NA,15087,NA
+"16","Ethiopia (Lemu District)","Africa (WHO)","2012-2013",5324,NA,5475,NA,10799,NA
+"17","South Africa (Western Cape Province, b)","Africa (WHO)","2005",1747,NA,979,NA,2726,NA
+"18","Malawi (National)","Africa (WHO)","2013-2014",18490,69,13089,63,31579,132
+"19","Bangladesh (Matlab)","South-East Asia (WHO)","2001",33942,NA,25453,NA,59395,NA
+"20","Bangladesh (National) ","South-East Asia (WHO)","2007-2009",27895,NA,24203,NA,52098,NA
+"21","Ethiopia (Mecha District) ","Africa (WHO)","2008",NA,NA,NA,NA,NA,NA
+"22","China (Shandong Province)","Western Pacific (WHO)","2010",28873,NA,25406,NA,54279,NA
+"23","China (Yunnan Province)","Western Pacific (WHO)",NA,4692,26,4613,75,9305,101
+"24","China (National) ","Western Pacific (WHO)","2010",NA,NA,NA,NA,NA,NA
+"25","Viet Nam (Central Highlands)","Western Pacific (WHO)","2003",34135,NA,34809,NA,68944,NA
+"26","Kenya (Asembo Area) ","Africa (WHO)","2006-2007",12971,65,7595,58,20566,123
+"27","Phillipines (National)","Western Pacific (WHO)","1997",NA,NA,NA,NA,NA,NA
+"28","Phillipines (National)","Western Pacific (WHO)","2007",11764,44,11103,107,22867,151
+"29","Viet Nam (Bavi District) ","Western Pacific (WHO)","2000",19095,NA,16737,NA,35832,NA
+"30","Ethiopia (Dabat District) ","Africa (WHO)","2010",12400,NA,11190,NA,23590,NA
+"31","Indonesia (National) ","South-East Asia (WHO)","2004",25867,NA,24287,NA,50154,NA
+"32","India (Faridabad District) ","South-East Asia (WHO)","2008-2009",47976,30,50623,70,98599,100
+"33","Ethiopia (Lemo District) ","Africa (WHO)","2003",NA,NA,NA,NA,NA,NA
+"34","Uganda (Kisenyi)","Africa (WHO)","2005",305,NA,625,NA,930,NA
+"35","Uganda (Rubaga)","Africa (WHO)","2008-2009",1234,22,3868,17,5102,39
+"36","Eritrea (National)","Africa (WHO)","2005",11965,NA,6187,NA,18152,NA
+"37","Ecuador (Chine)","Americas (WHO)","2001",320,NA,333,NA,653,NA
+"38","India (Andhra Pradesh State) ","South-East Asia (WHO)","2008-2010",1587,NA,1374,NA,2961,NA
+"39","India (Karachal)","South-East Asia (WHO)","2007-2008",5795,53,5321,113,11116,166
+"40","India (Jabalpur District)","South-East Asia (WHO)","2009-2010",46966,51,48105,170,95071,221
+"41","Pakistan (National) ","Eastern Mediterranean (WHO)","2010-2011",61099,160,44814,181,105913,341
+"42","Kenya (Karemo)","Africa (WHO)",NA,2425,8,2579,8,5004,16
+"43","The Gambia (National)","Africa (WHO)","2012-2013",25596,22,17504,49,43100,71
+"44","Tanzania (National)","Africa (WHO)","2011-2012",29701,64,20735,90,50436,154
+"45","Zambia (National) ","Africa (WHO)","2013-2014",26642,NA,19457,NA,46099,NA
+"46","Nigeria (National)","Africa (WHO)","2012",26008,58,18178,86,44186,144
+"47","Myanmar (National) ","South-East Asia (WHO)","1994",13909,NA,11269,NA,25178,NA
+"48","Myanmar (National) ","South-East Asia (WHO)","2009-2010",28973,105,22394,206,51367,311
+"49","Ethiopia (National)","Africa (WHO)","2010-2011",24878,NA,21819,NA,46697,NA
+"50","Cambodia (National) ","Western Pacific (WHO)","2002",9758,116,7883,151,17641,267
+"51","Cambodia (National) ","Western Pacific (WHO)","2010-2011",20410,NA,17007,NA,37417,NA
+"52","Cambodia (Phnom Penh)","Western Pacific (WHO)","2012-2013",NA,NA,NA,NA,NA,NA
+"53","Ethiopia (Amibara District) ","Africa (WHO)","2010",NA,38,92,24,NA,62
+"54","Lao Pdr (National)","Western Pacific (WHO)","2010-2011",21474,80,17738,157,39212,237
+"55","Nepal (Ward 13 Mahendra Nagar Municipality) ","South-East Asia (WHO)","2002",NA,NA,NA,NA,NA,NA
+"56","Viet Nam (Hanoi City) ","Western Pacific (WHO)","2003-2004",6477,12,4340,10,10817,22
+"57","Bangladesh (Multiple Areas) ","South-East Asia (WHO)","2001",120423,NA,103513,NA,223936,NA
+"58","India (R.S. Pura Block, Jammu City) ","South-East Asia (WHO)","Not reported",2309,NA,2691,NA,5000,NA
+"59","India (Tiruvallur District)","South-East Asia (WHO)","1999-2001",42535,NA,40855,NA,83390,NA
+"60","Rwanda (National) ","Africa (WHO)","2012",24933,10,18195,30,43128,40
+"61","India (Chennai)","South-East Asia (WHO)","2010-2012",28674,35,26943,135,55617,170
+"62","Ethiopia (Jimma Zone)","Africa (WHO)","2009",13877,10,13720,NA,27597,NA
+"63","Ethiopia (District 16, Addis Ababa) ","Africa (WHO)","2001",6894,NA,5255,NA,12149,NA
+"64","Zimbabwe (Harare)","Africa (WHO)","2005-2006",6121,NA,3970,NA,10091,NA
+"65","Zimbabwe (Harare)","Africa (WHO)",NA,6213,NA,4022,NA,10235,NA
+"66","India (Nelamangala Sub-Division) ","South-East Asia (WHO)","2008-2010",33599,NA,29763,NA,63362,NA
+"67","Guinea-Bissau (Bissau)","Africa (WHO)","2006-2007",1674,NA,1315,NA,2989,NA
+"68","India (Madhya Pradesh Tribal)","South-East Asia (WHO)","2007-2008",11439,26,10831,57,22270,83
+"69","Ethiopia (Tigray)","Africa (WHO)","2011",6774,NA,5401,NA,12175,NA
+"70","Brazil (Sete De Setembro Reserve) ","Americas (WHO)","2003",373,5,363,5,736,10
+"71","Bangladesh (Mirpur, Dhaka City)","South-East Asia (WHO)","2009-2010",8267,NA,6757,NA,15024,NA
+"72","Zambia (Lusaka Province)","Africa (WHO)","2005",NA,NA,NA,NA,NA,NA
+"73","Pakistan (Shimshal Valley) ","Eastern Mediterranean (WHO)","1996",133,NA,98,NA,231,NA
+"74","Pakistan (Karachi)","Eastern Mediterranean (WHO)","2002",2927,7,2552,11,5479,18
+"75","India (Mohali District) ","South-East Asia (WHO)","2008-2010",42253,NA,43517,NA,85770,NA
+"76","Uganda (National) ","Africa (WHO)","2014-2015",23669,40,17485,120,41154,160
+"77","Namibia (National)","Africa (WHO)","2017-2018",16900,48,12595,71,29495,119
+"78","Philippines (National) ","Western Pacific (WHO)","2016",25796,144,20893,322,46689,466
+"79","Nepal (National) ","South-East Asia (WHO)","2018-2019",31223,NA,22977,NA,54200,NA
+"80","Mongolia (National)","Western Pacific (WHO)","2014-2015",30239,88,20070,160,50309,248
+"81","Eswatini (National)","Africa (WHO)","2018-2019",14418,NA,9938,NA,24356,NA
+"82","Myanmar (National) ","South-East Asia (WHO)","2017-2018",38495,86,27985,236,66480,322
+"83","India (National)","South-East Asia (WHO)","2019-2021",180356,NA,142106,NA,322462,NA
+"84","Lesotho (National)","Africa (WHO)","2019",13122,44,8597,88,21719,132
+"85","DPR Korea (National)","South-East Asia (WHO)","2015-2016",33649,103,27034,237,60683,340
+"86","Kenya (National)","Africa (WHO)","2015-2016",37006,NA,26044,NA,63050,NA
+"87","Bangladesh (National) ","South-East Asia (WHO)","2015-2016",54345,77,44365,201,98710,278
+"88","Indonesia (National) ","South-East Asia (WHO)","2013-2014",36312,137,31632,289,67944,426
+"89","Zimbabwe (National)","Africa (WHO)","2014",19541,49,14197,58,33738,107
+"90","South Africa (National)","Africa (WHO)","2017-2019",21803,110,13388,124,35191,234
+"91","China (Multiple Areas)","Western Pacific (WHO)","2013",16057,17,18212,45,34269,62
+"92","South Africa (Kwazulu Natal)","Africa (WHO)","2018-2019",11618,NA,5500,NA,17118,NA
+"93","India (Kashmir Valley)","South-East Asia (WHO)","2017",20858,17,21974,7,42832,24
+"94","India (National Tribal) ","South-East Asia (WHO)","2015-2020",39000,65,35532,134,74532,199
+"95","India (Saharia Tribal) ","South-East Asia (WHO)","2013-2013",4975,62,4781,231,9756,293
+"96","India (Maharashtra Tribal)","South-East Asia (WHO)","2015-2017",3601,NA,3297,NA,6898,NA
+"97","Viet Nam (National)","Western Pacific (WHO)","2017-2018",34613,46,27150,175,61763,221
+"98","China (Xinjiang Uyghur Region)","Western Pacific (WHO)","2010-2011",15397,NA,14438,NA,29835,NA
+"99","Ethiopia (Hawassa Zuria District) ","Africa (WHO)","2016",12307,18,12210,16,24517,34
+"100","Ethiopia (Hetosa District) ","Africa (WHO)","2013",16166,24,16907,19,33073,43
+"101","Malawi (Blantyre)","Africa (WHO)","2019-2020",9423,11,6131,18,15554,29
+"102","India (Tiruvallur District)","South-East Asia (WHO)","2015-2018",32956,28,29538,164,62494,192
+"103","Ethiopia (Multiple Areas)","Africa (WHO)","2012-2013",4975,NA,5084,NA,10059,NA
+"104","Ghana (National)","Africa (WHO)","2013",37038,NA,24688,NA,61726,NA
+"105","India (Pohari Block, Shivpuri District)","South-East Asia (WHO)","2012-2013, 2014-2015",4975,62,4781,231,9756,293
+"106","India (Saharia Tribal) ","South-East Asia (WHO)","2019",10070,55,10044,218,20114,273
+"107","Ethiopia (Dale District) ","Africa (WHO)","2016-2017",NA,64,NA,83,NA,147
