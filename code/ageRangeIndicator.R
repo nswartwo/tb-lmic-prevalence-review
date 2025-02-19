@@ -20,16 +20,21 @@ index20 <- sapply(popDesc[,2:3], function(x) grep("20 year", x))
 ### Confirmed all of these do not contain children 
 adultsOnlyTotals <- c(unique(index15[[1]], index14[[1]]), index20[[2]])
 
-# View(popDesc[index15[[2]],c(1,3)])
+View(popDesc[index15[[2]],c(1,3)])
 
+indRmv <- c(
 ### location 22 (Phillipines) cannot be ruled in as the 15 is matching clusters; row is 29
-### location 36 (Kampala, Uganda) matched on less than 15 ; row is 63
-childrenInTotals <- 63
+which(popDesc$title.covidence == "The 1997 nationwide tuberculosis prevalence survey in the Philippines"),
 ### location 40 cannot be ruled in as matched on random stat; row is 81
+which(popDesc$title.covidence == "Hyperendemic pulmonary tuberculosis in peri-urban areas of Karachi, Pakistan")
+) 
+
+### location 36 (Kampala, Uganda) matched on less than 15 ; row is 63
+childrenInTotals <- which(popDesc$title.covidence == "Burden of tuberculosis in Kampala, Uganda")
 
 # View(popDesc[index14[[2]],c(1,3)])
 
-adultsOnlyTotals <- unique(c(adultsOnlyTotals, index15[[2]][c(-22,-36,-40)], index14[[2]]))
+adultsOnlyTotals <- unique(c(adultsOnlyTotals, index15[[2]][-c(indRmv,childrenInTotals)], index14[[2]]))
 
 
 indexAdult <- sapply(popDesc, function(x) grep("adult", x, ignore.case = TRUE))
