@@ -20,7 +20,7 @@ index20 <- sapply(popDesc[,2:3], function(x) grep("20 year", x))
 ### Confirmed all of these do not contain children 
 adultsOnlyTotals <- c(unique(index15[[1]], index14[[1]]), index20[[2]])
 
-View(popDesc[index15[[2]],c(1,3)])
+# View(popDesc[index15[[2]],c(1,3)])
 
 indRmv <- c(
 ### location 22 (Phillipines) cannot be ruled in as the 15 is matching clusters; row is 29

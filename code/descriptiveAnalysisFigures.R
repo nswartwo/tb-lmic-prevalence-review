@@ -10,7 +10,7 @@
 ### source(here("code/cleanData.R"))
 ### cleanDF0 <- cleanData()[["clean data"]] %>% filter(report.rurality == "Yes")
 ### 
-### source(here("code/descriptiveAnalysis.R"))
+### source(here("code/descriptiveAnalysisFigures.R"))
 ### descriptPlots(cleanDF0 = cleanDF0, fileSuffix = "RuralitySurveys")
 ##############################################################################|
 
