@@ -4,7 +4,7 @@
 ### 2. a dataframe of errors 
 ### 3. a dataframe of cleaned data for analysis. 
 
-cleanData <- function(){
+cleanData <- function(saveFile = FALSE){
     library(here)
     
     ### Create an error dataframe to populate throughout the steps
@@ -35,13 +35,20 @@ cleanData <- function(){
     lgcList <- logicalData(validData = vldList[["clean data"]], 
                             errorDF = vldList[["errors"]])
 
+    ### Remove the duplicate study 
+    cleanData <- vldList[["clean data"]] %>% filter(covidence.id != 26904)
+    
     ### Create a summary of all the cleaning and the "cleanest dataset".
     cleanDataSummary <- list("missings" = stndList[["missings"]], 
                              "errors" = lgcList[["errors"]], 
-                             "clean data" = lgcList[["clean data"]])
+                             "clean data" = cleanData)
     
     ### Save errors dataframe as a csv
     write.csv(lgcList[["errors"]], here("data/errorDataToCheck.csv"), row.names = FALSE)
+    
+    ### Save clean data to RDS file 
+    if (saveFile == TRUE){
+    saveRDS(cleanData, file = here("data/fullDataClean.rds"))}
     
     return(cleanDataSummary)
 }
