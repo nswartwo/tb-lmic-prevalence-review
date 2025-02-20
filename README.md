@@ -23,6 +23,9 @@ Before analyzing the extracted data we performed various data cleaning steps. Th
     
 Data cleaning can be replicated by running the `cleanData.R` file using the `fullDataRaw.rds` datafile. This script will generate a clean dataset, which is stored in the `fullDataClean.rds` datafile.
 
+## Descriptive analysis 
+We first aimed to understand the distributions of the data we collected. We designed two scripts, `descriptiveAnalysisFigures.R` and `descriptiveAnalysisTables.R` to explore the data, in sum and within stratifications. The outputs of these scripts are saved to `outputs/descriptive` folder.
+
 ## Meta analysis 
 
-The dataset generated from the systematic review of TB prevalence will be used to examine the differences in TB notifications to TB prevalence across gender (male:female) and urbanicity (urban:rural) strata. In order to replicate these analyses, run `genderMetaAnalysis.R` and `urbanicityMetaAnalysis.R` using the `fullDataClean.rds` datafile. 
+The dataset generated from the systematic review of TB prevalence will be used to examine the differences in TB notifications to TB prevalence across gender (male:female) and urbanicity (urban:rural) strata. In order to replicate these analyses, run `sexMetaAnalysis.R` and `ruralityMetaAnalysis.R` using the `fullDataClean.rds` datafile. 
