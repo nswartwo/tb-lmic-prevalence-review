@@ -1,0 +1,81 @@
+"","title.covidence","xpert.used","bacteriological.tb.definition"
+"1","SUDAN TB PREVALENCE SURVEY REPORT 2013 – 2014","Yes (Xpert MTB/RIF only)","TB survey case definition: Survey TB case is defined as “a participant with bacteriological confirmation of MTB using culture that includes those that are smear-positive or smear-negative”."
+"2","Findings from the First Malawi TB Prevalence Survey","Yes (Xpert MTB/RIF only)","Definition is based on the following categorization: 
+1. Significant Direct Evidence: 
+a. S+ (4AFB or more) with “GXP+ and/or C MTB+ (any)” 
+b. C MTB+ (5 colonies or more) 
+2. Non-significant Direct Evidence: 
+a. S+ (1-3 AFB) with GXP+ ( GeneXpert ) and/or C MTB+ 
+b. C MTB+ (1-4 colonies) 
+3. Supportive Bacteriological Evidences: 
+a. S+ (any) without GXP test 
+4. Supportive CXR Evidence: 
+a. CXR TB disease suggestive or consistent by the panel 
+Thus, a bacteriologically confirmed ( positive )case with at least one of following conditions is defined as bacteriologically confirmed( positive )TB patient in this study: 
+• At least one sample showed one Significant Direct Evidence 
+• Both samples showed Non-significant Direct Evidences 
+• At least one sample showed Non-significant Direct Evidence and the other sample has one Supportive Bacteriological Evidence 
+• At least one sample showed a weak Direct Evidence and the panel has one Supportive CXR Evidence"
+"3","Prevalence of pulmonary tuberculosis among the adult population in Pakistan 2010-2011","Yes (Xpert MTB/RIF only)","(bacteriologically confirmed survey TB case) was defined as having at least:
+•	 
+OR
+Culture positive with five or more Mycobacterium tuberculosis (MTB) colonies; 
+•	 
+OR
+Culture positive with less than five MTB colonies either in combination with one or more positive smears or an 
+abnormal chest X-ray result consistent with TB; 
+•	 
+Any smear positive plus a positive nuclear acid amplification test result produced by the Genotype®MTBDRplus
+assay or the GeneXpert MTB/RIF test and no isolation of non-tuberculous mycobacteria (NTM)."
+"4","Prevalence of pulmonary tuberculosis in adult population of Tanzania: a national survey, 2012","Yes (Xpert MTB/RIF only)","A bacteriologically confirmed case was any person classified as being smear-positive and/or culture-positive for TB."
+"5","The prevalence of HIV among adults with pulmonary TB at a population level in Zambia","Yes (Xpert MTB/RIF only)","A patient with smear-positive and/or culture-positive pulmonary TB"
+"6","Community-based active tuberculosis case finding in poor urban settlements of Phnom Penh, Cambodia: a feasible and effective strategy","Yes (both Xpert MTB/RIF and Xpert Ultra, or either of these)","All patients with a positive smear, or M. tuberculosis detected by Xpert or isolated by culture were considered bacteriologically-proven TB."
+"7","The Uganda National Tuberculosis Prevalence Survey, 2014-2015","Yes (Xpert MTB/RIF only)","Either culture positive or Xpert MTB/RIF positive"
+"8","Namibia Tuberculosis disease prevalence survey, 2017-2018","Yes (Xpert MTB/RIF only)","Any demonstration of acid-fast bacilli on smear microscopy, or demonstration of mycobacterium tuberculosis using either Xpert MTB/RIF or other identification from a positive mycobacterial culture isolate."
+"9","NATIONAL TUBERCULOSIS PREVALENCE SURVEY 2016, PHILIPPINES","Yes (Xpert MTB/RIF only)","Bacteriologically confirmed TB (BCTB) cases were defined as screen-positive participants with
+sputum samples positive for MTB on culture and/or Xpert MTB/RIF positive."
+"10","NATIONAL TUBERCULOSIS PREVALENCE SURVEY REPORT, Nepal, 2018-19","Yes (Xpert MTB/RIF only)",NA
+"11","REPORT OF THE FIRST NATIONAL
+TUBERCULOSIS PREVALENCE SURVEY
+IN MONGOLIA
+2014-2015","Yes (Xpert MTB/RIF only)","Definite and probable cases (i.e. at least one smear positive result AND at least one culture positive, OR GeneXpert positive, OR culture negative and CXR positive by central reading, or diagnosed confirmed by referral facility; AND smear negative and at least one positive culture, OR two scanty positive cultures; or one scanty positive with TB consistent abnormality on central CXR read, OR One scanty culture positive without TB consistent abnormality by the central CXR reader but has cough more than 2 weeks or TB disease confirmed by other referral health facility (TB diagnosed prior or after the survey)"
+"12","Eswatini National Tuberculosis Prevalence Survey Report, 2018-2019","Yes (Xpert MTB/RIF only)","Cases that are either GeneXpert MTB-positive and/or culture-positive pulmonary TB."
+"13","Fourth National Tuberculosis Prevalence Survey Report (2017-2018) Myanmar","Yes (Xpert Ultra only)","Screening-positive participants in whose case at least one of the two Xpert results showed the presence of Mtb, not including trace call (Trace call was counted as “Negative: MTB not detected”), with at least one of the following conditions being met: 1) culture being Mtb-positive, and 2) deemed active TB without culture confirmation classified by a panel of experts from the Myanmar NTP based on chest X-ray images, and TB suggestive symptoms of each participant and treatment history."
+"14","Recurrence of pulmonary tuberculosis in India: Findings from the 2019-2021 nationwide community-based TB prevalence survey","Yes (Xpert MTB/RIF only)","Microbiologically confirmed pulmonary TB patient was defined as a participant with any 
+one of the following criteria :
+1. 2 Bacteriological Evidence: [2 specimens positive for TB either by smear or culture or 
+CBNAAT] or
+2. 1 Bacteriological Evidence and One Radiological Evidence by Central Teleradiology or 
+local field medical officer [1 specimen positive by smear or CBNAAT or Culture and X-
+ray abnormal by the central reader / field medical officer]"
+"15","Lesotho Tuberculosis Prevalence Survey","Yes (Xpert Ultra only)","1) All cultures with MTB-positive results (regardless of Xpert Ultra results), or 2) (a) Xpert Ultra positive (excluding trace), and (b) culture not TB (i.e., culture-negative, nontuberculous mycobacteria, contaminated, or not done), and (c) CXR suggestive of active TB as determined by three central readers, and (d) no history of TB (past or current)"
+"16","KENYA TUBERCULOSIS PREVALENCE SURVEY","Yes (Xpert MTB/RIF only)","Xpert MTB/RIF positive and/or culture positive for Mycobacterium tuberculosis (MTB)"
+"17","National Tuberculosis Prevalence Survey, Bangladesh
+2015-2016
+National","Yes (Xpert MTB/RIF only)","at least one of the LJ culture bottle out of 4 of a subject was identified 
+as MTB positive"
+"18","Results from the national TB prevalence survey of Indonesia","Yes (Xpert MTB/RIF only)",NA
+"19","The Zimbabwe National Population based Tuberculosis Prevalence Survey","Yes (Xpert MTB/RIF only)","a. A sputum smear positive participant with confirmed Mycobacterium TB using Xpert MTB/RIF technology 
+b. Any culture (MGIT or LJ) positively confirmed as MTB identified by colony morphology and the MPT64 antigen testing kit followed by Xpert MTB/RIF technology. Any culture positive irrespective of the strength of the positivity was considered positive in this survey"
+"20","The First National TB Prevalence Survey | South Africa 2018","Yes (both Xpert MTB/RIF and Xpert Ultra, or either of these)","Participants who were screen-positive and 
+had M tuberculosis complex culture-positive sputum 
+samples were considered positive for bacteriologically 
+confirmed pulmonary tuberculosis; when culture was not 
+positive (ie, negative, contaminated, or not done), screen-
+positive participants with Xpert MTB/RIF Ultra-positive 
+samples and an abnormal chest X-ray (as determined by a 
+central panel of three readers) and no history of current or 
+previous tuberculosis, in keeping with emerging data at 
+the time of the survey, were also considered as positive for 
+bacteriologically confirmed pulmonary tuberculosis."
+"21","Convergence of infectious and non-communicable disease epidemics in rural South Africa: a cross-sectional, population-based multimorbidity study","Yes (both Xpert MTB/RIF and Xpert Ultra, or either of these)",NA
+"22","Estimation of the burden of bacteriologically positive Tuberculosis among Adults in Kashmir: A baseline for future surveys in the Valley","Yes (Xpert MTB/RIF only)","A case of TB for the study was defined as having 
+a positive sputum smear microscopy or a positive CBNAAT 
+test (Xpert MTB/RIF) with or without an abnormal X‑Ray result 
+consistent with tuberculosis."
+"23","The second national tuberculosis prevalence survey in Vietnam","Yes (Xpert MTB/RIF only)","Xpert positive OR Xpert negative with abnormal chest Xray and positive culture"
+"24","Population-based screening for pulmonary tuberculosis utilizing community health workers in Ethiopia","Yes (Xpert MTB/RIF only)","A confirmed pulmonary TB case was defined as one in whom a
+sputum specimen was Xpert MTB/RIF test and/or culture positive."
+"25","Prevalence of Bacteriologically-Confirmed Tuberculosis in Urban Blantyre, Malawi 2019-20: Substantial Decline Compared to 2013-14 National Survey","Yes (Xpert MTB/RIF only)","Participants with positive microscopy, Xpert MTB/Rif or MTB culture results were classified as having bacteriologically-confirmed TB"
+"26","National population-based tuberculosis prevalence survey in Ghana, 2013","Yes (Xpert MTB/RIF only)","Patients with a biological specimen that is positive on smear microscopy, culture or Xpert were considered to have bacteriologically confirmed TB."
+"27","Prevalence and incidence of symptomatic pulmonary tuberculosis based on repeated population screening in a district in Ethiopia: a prospective cohort study","Yes (both Xpert MTB/RIF and Xpert Ultra, or either of these)","at least one positive result by smear microscopy, GeneXpert or culture"

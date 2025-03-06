@@ -1,0 +1,5 @@
+"","title.covidence","n.smear.positive.tb.male","n.culture.positive.tb.male","adj.prev100k.smear.positive.tb.male","prev100k.smear.positive.tb.male","sex.analysis.indicator","smear.positive.tb.definition","culture.positive.tb.definition"
+"1","Declining tuberculosis prevalence in Saharia, a particularly vulnerable tribal community in Central India: evidences for action (2015 survey)",115,113,NA,2447,"n.bacteriological.tb",NA,NA
+"2","Findings from the First Malawi TB Prevalence Survey",78,40,303,NA,"adj.prev100k.ci.bacteriological.tb","at least smear positive result of >4AFB or more","culture positive TB (C MTB+) of 5 colonies or more identified with capillia test as Mycobacterium tuberculosis grown within an 8 week incubation period"
+"3","A survey of tuberculosis prevalence in Hanoi, Vietnam",7,3,NA,NA,"n.bacteriological.tb",NA,NA
+"4","Prevalence of pulmonary tuberculosis among the tribal populations in India",110,71,NA,NA,"n.bacteriological.tb",NA,NA
