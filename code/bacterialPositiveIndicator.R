@@ -188,7 +188,7 @@ excluded <- newBactStratumDF %>% filter(!!sym(paste0(stratum, ".analysis.indicat
 if (saveCheckFiles == TRUE){
 write.csv(x = highSmr, file = here(paste0("data/checks/cultureSmallerThanSmear_",suffix, ".csv")))                       
 write.csv(x = xpert, file = here(paste0("data/checks/usedXpert_",suffix, ".csv")))                        
-write.csv(x = excluded, file = here(paste0("data/checks/excludedSexSurveys_", suffix, ".csv")))                
+write.csv(x = excluded, file = here(paste0("data/checks/excludedSurveys_", suffix, ".csv")))                
 }
 
 return(newBactStratumDF)
