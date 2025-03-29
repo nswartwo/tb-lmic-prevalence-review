@@ -1,0 +1,251 @@
+---
+title: "urban-rural-model"
+author: "Alireza Mortazavi"
+date: "2025-03-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+
+expit <- function (x) {1/(1 + exp(-x))} #convert back to the response scale
+
+```
+## Subset of data
+```{r}
+SDS <- bactPosRuralityData %>% 
+    select(c(1,2,3,55,130:132,148,149,150,151:153,160:195,902:907))
+
+```
+## Filterout the studies that dont have bacterilogical result based on rurality.analysis.indicator
+```{r}
+SDS_filtered <- SDS %>%
+  filter(!rurality.analysis.indicator %in% c(
+    "adj.prev100k.ci.smear.positive.tb",
+    "n.smear.positive.tb",
+    "prev100k.ci.smear.positive.tb"
+  ))
+```
+Hierchy of the model
+```{r}
+SDS_filtered <- SDS_filtered %>%
+  mutate(
+    urban_p = case_when(
+      !is.na(adj.prev100k.bacteriological.tb.urban) ~ adj.prev100k.bacteriological.tb.urban,
+      !is.na(prev100k.bacteriological.tb.urban) ~ prev100k.bacteriological.tb.urban,
+      !is.na(n.bacteriological.tb.urban) & !is.na(n.participants.urban) ~
+        (n.bacteriological.tb.urban / n.participants.urban) * 100000,
+      TRUE ~ NA_real_
+    ),
+    urban_ci = case_when(
+      !is.na(adj.prev100k.ci.bacteriological.tb.urban) ~ as.character(adj.prev100k.ci.bacteriological.tb.urban),
+      !is.na(prev100k.ci.bacteriological.tb.urban) ~ as.character(prev100k.ci.bacteriological.tb.urban),
+      TRUE ~ NA_character_
+    )
+  )
+```
+```{r}
+SDS_filtered <- SDS_filtered %>%
+  mutate(
+    rural_p = case_when(
+      !is.na(adj.prev100k.bacteriological.tb.rural) ~ adj.prev100k.bacteriological.tb.rural,
+      !is.na(prev100k.bacteriological.tb.rural) ~ prev100k.bacteriological.tb.rural,
+      !is.na(n.bacteriological.tb.rural) & !is.na(n.participants.rural) ~
+        (n.bacteriological.tb.rural / n.participants.rural) * 100000,
+      TRUE ~ NA_real_
+    ),
+    rural_ci = case_when(
+      !is.na(adj.prev100k.ci.bacteriological.tb.rural) ~ as.character(adj.prev100k.ci.bacteriological.tb.rural),
+      !is.na(prev100k.ci.bacteriological.tb.rural) ~ as.character(prev100k.ci.bacteriological.tb.rural),
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r}
+SDS_filtered <- SDS_filtered %>%
+  mutate(
+    total_prev = case_when(
+      !is.na(adj.prev100k.bacteriological.tb.rurality.total) ~ adj.prev100k.bacteriological.tb.rurality.total,
+      !is.na(prev100k.bacteriological.tb.rurality.total) ~ prev100k.bacteriological.tb.rurality.total,
+      !is.na(n.bacteriological.tb.rurality.total) & !is.na(n.participants.rurality.total) ~
+        (n.bacteriological.tb.rurality.total / n.participants.rurality.total) * 100000,
+      TRUE ~ NA_real_
+    ),
+    total_ci = case_when(
+      !is.na(adj.prev100k.ci.bacteriological.tb.rurality.total) ~ as.character(adj.prev100k.ci.bacteriological.tb.rurality.total),
+      !is.na(prev100k.ci.bacteriological.tb.rurality.total) ~ as.character(prev100k.ci.bacteriological.tb.rurality.total),
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+Seperate confidence intervals into upper and lower intervals
+```{r}
+library(tidyr)
+
+SDS_filtered <- SDS_filtered %>%
+  separate(urban_ci, into = c("urban_lo", "urban_hi"), sep = "-", remove = FALSE, convert = TRUE) %>%
+  separate(rural_ci, into = c("rural_lo", "rural_hi"), sep = "-", remove = FALSE, convert = TRUE) %>%
+  separate(total_ci, into = c("total_lo", "total_hi"), sep = "-", remove = FALSE, convert = TRUE)
+```
+Transfer to logodds scale
+```{r}
+SDS_log <- SDS_filtered %>%
+  mutate(across(c(urban_p,urban_lo,urban_hi,rural_p,rural_lo,rural_hi,total_prev,total_lo,total_hi), ~./100000)) %>%
+    mutate(id = row_number()) %>%
+    mutate(
+    logodds_urban = log(urban_p/(1-urban_p)),
+    logodds_rural = log(rural_p/(1-rural_p)),
+    logodds_total = log(total_prev/(1-total_prev))
+  ) %>%
+  mutate(
+    logodds_urban_lower = log(urban_lo/(1-urban_lo)),
+    logodds_urban_upper = log(urban_hi/(1-urban_hi)),
+    logodds_rural_lower = log(rural_lo/(1-rural_lo)),
+    logodds_rural_upper = log(rural_hi/(1-rural_hi)),
+    logodds_total_lower = log(total_lo/(1-total_lo)),
+    logodds_total_upper = log(total_hi/(1-total_hi))
+  ) %>%
+  mutate(logodds_se_urban = (logodds_urban_upper-logodds_urban_lower)/3.92,
+         logodds_se_rural = (logodds_rural_upper-logodds_rural_lower)/3.92,
+         logodds_se_total = (logodds_total_upper-logodds_total_lower)/3.92
+         )%>%
+  select(id, WHO.region, logodds_urban, logodds_rural, logodds_se_urban, logodds_se_rural)  %>%
+  pivot_longer(
+    cols = starts_with("logodds"),
+    names_to = c("metric", "type"),
+    names_pattern = "logodds(_se)?_(.+)"
+  ) %>%
+  pivot_wider(
+    names_from = metric,
+    values_from = value,
+    names_prefix = "logodds"
+  )
+  )
+```
+
+```{r}
+SDS_log <- SDS_filtered %>%
+  mutate(across(c(urban_p:rural_hi, -total_ci, -urban_ci, -rural_ci), ~./100000)) %>%
+  mutate(id = row_number()) %>%
+  mutate(
+    logodds_urban = log(urban_p/(1-urban_p)),
+    logodds_rural = log(rural_p/(1-rural_p))
+  ) %>%
+    mutate(
+    logodds_urban_lower = log(urban_lo/(1-urban_lo)),
+    logodds_urban_upper = log(urban_hi/(1-urban_hi)),
+    logodds_rural_lower = log(rural_lo/(1-rural_lo)),
+    logodds_rural_upper = log(rural_hi/(1-rural_hi))
+  ) %>%
+  mutate(logodds_se_urban = (logodds_urban_upper-logodds_urban_lower)/3.92,
+         logodds_se_rural = (logodds_rural_upper-logodds_rural_lower)/3.92
+  ) %>%
+  select(id, WHO.region, logodds_urban, logodds_rural, logodds_se_urban, logodds_se_rural)  %>%
+  pivot_longer(
+    cols = starts_with("logodds"),
+    names_to = c("metric", "type"),
+    names_pattern = "logodds(_se)?_(.+)"
+  ) %>%
+  pivot_wider(
+    names_from = metric,
+    values_from = value,
+    names_prefix = "logodds"
+  )
+
+```
+
+Fitting the model
+```{r}
+library(brms)
+m3 <- brm(
+  logodds | se(logodds_se, sigma=TRUE) ~ 1 + type + (1|id),
+  data = SDS_log,
+  family = "gaussian",
+  control = list(adapt_delta = 0.99),
+  cores = 4,
+  chains = 4,
+  iter = 4000
+)
+
+summary(m3)
+posterior_summary(m3)
+plot(m3)
+pp_check(m3, ndraws =100)
+```
+```{r}
+m3_draws <- m3 %>% 
+  as_draws_df() %>%
+  select(b_Intercept, b_typeurban) %>%
+  transmute(rural = b_Intercept, urban = b_Intercept+b_typeurban) %>%
+  mutate(across(c(urban, rural), ~expit(.))) %>%
+  mutate(u_to_rural_ratio = urban/rural) %>%
+  mutate(model = "m3")
+```
+
+```{r}
+library(ggplot2)
+library(bayesplot)
+
+m3_drawsxxx <- as_draws_df(m3)
+colnames(m3_drawsxxx)
+
+mcmc_areas(m3_drawsxxx, pars = c("b_Intercept", "b_typeurban"))
+m3_draws %>%
+  pivot_longer(cols = c(urban, rural), names_to = "area", values_to = "prevalence") %>%
+  ggplot(aes(x = prevalence, fill = area)) +
+  geom_density(alpha = 0.6) +
+  labs(title = "Posterior Distribution of Urban and Rural TB Prevalence",
+       x = "Estimated TB Prevalence", y = "Density") +
+  theme_minimal()
+
+m3_drawsxxx %>%
+  summarise(
+    OR_median = median(exp(b_typeurban)),
+    OR_95lo = quantile(exp(b_typeurban), 0.025),
+    OR_95hi = quantile(exp(b_typeurban), 0.975)
+  )
+
+ggplot(m3_draws, aes(x = u_to_rural_ratio)) +
+  geom_density(fill = "steelblue", alpha = 0.7) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "darkred") +
+  labs(
+    title = "Posterior Distribution of Urban-to-Rural TB Prevalence Ratio",
+    x = "Urban : Rural Ratio",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+m3_draws %>%
+  summarise(
+    median_ratio = median(u_to_rural_ratio),
+    CI_lower = quantile(u_to_rural_ratio, 0.025),
+    CI_upper = quantile(u_to_rural_ratio, 0.975)
+  )
+```
+Model with regional effects
+```{r}
+m4 <- brm(
+  logodds | se(logodds_se, sigma=TRUE) ~ 1 + type*WHO.region + (1|id),
+  data = SDS_log,
+  family = "gaussian",
+  control = list(adapt_delta = 0.99),
+  cores = 4,
+  chains = 4,
+  iter = 4000
+)
+summary(m4)
+plot(m4)
+pp_check(m4, ndraws =100)
+```
+
