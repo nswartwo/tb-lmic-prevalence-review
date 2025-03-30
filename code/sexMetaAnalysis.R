@@ -39,7 +39,8 @@ cleanSexDF0 %<>%
 cleanSexDF <- cleanSexDF0 %>% 
     filter(sex.analysis.indicator %in% c("adj.prev100k.ci.bacteriological.tb",
                                          "adj.prev100k.ci.smear.positive.tb")) %>% 
-    mutate(adj.prev100k.bacteriological.tb.male = adj.prev100k.bacteriological.tb.male/1e5,
+    mutate("id" = row_number(),
+           adj.prev100k.bacteriological.tb.male = adj.prev100k.bacteriological.tb.male/1e5,
            adj.prev100k.ci.upper.bacteriological.tb.male = adj.prev100k.ci.upper.bacteriological.tb.male/1e5,
            adj.prev100k.ci.lower.bacteriological.tb.male = adj.prev100k.ci.lower.bacteriological.tb.male/1e5,
            
@@ -54,7 +55,8 @@ cleanSexDF <- cleanSexDF0 %>%
            adj.prev100k.smear.positive.tb.female = adj.prev100k.smear.positive.tb.female/1e5,
            adj.prev100k.ci.upper.smear.positive.tb.female = adj.prev100k.ci.upper.smear.positive.tb.female/1e5,
            adj.prev100k.ci.lower.smear.positive.tb.female = adj.prev100k.ci.lower.smear.positive.tb.female/1e5) %>%
-    select(covidence.id, 
+    select(id,
+           covidence.id, 
            figure.id.yr, 
            study.geography, 
            title.extracted,
@@ -110,8 +112,7 @@ cleanSexDF <- cleanSexDF0 %>%
                                                   Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
                                                                              (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
                                                                          log(adj.prev100k.ci.lower.smear.positive.tb.female /
-                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92), 
-           "id" = row_number())
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92))
 
 ##############################################################################|
 ##### BAYESIAN MODEL #########################################################
