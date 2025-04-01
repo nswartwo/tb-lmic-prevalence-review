@@ -99,40 +99,6 @@ SDS_filtered <- SDS_filtered %>%
   separate(total_ci, into = c("total_lo", "total_hi"), sep = "-", remove = FALSE, convert = TRUE)
 ```
 Transfer to logodds scale
-```{r}
-SDS_log <- SDS_filtered %>%
-  mutate(across(c(urban_p,urban_lo,urban_hi,rural_p,rural_lo,rural_hi,total_prev,total_lo,total_hi), ~./100000)) %>%
-    mutate(id = row_number()) %>%
-    mutate(
-    logodds_urban = log(urban_p/(1-urban_p)),
-    logodds_rural = log(rural_p/(1-rural_p)),
-    logodds_total = log(total_prev/(1-total_prev))
-  ) %>%
-  mutate(
-    logodds_urban_lower = log(urban_lo/(1-urban_lo)),
-    logodds_urban_upper = log(urban_hi/(1-urban_hi)),
-    logodds_rural_lower = log(rural_lo/(1-rural_lo)),
-    logodds_rural_upper = log(rural_hi/(1-rural_hi)),
-    logodds_total_lower = log(total_lo/(1-total_lo)),
-    logodds_total_upper = log(total_hi/(1-total_hi))
-  ) %>%
-  mutate(logodds_se_urban = (logodds_urban_upper-logodds_urban_lower)/3.92,
-         logodds_se_rural = (logodds_rural_upper-logodds_rural_lower)/3.92,
-         logodds_se_total = (logodds_total_upper-logodds_total_lower)/3.92
-         )%>%
-  select(id, WHO.region, logodds_urban, logodds_rural, logodds_se_urban, logodds_se_rural)  %>%
-  pivot_longer(
-    cols = starts_with("logodds"),
-    names_to = c("metric", "type"),
-    names_pattern = "logodds(_se)?_(.+)"
-  ) %>%
-  pivot_wider(
-    names_from = metric,
-    values_from = value,
-    names_prefix = "logodds"
-  )
-  )
-```
 
 ```{r}
 SDS_log <- SDS_filtered %>%
@@ -233,6 +199,28 @@ m3_draws %>%
     CI_upper = quantile(u_to_rural_ratio, 0.975)
   )
 ```
+# Prevalence ratio from M3 model
+```{r}
+# Extract posterior samples
+post_m3 <- posterior_samples(m3)
+
+# Get urban/rural log-odds difference
+logodds_diff <- post_m3$b_typeurban
+
+# Convert to prevalence ratio (PR)
+PR <- exp(logodds_diff)
+
+# Summarise
+PR_summary <- tibble(
+  Mean = mean(PR),
+  Lower_95CrI = quantile(PR, 0.025),
+  Upper_95CrI = quantile(PR, 0.975)
+)
+
+# Print
+print(PR_summary)
+```
+
 Model with regional effects
 ```{r}
 m4 <- brm(
@@ -245,7 +233,160 @@ m4 <- brm(
   iter = 4000
 )
 summary(m4)
-plot(m4)
 pp_check(m4, ndraws =100)
+```
+```{r}
+library(broom.mixed)
+library(ggplot2)
+
+tidy_m4 <- broom.mixed::tidy(m4, effects = "fixed", conf.int = TRUE)
+
+ggplot(tidy_m4, aes(x = estimate, y = term)) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(title = "Posterior Estimates (Fixed Effects)",
+       x = "Estimate (log-odds scale)", y = "") +
+  theme_minimal()
+
+
+
+draws <- as_draws_df(m4) %>%
+  transmute(
+    AFR     = b_typeurban,
+    EMR       = b_typeurban + `b_typeurban:WHO.regionEasternMediterraneanWHO`,
+    SEAR      = b_typeurban + `b_typeurban:WHO.regionSouthMEastAsiaWHO`,
+    WPR       = b_typeurban + `b_typeurban:WHO.regionWesternPacificWHO`
+  ) %>%
+  pivot_longer(everything(), names_to = "region", values_to = "logodds_diff")
+
+ggplot(draws, aes(x = logodds_diff, fill = region)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(title = "Urban vs Rural TB Log-Odds Difference by WHO Region",
+       x = "Urban - Rural (log-odds)", y = "Density") +
+  theme_minimal()
+
+
+### Prevalence ratio plot
+draws %>%
+  mutate(prevalence_ratio = exp(logodds_diff)) %>%
+  ggplot(aes(x = prevalence_ratio, fill = region)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  labs(title = "Urban vs Rural TB Prevalence Ratio by Region",
+       x = "Prevalence Ratio (Urban / Rural)", y = "Density") +
+  theme_minimal()
+```
+```{r}
+library(posterior)
+
+
+# Calculate log-odds for each region & setting
+m4_draws <- as_draws_df(m4)
+
+region_prevalence_draws <- m4_draws %>%
+  transmute(
+    Africa_rural  = b_Intercept,
+    Africa_urban  = b_Intercept + b_typeurban,
+
+    EMR_rural    = b_Intercept + `b_WHO.regionEasternMediterraneanWHO`,
+    EMR_urban    = b_Intercept + b_typeurban +
+                    `b_WHO.regionEasternMediterraneanWHO` + `b_typeurban:WHO.regionEasternMediterraneanWHO`,
+
+    SEAR_rural   = b_Intercept + `b_WHO.regionSouthMEastAsiaWHO`,
+    SEAR_urban   = b_Intercept + b_typeurban +
+                    `b_WHO.regionSouthMEastAsiaWHO` + `b_typeurban:WHO.regionSouthMEastAsiaWHO`,
+
+    WPR_rural    = b_Intercept + `b_WHO.regionWesternPacificWHO`,
+    WPR_urban    = b_Intercept + b_typeurban +
+                    `b_WHO.regionWesternPacificWHO` + `b_typeurban:WHO.regionWesternPacificWHO`
+  ) %>%
+  pivot_longer(cols = everything(), names_to = "group", values_to = "logodds") %>%
+  separate(group, into = c("region", "type"), sep = "_") %>%
+  mutate(prevalence_per_100k = plogis(logodds) * 100000)
+
+
+prevalence_summary <- region_prevalence_draws %>%
+  group_by(region, type) %>%
+  summarise(
+    median = median(prevalence_per_100k),
+    lower = quantile(prevalence_per_100k, 0.025),
+    upper = quantile(prevalence_per_100k, 0.975),
+    .groups = "drop"
+  )
+
+ggplot(prevalence_summary, aes(x = median, y = region, color = type)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper),
+                 position = position_dodge(width = 0.6), height = 0.2) +
+  scale_x_continuous(labels = scales::comma_format()) +
+  labs(title = "Estimated TB Prevalence per 100,000 by WHO Region and Setting",
+       x = "TB Prevalence per 100,000 population (posterior median with 95% CrI)",
+       y = "WHO Region", color = "Setting") +
+  theme_minimal()
+
+```
+# Calculating prevalence ratios base on M4 model
+```{r}
+post <- posterior_samples(m4)
+# Define baseline (AFR): just 'typeurban'
+logodds_AFR <- post$b_typeurban
+PR_AFR <- exp(logodds_AFR)
+
+# For other regions: add interaction terms
+logodds_EMR <- post$b_typeurban + post$`b_typeurban:WHO.regionEasternMediterraneanWHO`
+PR_EMR <- exp(logodds_EMR)
+
+logodds_SEAR <- post$b_typeurban + post$`b_typeurban:WHO.regionSouthMEastAsiaWHO`
+PR_SEAR <- exp(logodds_SEAR)
+
+logodds_WPR <- post$b_typeurban + post$`b_typeurban:WHO.regionWesternPacificWHO`
+PR_WPR <- exp(logodds_WPR)
+
+# Function to summarize posterior distributions
+summarise_posterior <- function(x) {
+  tibble(
+    Mean = mean(x),
+    Lower_95CrI = quantile(x, 0.025),
+    Upper_95CrI = quantile(x, 0.975)
+  )
+}
+
+# Create summary table
+PR_summary <- bind_rows(
+  summarise_posterior(PR_AFR) %>% mutate(Region = "AFR"),
+  summarise_posterior(PR_EMR) %>% mutate(Region = "EMR"),
+  summarise_posterior(PR_SEAR) %>% mutate(Region = "SEAR"),
+  summarise_posterior(PR_WPR) %>% mutate(Region = "WPR")
+) %>% 
+  select(Region, everything())
+
+# View the result
+print(PR_summary)
+
+```
+
+### model with the urban/rural population ratio
+```{r}
+## calculate urban/rural population ratio
+SDS_filtered <- SDS_filtered %>%
+  mutate(
+    urban_pop = case_when(
+      !is.na(n.participants.urban) ~ n.participants.urban,
+      TRUE ~ NA_real_
+    ),
+    rural_pop = case_when(
+      !is.na(n.participants.rural) ~ n.participants.rural,
+      TRUE ~ NA_real_
+    ),
+    total_pop = case_when(
+      !is.na(n.participants.rurality.total) ~ n.participants.rurality.total,
+      TRUE ~ NA_real_
+    ),
+    urban_to_rural_ratio = urban_pop / rural_pop
+  )
+
+## fit the model (to be completed)
 ```
 
