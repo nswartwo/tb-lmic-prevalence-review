@@ -14,7 +14,6 @@ This script reads in the clean dataset from data folder and then runs fits a Bay
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 
-setwd("~/tbPrevalenceReviewLMIC/tb-lmic-prevalence-review/")
 ##### LOAD IN NECESSARY PACKAGES ##############################################
 library(dplyr)
 library(forcats)
@@ -188,6 +187,7 @@ Model specification
 model1 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
                                            sigma=TRUE) ~ 1 + (1|id) + Sex,
                     data = cleanSexDF,
+                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
                     family = "gaussian",
                     control = list(adapt_delta = 0.99),
                     cores = 4,
@@ -245,8 +245,9 @@ ggplot(data = model1_est) +
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 model2 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
-                                           sigma=TRUE) ~ 1 + Sex*WHO.region + (1|id),
+                                           sigma=TRUE) ~ 1 + Sex + WHO.region + (1|id),
                     data = cleanSexDF,
+                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
                     family = "gaussian",
                     control = list(adapt_delta = 0.90),
                     cores = 4,
@@ -282,27 +283,24 @@ model2_est0 <- model2 %>%
                                        Sex = c("Male", "Female"),
                                        LogOddsStandardError = 1),
                     re_formula = NA) %>%
-    transmute(value = expit(.epred)*1e5) %>%
-    mutate(model = "Country level fixed effects") %>% ungroup()
-    
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    dplyr::select(WHO.region, Sex, .draw, value) %>%
+    pivot_wider(names_from = Sex, values_from = value) %>%
+    mutate(mfRatio = Male/Female) %>%
+    select(-.draw) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>%
+    mutate(model = "Country level fixed effects") %>%
+    rename(Sex = name)
+
 model2_est_summary <- model2_est0 %>% reframe(meanPrev = mean(value), .by = c(Sex, WHO.region)); model2_est_summary
-
-
-# mfRatio <- model2_est0[1:(dim(model2_est0)[1]/2),]
-# 
-# mfRatio$value <- model2_est0 %>% filter(Sex == "Male") %>% dplyr::select(value) /
-#                  model2_est0 %>% filter(Sex == "Female") %>% dplyr::select(value)
-
-# mfRatio$Sex <- "mfRatio"
-
-# model2_est <- rbind(model2_est0, mfRatio)
 
 # ggplot(data = model2_est0) + geom_density(aes(x=value, fill = WHO.region, group=WHO.region))
 
 ggplot(data = model2_est0) +
     stat_pointinterval(aes(x=value, colour=WHO.region), position = position_dodge(width=0.5), size =20) +
     facet_grid(model~fct_relevel(Sex,
-                                 "Male", "Female", "mfRatio"),
+                                 "Male prev", "Female prev", "mfRatio"),
                scales = "free_x") +
     labs(x="", y="") + 
     theme_minimal( base_size = 30) + theme(legend.position = "bottom")
@@ -315,6 +313,7 @@ Model specification
 model3 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
                                            sigma=TRUE) ~ 1 + Sex + (1|id/title.extracted),
                     data = cleanSexDF,
+                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
                     family = "gaussian",
                     control = list(adapt_delta = 0.99),
                     cores = 4,
@@ -362,5 +361,68 @@ ggplot(data = model3_est) +
                scales = "free_x") +
     labs(x="", y="") +
     theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+```
+
+## Model 4: random intercepts for countries nested within regions, and surveys nested within studies
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+model4 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted),
+                      data = cleanSexDF,
+                      prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+```
+
+Model diagnostics  
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+summary(model4)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+plot(model4)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pairs(model4)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pp_check(model4, ndraws =100)
+```
+
+Model results 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+model4_est <- model4 %>%
+    add_epred_draws(newdata = cleanSexDF, re_formula = NULL) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)
+
+# model3_est <- melt(model3_est0)
+# model3_est_summary <- model3_est %>% reframe(meanPrev = mean(value), .by = c(variable)); model3_est_summary
+
+
+ggplot(data = model4_est) +
+        stat_pointinterval(aes(x=value, y=study.country, color = WHO.region), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
+        labs(x="", y="") +
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
 
 ```
