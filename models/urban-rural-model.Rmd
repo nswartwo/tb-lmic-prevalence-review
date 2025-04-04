@@ -390,6 +390,7 @@ SDS_filtered <- SDS_filtered %>%
 
 ## fit the model (to be completed)
 ```
+
 New models based on our latest group discussion
 # (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted)
 ```{r}
@@ -397,7 +398,7 @@ New models based on our latest group discussion
     m5 <- brm(
       formula = logodds | se(logodds_se, sigma=TRUE) ~ 1 + type + 
         (1 + type | WHO.region/study.country) + 
-        (1 + type | id/title.extracted),
+        (1 | id),
       
       data = SDS_log,
       family = gaussian(),
@@ -407,8 +408,8 @@ New models based on our latest group discussion
       chains = 4,
       iter = 4000,
       
-      prior = prior(normal(0, 10), class = Intercept) +
-              prior(normal(0, 10), class = b) +
+      prior = prior(normal(0, 100), class = Intercept) +
+              prior(normal(0, 100), class = b) +
               prior(exponential(1), class = sd) +
               prior(lkj(4), class = cor)
     )
@@ -416,7 +417,24 @@ New models based on our latest group discussion
 summary(m5)
 conditional_effects(m5)
 pp_check(m5, ndraws = 100)
+```
 
+Overall summary
+
+```{r}
+m5 %>%
+    as_draws_df() %>%
+    select(b_Intercept, b_typeurban) %>%
+    transmute(Rural = b_Intercept,
+              Urban = b_Intercept + b_typeurban)  %>%
+    mutate(across(everything(), ~expit(.)*1e5)) %>%
+    mutate(urRatio = Urban/Rural) %>%
+    pivot_longer(cols = everything()) %>%
+    group_by(name) %>%
+    mean_qi(value)
+
+```
+```{r}
 # Prepare new data
 nd <- SDS_log %>%
   select(WHO.region, study.country, type) %>%
@@ -448,11 +466,11 @@ m5_draws_region <- m5_draws_region %>%
   pivot_longer(cols = c(urban, rural, urRatio)) %>%
   rename(type = name)
 
-# Overall
-m5_draws_country %>%
-  group_by(type) %>%
-  mean_qi(value)
+```
 
+Summarise by country and region
+
+```{r}
 # By region
 m5_draws_region %>%
   group_by(WHO.region, type) %>%
@@ -462,7 +480,11 @@ m5_draws_region %>%
 m5_draws_country %>%
   group_by(study.country, type) %>%
   mean_qi(value)
+```
 
+Plot
+
+```{r}
 #EMPERICAL VALUES
 m5_empirical <- SDS_filtered %>%
   select(covidence.id, WHO.region, study.country, urban = urban_p, rural = rural_p) %>%
@@ -470,75 +492,48 @@ m5_empirical <- SDS_filtered %>%
     urRatio = urban / rural
   ) %>%
   pivot_longer(cols = c(urban, rural, urRatio)) %>%
-  rename(type = name, value = value)
+  rename(type = name, value = value) %>%  
+    mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio"))
 
 # Country-level plot
 a <- m5_draws_country %>%
+  mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio")) %>%
   ggplot() +
+    geom_vline(data = m5_empirical %>% filter(type=="Urban-to-rural ratio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
   stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +
   geom_point(data = m5_empirical, aes(y = study.country, x = value),
              colour = "mediumseagreen", shape = 1) +
-  facet_grid(. ~ fct_relevel(type, "urban", "rural"), scale = "free_x") +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(type, "Urban", "Rural"), scale = "free_x") +
   theme_tidybayes() +
-  theme(panel.background = element_rect(fill = NA, colour = "grey78"))
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
 
 # Region-level plot
-b <- m5_draws_region %>%
+b <- m5_draws_region %>%  
+    mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio")) %>%
   ggplot() +
+    geom_vline(data = m5_empirical %>% filter(type=="Urban-to-rural ratio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
   stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +
   geom_point(data = m5_empirical, aes(y = WHO.region, x = value),
              colour = "mediumseagreen", shape = 1) +
-  facet_grid(. ~ fct_relevel(type, "urban", "rural"), scale = "free_x") +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(type, "Urban", "Rural"), scale = "free_x") +
   theme_tidybayes() +
-  theme(panel.background = element_rect(fill = NA, colour = "grey78"))
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
 
+library(patchwork)
 # Show plots
-a
-b
-```
+(a / b) + plot_annotation(tag_levels = 'A')
 
-```{r}
-nd <- expand.grid(
-  WHO.region = unique(SDS_log$WHO.region),
-  type = c("urban", "rural")
-) %>%
-  mutate(logodds_se = 1)
-
-m5_preds <- m5 %>%
-  add_epred_draws(newdata = nd, re_formula = ~(1 + type | WHO.region)) %>%
-  ungroup() %>%
-  mutate(prevalence_per100k = expit(.epred) * 1e5)
-
-urban_rural_summary <- m5_preds %>%
-  group_by(WHO.region, type) %>%
-  mean_qi(prevalence_per100k)
-
-print(urban_rural_summary)
-
-
-# Pivot to wide to calculate ratios
-pr_ratio_draws <- m5_preds %>%
-  select(.draw, WHO.region, type, prevalence_per100k) %>%
-  pivot_wider(names_from = type, values_from = prevalence_per100k) %>%
-  mutate(PR_urban_rural = urban / rural)
-
-# Summarise ratios
-pr_summary <- pr_ratio_draws %>%
-  group_by(WHO.region) %>%
-  mean_qi(PR_urban_rural)
-
-print(pr_summary)
-
-pr_summary_tbl <- pr_summary %>%
-  ungroup() %>%
-  select(
-    Region = WHO.region,
-    Mean = PR_urban_rural,
-    Lower_95CrI = .lower,
-    Upper_95CrI = .upper
-  ) %>%
-  mutate(across(where(is.numeric), ~ round(.x, 2)))
-
-# Print as tibble
-print(pr_summary_tbl)
+ggsave("f1.png", width = 12, height=10)
 ```
