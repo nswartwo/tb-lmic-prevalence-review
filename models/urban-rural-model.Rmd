@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+library(tidybayes)
 ```
 
 
@@ -23,7 +24,7 @@ expit <- function (x) {1/(1 + exp(-x))} #convert back to the response scale
 ## Subset of data
 ```{r}
 SDS <- bactPosRuralityData %>% 
-    select(c(1,2,3,55,130:132,148,149,150,151:153,160:195,902:907))
+    select(c(1,2,3,7,14,55,130:132,148,149,150,151:153,160:195,902:907))
 
 ```
 ## Filterout the studies that dont have bacterilogical result based on rurality.analysis.indicator
@@ -117,7 +118,7 @@ SDS_log <- SDS_filtered %>%
   mutate(logodds_se_urban = (logodds_urban_upper-logodds_urban_lower)/3.92,
          logodds_se_rural = (logodds_rural_upper-logodds_rural_lower)/3.92
   ) %>%
-  select(id, WHO.region, logodds_urban, logodds_rural, logodds_se_urban, logodds_se_rural)  %>%
+  select(id, WHO.region, study.country, title.extracted, logodds_urban, logodds_rural, logodds_se_urban, logodds_se_rural)  %>%
   pivot_longer(
     cols = starts_with("logodds"),
     names_to = c("metric", "type"),
@@ -390,3 +391,149 @@ SDS_filtered <- SDS_filtered %>%
 ## fit the model (to be completed)
 ```
 
+New models based on our latest group discussion
+# (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted)
+```{r}
+    library(brms)
+    m5 <- brm(
+      formula = logodds | se(logodds_se, sigma=TRUE) ~ 1 + type + 
+        (1 + type | WHO.region/study.country) + 
+        (1 | id),
+      
+      data = SDS_log,
+      family = gaussian(),
+      
+      control = list(adapt_delta = 0.99),
+      cores = 4,
+      chains = 4,
+      iter = 4000,
+      
+      prior = prior(normal(0, 100), class = Intercept) +
+              prior(normal(0, 100), class = b) +
+              prior(exponential(1), class = sd) +
+              prior(lkj(4), class = cor)
+    )
+
+summary(m5)
+conditional_effects(m5)
+pp_check(m5, ndraws = 100)
+```
+
+Overall summary
+
+```{r}
+m5 %>%
+    as_draws_df() %>%
+    select(b_Intercept, b_typeurban) %>%
+    transmute(Rural = b_Intercept,
+              Urban = b_Intercept + b_typeurban)  %>%
+    mutate(across(everything(), ~expit(.)*1e5)) %>%
+    mutate(urRatio = Urban/Rural) %>%
+    pivot_longer(cols = everything()) %>%
+    group_by(name) %>%
+    mean_qi(value)
+
+```
+```{r}
+# Prepare new data
+nd <- SDS_log %>%
+  select(WHO.region, study.country, type) %>%
+  distinct() %>%
+  mutate(logodds_se = 1)
+
+
+m5_draws_country <- m5 %>%
+  add_epred_draws(newdata = nd, re_formula = ~(1 + type | WHO.region/study.country)) %>%
+  ungroup() %>%
+  mutate(value = expit(.epred) * 1e5) %>%
+  select(study.country, WHO.region, type, value, .draw)
+
+m5_draws_country <- m5_draws_country %>%
+  pivot_wider(names_from = type, values_from = value) %>%
+  mutate(urRatio = urban / rural) %>%
+  pivot_longer(cols = c(urban, rural, urRatio)) %>%
+  rename(type = name)
+
+m5_draws_region <- m5 %>%
+  add_epred_draws(newdata = nd, re_formula = ~(1 + type | WHO.region)) %>%
+  ungroup() %>%
+  mutate(value = expit(.epred) * 1e5) %>%
+  select(study.country, WHO.region, type, value, .draw)
+
+m5_draws_region <- m5_draws_region %>%
+  pivot_wider(names_from = type, values_from = value) %>%
+  mutate(urRatio = urban / rural) %>%
+  pivot_longer(cols = c(urban, rural, urRatio)) %>%
+  rename(type = name)
+
+```
+
+Summarise by country and region
+
+```{r}
+# By region
+m5_draws_region %>%
+  group_by(WHO.region, type) %>%
+  mean_qi(value)
+
+# By country
+m5_draws_country %>%
+  group_by(study.country, type) %>%
+  mean_qi(value)
+```
+
+Plot
+
+```{r}
+#EMPERICAL VALUES
+m5_empirical <- SDS_filtered %>%
+  select(covidence.id, WHO.region, study.country, urban = urban_p, rural = rural_p) %>%
+  mutate(
+    urRatio = urban / rural
+  ) %>%
+  pivot_longer(cols = c(urban, rural, urRatio)) %>%
+  rename(type = name, value = value) %>%  
+    mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio"))
+
+# Country-level plot
+a <- m5_draws_country %>%
+  mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio")) %>%
+  ggplot() +
+    geom_vline(data = m5_empirical %>% filter(type=="Urban-to-rural ratio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+  stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +
+  geom_point(data = m5_empirical, aes(y = study.country, x = value),
+             colour = "mediumseagreen", shape = 1) +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(type, "Urban", "Rural"), scale = "free_x") +
+  theme_tidybayes() +
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
+
+# Region-level plot
+b <- m5_draws_region %>%  
+    mutate(type = case_when(type=="urban" ~ "Urban",
+                          type=="rural" ~ "Rural",
+                          type=="urRatio" ~ "Urban-to-rural ratio")) %>%
+  ggplot() +
+    geom_vline(data = m5_empirical %>% filter(type=="Urban-to-rural ratio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+  stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +
+  geom_point(data = m5_empirical, aes(y = WHO.region, x = value),
+             colour = "mediumseagreen", shape = 1) +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(type, "Urban", "Rural"), scale = "free_x") +
+  theme_tidybayes() +
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
+
+library(patchwork)
+# Show plots
+(a / b) + plot_annotation(tag_levels = 'A')
+
+ggsave("f1.png", width = 12, height=10)
+```
