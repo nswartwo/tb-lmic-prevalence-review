@@ -83,6 +83,7 @@ cleanSexDF <- cleanSexDF0 %>%
            study.country,
            WHO.region,
            study.start.year, 
+           study.end.year, 
            sex.analysis.indicator,
            ends_with("male"), ends_with("sex")) %>%
     
@@ -371,7 +372,10 @@ Model specification
 model4 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
                                              sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted),
                       data = cleanSexDF,
-                      prior = prior(cauchy(231/1e5, 180/1e5), class = Intercept),
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
                       family = "gaussian",
                       control = list(adapt_delta = 0.99),
                       cores = 4,
@@ -419,15 +423,133 @@ model4_est <- model4 %>%
     pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
     rename(Sex = name)
 
-# model3_est <- melt(model3_est0)
-# model3_est_summary <- model3_est %>% reframe(meanPrev = mean(value), .by = c(variable)); model3_est_summary
-
 
 ggplot(data = model4_est) +
         stat_pointinterval(aes(x=value, y=study.country, color = WHO.region), .width = 0.95, size=20) +
         facet_grid(.~fct_relevel(Sex,
                                      "Male", "Female", "mfRatio"), scale = "free_x") + 
-        labs(x="", y="") +
+        labs(x="", y="") + expand_limits(x=0) + 
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+model4_estb <- model4 %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex |WHO.region)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)
+
+
+ggplot(data = model4_estb) +
+        stat_pointinterval(aes(x=value, y=WHO.region), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
+        labs(x="", y="") + #expand_limits(x=0) + 
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+```
+
+## Model 5: random intercepts for countries nested within regions, and surveys nested within studies; add in survey end years
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+model5 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted) + (1 + Sex | study.end.year),
+                      data = cleanSexDF,
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+```
+Model diagnostics  
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+summary(model5)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+plot(model5)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pairs(model5)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pp_check(model5, ndraws =100)
+```
+
+Model results 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- cleanSexDF %>%
+    filter(!is.na(study.end.year)) %>%
+    select(Sex, study.country, id, WHO.region, study.end.year, title.extracted) %>%
+    distinct() %>%
+    mutate(LogOddsStandardError=1)
+           
+model5_est <- model5 %>%
+    add_epred_draws(newdata = nd, re_formula = ~ (1 + Sex | study.end.year)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(Sex, study.end.year,  value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name) %>%
+    mutate(study.end.year = as.factor(study.end.year))
+
+
+ggplot(data = model5_est) +
+        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
+        labs(x="", y="") + expand_limits(x=0) + 
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+model5_estb <- model5 %>%
+    add_epred_draws(newdata = nd, re_formula = ~ (1 + Sex | study.end.year) + (1 + Sex | WHO.region)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(Sex, study.end.year, WHO.region, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name) %>%
+    mutate(study.end.year = as.factor(study.end.year))
+
+
+ggplot(data = model5_estb %>% filter(Sex != "mfRatio")) +
+        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio") ~ WHO.region, scale = "free_x") + 
+        labs(x="", y="") + expand_limits(x=0) + 
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+ggplot(data = model5_estb %>% filter(Sex == "mfRatio")) +
+        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio") ~ WHO.region, scale = "free_x") + 
+        labs(x="", y="") + expand_limits(x=0) + 
         theme_minimal(base_size = 30) + theme(legend.position = "bottom")
 
 ```
