@@ -614,6 +614,7 @@ model6_priors <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TR
 
 summary(model6_priors)
 plot(model6_priors)
+conditional_effects(model6_priors)
 
 ```
 Now fit the model with the data
@@ -621,7 +622,7 @@ Now fit the model with the data
 ```{r}
 
 model6 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
-                               1 + Sex*year_z +  (1 + Sex + year_z |WHO.region/study.country),
+                               1 + Sex*year_z +  (1 + Sex*year_z |WHO.region/study.country),
                                sigma ~ Sex*year_z,
                       data = cleanSexDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -671,7 +672,7 @@ nd_country <-  cleanSexDF %>%
 model6_draws_country <- 
     add_epred_draws(object = model6,
                     newdata = nd_country,
-                    re_formula = ~(1 +  Sex + year_z | WHO_region/study.country)) %>%
+                    re_formula = ~(1 +  Sex*year_z | WHO_region/study.country)) %>%
     ungroup() %>%
     group_by(id, study.country) %>%
     mutate(value = expit(.epred) * 1e5) %>%
@@ -729,7 +730,7 @@ nd_region <-  cleanSexDF %>%
 model6_draws_region <- 
     add_epred_draws(object = model6,
                     newdata = nd_region,
-                    re_formula = ~(1 +  Sex + year_z | WHO_region)) %>%
+                    re_formula = ~(1 +  Sex*year_z | WHO_region)) %>%
     ungroup() %>%
     group_by(id, WHO.region) %>%
     mutate(value = expit(.epred) * 1e5) %>%
@@ -744,7 +745,7 @@ model6_draws_region <- model6_draws_region %>%
 
 model6_draws_region %>%
     group_by(WHO.region, name) %>%
-    mean_qi(value)
+    mean_qi(value, na.rm=TRUE)
 
 
 #EMPERICAL VALUES
@@ -773,4 +774,102 @@ model6_draws_region %>%
 
 ```
 
+Experiment a bit more with taking draws and summarising.
+
+```{r}
+
+#updated function to also convert to prev per 100k scale
+expit_p100k <- function (x) {(exp(x)/(1 + exp(x)))*1e5}
+
+#get posteriors in rvars format
+post_model6_country <- cleanSexDF %>% tidybayes::add_epred_rvars(model6, value = "logodds_epred",
+                                                                 re_formula = ~(1 +  Sex*year_z | WHO_region/study.country))
+
+#mutate a new column to get prev scale
+post_model6_rvars <- post_model6 %>%
+    select(Sex, WHO.region, study.country, logodds_epred) %>%
+    mutate(prev_epred = rvar_apply(.x = logodds_epred, 1, expit_p100k))
+
+#now get the m-to-f ratio
+post_model6_rvars_ratio <- post_model6_rvars %>%
+  group_by(WHO.region, study.country) %>%
+  reframe(
+    Male = prev_epred[Sex == "Male"],
+    Female = prev_epred[Sex == "Female"],
+    mfRatio = Male / Female
+  ) %>%
+    mutate(id = 1:n())
+
+#pivot and unnesay to dataframe for summary and plotting
+post_model6_rvars_long <- post_model6_rvars_ratio %>%
+    ungroup() %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) %>%
+    unnest_rvars() %>%
+    ungroup()
+
+#Country summaries
+post_model6_rvars_long %>%
+    group_by(study.country, name) %>%
+    mean_qi(value, na.rm=TRUE)
+
+#Now plot
+post_model6_rvars_long %>%
+    ggplot() +
+    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+    stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +  
+    geom_point(data = m6_empirical, aes(y = study.country, x = value),
+             colour = "mediumseagreen", shape = 1) +
+    facet_wrap(~name, scale="free_x") +
+    scale_y_discrete(limits=rev)
+
+
+```
+
+```{r}
+
+
+#get posteriors in rvars format
+post_model6_region <- cleanSexDF %>% tidybayes::add_epred_rvars(model6, value = "logodds_epred",
+                                                                 re_formula = ~(1 +  Sex*year_z | WHO_region))
+
+#mutate a new column to get prev scale
+post_model6_rvars_region <- post_model6_region %>%
+    select(Sex, WHO.region, logodds_epred) %>%
+    mutate(prev_epred = rvar_apply(.x = logodds_epred, 1, expit_p100k))
+
+#now get the m-to-f ratio
+post_model6_rvars_ratio_region <- post_model6_rvars_region %>%
+  group_by(WHO.region) %>%
+  reframe(
+    Male = prev_epred[Sex == "Male"],
+    Female = prev_epred[Sex == "Female"],
+    mfRatio = Male / Female
+  ) %>%
+    mutate(id = 1:n())
+
+#pivot and unnesay to dataframe for summary and plotting
+post_model6_rvars_long_region <- post_model6_rvars_ratio_region %>%
+    ungroup() %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) %>%
+    unnest_rvars() %>%
+    ungroup()
+
+#Country summaries
+post_model6_rvars_long_region %>%
+    group_by(WHO.region, name) %>%
+    mean_qi(value, na.rm=TRUE)
+
+#Now plot
+post_model6_rvars_long_region %>%
+    ggplot() +
+    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+    stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +  
+    geom_point(data = m6_empirical, aes(y = WHO.region, x = value),
+             colour = "mediumseagreen", shape = 1) +
+    facet_wrap(~name, scale="free_x") +
+    scale_y_discrete(limits=rev)
+
+```
 
