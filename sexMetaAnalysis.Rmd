@@ -873,3 +873,40 @@ post_model6_rvars_long_region %>%
 
 ```
 
+Year effects by country and sex
+
+```{r}
+
+nd <- cleanSexDF %>%
+    select(id, study.country, WHO.region, LogOddsStandardError) %>%
+    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1),
+             Sex = c("Male", "Female"))
+
+model6_year_draws <- add_epred_draws(object = model6,
+                                     newdata=nd,
+                                     re_formula = ~(1 + Sex*year_z |WHO.region/study.country))
+
+model6_year_sum <- model6_year_draws %>%
+    mutate(prev = expit_p100k(.epred)) %>%
+    group_by(year_z, study.country, Sex) %>%
+    mean_qi(prev)
+
+model6_year_sum %>%
+    mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    ggplot() +
+    geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper, fill=Sex), alpha=0.5) +
+    geom_line(aes(x=year_z, y=prev, colour=Sex), alpha=0.5) +
+    geom_point(data = cleanSexDF, aes(
+                       x=study.end.year,
+                       y=`Adjusted Prevalence`*1e5,
+               colour=Sex, shape=Sex)) +
+    facet_wrap(~study.country, scales="free_y") +
+    scale_colour_manual(values = c("darkorange", "mediumseagreen")) +
+    scale_fill_manual(values = c("darkorange", "mediumseagreen")) +
+    theme_ggdist()
+
+
+```
+
+
+
