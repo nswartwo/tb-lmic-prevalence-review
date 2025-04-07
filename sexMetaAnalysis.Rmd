@@ -188,7 +188,7 @@ Model specification
 model1 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
                                            sigma=TRUE) ~ 1 + (1|id) + Sex,
                     data = cleanSexDF,
-                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
+                    #prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
                     family = "gaussian",
                     control = list(adapt_delta = 0.99),
                     cores = 4,
@@ -553,3 +553,224 @@ ggplot(data = model5_estb %>% filter(Sex == "mfRatio")) +
         theme_minimal(base_size = 30) + theme(legend.position = "bottom")
 
 ```
+
+
+Peter MacP: 7th April 2025
+
+Modify Model 5 above to 
+ a) Look at priors
+ b) model sigma
+ c) Look at year effect
+ 
+Need to centre year
+
+```{r}
+
+cleanSexDF <- cleanSexDF %>%
+    mutate(year_z =study.end.year - round(mean(study.end.year, na.rm=TRUE)))
+
+cleanSexDF %>%
+    ggplot(aes(x=year_z)) +
+    geom_histogram()
+
+
+```
+
+
+
+
+```{r}
+
+set.seed(123)
+
+data.frame(theta = plogis(ggdist::rstudent_t(n=20000, df=7, mu=0, sigma=1.5))) |>
+  bayesplot::mcmc_hist() +
+  xlim(c(0,1)) +
+  labs(title='student_t(7, 0, 1.5) for Intercept')
+
+```
+
+
+Fit a model, sampling from the prior distributions only (i.e. not including data)
+
+
+```{r}
+
+model6_priors <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
+                               1 + Sex + year_z +  (1 + Sex |WHO.region/study.country),
+                               sigma ~ Sex + year_z,
+                      data = cleanSexDF,
+                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(2), class = sd) +
+                          prior(lkj(2), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      sample_prior = "only",
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+
+
+summary(model6_priors)
+plot(model6_priors)
+
+```
+Now fit the model with the data
+ 
+```{r}
+
+model6 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
+                               1 + Sex*year_z +  (1 + Sex + year_z |WHO.region/study.country),
+                               sigma ~ Sex*year_z,
+                      data = cleanSexDF,
+                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(2), class = sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+
+
+summary(model6)
+plot(model6)
+conditional_effects(model6)
+
+```
+
+Overall sex effect, ignoring random effects.
+ 
+```{r}
+
+as_draws_df(model6) %>%
+    select(b_Intercept, b_SexMale) %>%
+    transmute(Female = expit(b_Intercept)*1e5, 
+              Male = expit(b_Intercept + b_SexMale)*1e5) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(everything()) %>%
+    group_by(name) %>%
+    mean_qi()
+
+
+
+```
+ 
+Random effect for country
+
+```{r}
+
+nd_country <-  cleanSexDF %>%
+    select(id, WHO.region, study.country, Sex, year_z) %>%
+    distinct() %>%
+    mutate(LogOddsStandardError = 1)
+
+
+model6_draws_country <- 
+    add_epred_draws(object = model6,
+                    newdata = nd_country,
+                    re_formula = ~(1 +  Sex + year_z | WHO_region/study.country)) %>%
+    ungroup() %>%
+    group_by(id, study.country) %>%
+    mutate(value = expit(.epred) * 1e5) %>%
+    select(id, study.country, Sex, value, .draw) %>%
+    ungroup()
+
+model6_draws_country <- model6_draws_country %>%
+    pivot_wider(names_from = Sex, values_from = value) %>%
+    mutate(mfRatio = Male / Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) 
+
+
+model6_draws_country %>%
+    group_by(study.country, name) %>%
+    mean_qi(value)
+
+
+#EMPERICAL VALUES
+m6_empirical <- cleanSexDF %>%
+  select(id, WHO.region, study.country, Sex,LogOdds) %>%
+  mutate(value = expit(LogOdds)*1e5) %>%
+    pivot_wider(names_from=Sex,
+                values_from = value,
+                id_cols = c(id, study.country, WHO.region)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio))
+
+model6_draws_country %>%
+  ggplot() +
+    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+  stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +
+  geom_point(data = m6_empirical, aes(y = study.country, x = value),
+             colour = "mediumseagreen", shape = 1) +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(name, "Male", "Female"), scale = "free_x") +
+  theme_tidybayes() +
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
+
+
+```
+
+
+Random effect for country
+
+```{r}
+
+nd_region <-  cleanSexDF %>%
+    select(id, WHO.region, Sex, year_z) %>%
+    distinct() %>%
+    mutate(LogOddsStandardError = 1)
+
+
+model6_draws_region <- 
+    add_epred_draws(object = model6,
+                    newdata = nd_region,
+                    re_formula = ~(1 +  Sex + year_z | WHO_region)) %>%
+    ungroup() %>%
+    group_by(id, WHO.region) %>%
+    mutate(value = expit(.epred) * 1e5) %>%
+    select(id, WHO.region, Sex, value, .draw) %>%
+    ungroup()
+
+model6_draws_region <- model6_draws_region %>%
+    pivot_wider(names_from = Sex, values_from = value) %>%
+    mutate(mfRatio = Male / Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) 
+
+
+model6_draws_region %>%
+    group_by(WHO.region, name) %>%
+    mean_qi(value)
+
+
+#EMPERICAL VALUES
+m6_empirical <- cleanSexDF %>%
+  select(id, WHO.region, study.country, Sex,LogOdds) %>%
+  mutate(value = expit(LogOdds)*1e5) %>%
+    pivot_wider(names_from=Sex,
+                values_from = value,
+                id_cols = c(id, study.country, WHO.region)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio))
+
+model6_draws_region %>%
+  ggplot() +
+    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
+               aes(xintercept = 1), colour="grey50", linetype=2) +
+  stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +
+  geom_point(data = m6_empirical, aes(y = WHO.region, x = value),
+             colour = "mediumseagreen", shape = 1) +
+  scale_y_discrete(limits=rev) +
+  facet_grid(. ~ fct_relevel(name, "Male", "Female"), scale = "free_x") +
+  theme_tidybayes() +
+  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
+  labs(x="", y="")
+
+
+```
+
+
