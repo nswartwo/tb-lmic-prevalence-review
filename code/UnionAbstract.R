@@ -6,6 +6,7 @@ library(reshape2)
 library(here)
 library(magrittr)
 library(DT)
+library(scales)
 library(metafor)
 library(meta)
 library(brms)
@@ -193,16 +194,16 @@ cleanSexDF <- cleanSexDF0 %>%
 
 #### Main effect model 
 mainEffectMod <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
-                                           sigma=TRUE) ~ 1 + Sex + (1 + Sex | study.country) + (1|id),
-                    data = cleanSexDF,
-                    prior = prior(normal(0,10), class=Intercept) +
-                        prior(normal(0, 10), class = b) +
-                        prior(exponential(1), class=sd),
-                    family = "gaussian",
-                    control = list(adapt_delta = 0.90),
-                    cores = 4,
-                    chains = 4,
-                    iter = 4000)
+                                                  sigma=TRUE) ~ 1 + Sex + (1 + Sex | study.country) + (1|id),
+                           data = cleanSexDF,
+                           prior = prior(normal(0,10), class=Intercept) +
+                               prior(normal(0, 10), class = b) +
+                               prior(exponential(1), class=sd),
+                           family = "gaussian",
+                           control = list(adapt_delta = 0.90),
+                           cores = 4,
+                           chains = 4,
+                           iter = 4000)
 
 
 nd <- cleanSexDF %>%
@@ -230,16 +231,16 @@ mainEffectModEst %>% group_by(Sex) %>% mean_qi(value)
 
 ### Region Model 
 regionEffectMod <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
-                                                  sigma=TRUE) ~ 1 + Sex + (1 + Sex | WHO.region/study.country) + (1|id),
-                           data = cleanSexDF,
-                           prior = prior(normal(0,10), class=Intercept) +
-                               prior(normal(0, 10), class = b) +
-                               prior(exponential(1), class=sd),
-                           family = "gaussian",
-                           control = list(adapt_delta = 0.90),
-                           cores = 4,
-                           chains = 4,
-                           iter = 4000)
+                                                    sigma=TRUE) ~ 1 + Sex + (1 + Sex | WHO.region/study.country) + (1|id),
+                             data = cleanSexDF,
+                             prior = prior(normal(0,10), class=Intercept) +
+                                 prior(normal(0, 10), class = b) +
+                                 prior(exponential(1), class=sd),
+                             family = "gaussian",
+                             control = list(adapt_delta = 0.90),
+                             cores = 4,
+                             chains = 4,
+                             iter = 4000)
 
 
 
@@ -254,8 +255,10 @@ regionEffectModEst <- regionEffectMod %>%
     ) %>%
     unnest_longer(col = c(Male, Female)) %>%
     mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% dplyr::rename(Sex = name) %>%
+    mutate(type="Region mean and 95% credible interval",
+           WHO.region = gsub("\\(WHO\\)", "region", WHO.region)) 
+
 
 
 regionEffectModEst %>% group_by(Sex, WHO.region) %>% mean_qi(value)
@@ -270,16 +273,138 @@ region_empirical <- cleanSexDF %>%
                 values_from = value,
                 id_cols = c(id, study.country, WHO.region)) %>%
     mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Male, Female, mfRatio))
+    pivot_longer(cols = c(Male, Female, mfRatio)) %>% mutate(type = "Survey-specific ratios",
+                                                             WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+ggplot(region_empirical %>% filter(name != "mfRatio")) + geom_point(aes(y = WHO.region, x = value, color=name),
+                                                                    size = 2) + theme_minimal()
+
+cleanSexDF %>% filter(WHO.region == "Americas (WHO)") %>% select(n.participants.male, prev100k.smear.positive.tb.male)
+
+region_empirical %>% filter(WHO.region == "Americas (WHO)") 
+
+##plot it 
+
+myPal <- c("black", "violet")
 
 regionEffectModEst %>%
+    filter(Sex !="mfRatio") %>%
+    # filter(WHO.region != "Americas (WHO)") %>%
     ggplot() +
-    geom_vline(data = region_empirical %>% filter(name=="mfRatio"),
-               aes(xintercept = 1), colour="grey50", linetype=2) +
-    stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +  
-    geom_point(data = region_empirical, aes(y = WHO.region, x = value),
-               colour = "mediumseagreen", shape = 1) +
-    facet_wrap(~name, scale="free_x") +
-    scale_y_discrete(limits=rev)
+    geom_point(data = region_empirical %>%
+                   filter(name !="mfRatio"), aes(y = name, x = value, color=type),
+               alpha = 0.5, size=3) +
+    stat_pointinterval(aes(x = value, y = Sex, color = type), .width = 0.95) +  
+    facet_wrap(~WHO.region, scale="free_x") +
+    scale_y_discrete(limits=rev) + 
+    expand_limits(x=0) + theme_minimal(base_size = 20) + 
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.83,.1), 
+          panel.grid.minor=element_blank(),
+          panel.border = element_rect(colour = "black",fill=NA, linewidth = 1))  + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("Sex") + 
+    xlab("Bacteriologically confirmed TB prevalence (per 100,000 persons)")
 
 
+regionEffectModEst %>%
+    filter(Sex =="mfRatio") %>%
+    # filter(WHO.region != "Americas (WHO)") %>%
+    ggplot() +
+    geom_point(data = region_empirical %>%
+                   filter(name =="mfRatio"), aes(y = WHO.region, x = value, color=type),
+               alpha = 0.5, size=3) +
+    stat_pointinterval(aes(x = value, y = WHO.region, color = type), .width = 0.95) +  
+    # facet_wrap(~WHO.region, scale="free_x") +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) + 
+    expand_limits(y=0) + theme_bw(base_size = 20) + 
+    scale_x_continuous(breaks = seq(0,7,1))+
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.8,.1), 
+          panel.grid.minor=element_blank()) + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("WHO region") + xlab("Male-to-female ratio of bacteriologically confirmed TB prevalence")
+
+###############################################################################
+
+##### HOW MANY PARTICIPANTS ##### 
+participants <- cleanSexDF %>% filter(Sex == "Male") %>% summarise(TotalParticipants=n.participants.male+n.participants.female)
+
+sum(is.na(participants))
+
+sum(participants, na.rm=TRUE)
+
+###############################################################################
+##### CHANGE OVER TIME? #####
+# cleanSexDF <- cleanSexDF %>%
+#     mutate(year_z =study.end.year - round(mean(study.end.year, na.rm=TRUE)))
+# 
+# timeMod <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
+#                          1 + Sex*year_z +  (1 + Sex*year_z | study.country),
+#                      data = cleanSexDF,
+#                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+#                          prior(normal(0, 10), class = b) +
+#                          prior(exponential(2), class = sd) +
+#                          prior(lkj(4), class=cor),
+#                      family = "gaussian",
+#                      control = list(adapt_delta = 0.99),
+#                      cores = 4,
+#                      chains = 4,
+#                      iter = 4000)
+# 
+# nd <- cleanSexDF %>%
+#     select(id, study.country, LogOddsStandardError) %>%
+#     crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1),
+#              Sex = c("Male", "Female"))
+# 
+# expit_p100k <- function (x) {(exp(x)/(1 + exp(x)))*1e5}
+# 
+# 
+# regionTimeModEst <- add_epred_draws(object = regionTimeMod,
+#                                     newdata=nd,
+#                                     re_formula = ~(1 + Sex*year_z)) %>%
+#     ungroup %>%
+#     mutate(prev = expit_p100k(.epred))
+# 
+# mean_qi(prev)
+# 
+# # regionTimeModEstSum %>%
+# #     mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+# #     ggplot() +
+# #     geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper, fill=Sex), alpha=0.5) +
+# #     geom_line(aes(x=year_z, y=prev, colour=Sex), alpha=0.5) +
+# #     geom_point(data = cleanSexDF, aes(
+# #         x=study.end.year,
+# #         y=`Adjusted Prevalence`*1e5,
+# #         colour=Sex, shape=Sex)) +
+# #     facet_wrap(~WHO.region, scales="free_y") +
+# #     scale_colour_manual(values = c("salmon", "dodgerblue1")) +
+# #     scale_fill_manual(values = c("salmon", "dodgerblue1")) +
+# #     theme_ggdist()
+# 
+# regionTimeModRatioSum <- regionTimeModEst %>%
+#     mutate(prev = expit_p100k(.epred)) %>%
+#     group_by(year_z, WHO.region, Sex) %>%
+#     pivot_wider(names_from = Sex, values_from = prev) %>%
+#     mutate(mfRatio = Male / Female) %>%
+#     pivot_longer(cols = c(Male, Female, mfRatio)) 
+# 
+# 
+# regionTimeModRatioSum <- regionTimeModRatioSum %>% ungroup() %>%
+#     group_by(WHO.region, year_z, name) %>% 
+#     mean_qi(value) 
+# 
+# regionTimeModRatioSum %>%
+#     filter(name == "mfRatio") %>%
+#     mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+#     ggplot() +
+#     geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper), alpha=0.5) +
+#     geom_line(aes(x=year_z, y=value, colour=name), alpha=0.5) +
+#     geom_point(data = cleanSexDF, aes(
+#         x=study.end.year,
+#         y=`Adjusted Prevalence`)) +
+#     facet_wrap(~WHO.region, scales="free_y") +
+#     # scale_colour_manual(values = c("salmon", "dodgerblue1")) +
+#     # scale_fill_manual(values = c("salmon", "dodgerblue1")) +
+#     theme_ggdist()
