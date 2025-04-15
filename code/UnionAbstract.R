@@ -316,18 +316,20 @@ regionEffectModEst %>%
     ggplot() +
     geom_point(data = region_empirical %>%
                    filter(name =="mfRatio"), aes(y = WHO.region, x = value, color=type),
-               alpha = 0.5, size=3) +
+               alpha = 0.6, size=7) +
     stat_pointinterval(aes(x = value, y = WHO.region, color = type), .width = 0.95) +  
     # facet_wrap(~WHO.region, scale="free_x") +
     scale_y_discrete(limits=rev, 
                      labels = label_wrap(10)) + 
-    expand_limits(y=0) + theme_bw(base_size = 20) + 
+    expand_limits(y=0) + theme_bw(base_size = 30) + 
     scale_x_continuous(breaks = seq(0,7,1))+
     scale_color_manual(values = myPal) +
-    theme(legend.title = element_blank(), legend.position = c(.8,.1), 
-          panel.grid.minor=element_blank()) + 
+    theme(legend.title = element_blank(), legend.position = c(.73,.07), 
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=22)) + 
     # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
-    ylab("WHO region") + xlab("Male-to-female ratio of bacteriologically confirmed TB prevalence")
+    ylab("WHO region") + xlab("Male-to-female ratio of bacteriologically confirmed TB prevalence") + 
+    ggtitle("Figure 1: Male-to-female ratios of bacteriologically confirmed TB prevalence by WHO region")
 
 ###############################################################################
 ##### HOW MANY PARTICIPANTS ##### 
@@ -374,16 +376,25 @@ timeModEst <- add_epred_draws(object = timeMod,
               select(id, year_z, Sex, prev, .draw) %>%
               ungroup() %>%
               pivot_wider(names_from = Sex, values_from = prev) %>%
-              mutate(mfRatio = Male / Female) %>%
-              pivot_longer(cols = c(Male, Female, mfRatio)) %>% 
-              rename(Sex = name)
+              group_by(.draw, year_z) %>%
+              mutate(mfRatio = Male / Female) 
 
 timeModEstRatio <- timeModEst %>%
+                    pivot_longer(cols = c(Male, Female, mfRatio)) %>% 
+                    rename(Sex = name) %>%
                     group_by(year_z, Sex) %>%
                     mean_qi(value, na.rm=TRUE) %>%
                     mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)))
 
-    
+annualChangeDF <- timeModEst %>% dplyr::select(id,.draw, year_z, mfRatio) %>% 
+    group_by(.draw, id) %>% 
+    mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)),
+           annualChange = (mfRatio - lag(mfRatio))/ lag(mfRatio) *100)
+
+timeModEstAnnualChange <- annualChangeDF %>%
+    ungroup() %>%
+    mean_qi(annualChange, na.rm=TRUE)
+
 timeModEstRatio %>%
     filter(Sex =="mfRatio") %>%
     ggplot() +
