@@ -39,10 +39,11 @@ cleanSexDF0 <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="non
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
 cleanSexDF <- cleanSexDF0 %>% 
-    filter(sex.analysis.indicator %in% c("adj.prev100k.ci.bacteriological.tb",
-                                         "adj.prev100k.ci.smear.positive.tb",
-                                         "prev100k.ci.bacteriological.tb",
-                                         "prev100k.ci.smear.positive.tb")) %>% 
+    # filter(sex.analysis.indicator %in% c("adj.prev100k.ci.bacteriological.tb",
+    #                                      "adj.prev100k.ci.smear.positive.tb",
+    #                                      "prev100k.ci.bacteriological.tb",
+    #                                      "prev100k.ci.smear.positive.tb")) %>% 
+        filter(sex.analysis.indicator != "none") %>% 
     mutate("id" = row_number(),
            adj.prev100k.bacteriological.tb.male = adj.prev100k.bacteriological.tb.male/1e5,
            adj.prev100k.ci.upper.bacteriological.tb.male = adj.prev100k.ci.upper.bacteriological.tb.male/1e5,
@@ -84,8 +85,8 @@ cleanSexDF <- cleanSexDF0 %>%
            WHO.region,
            study.start.year, 
            study.end.year, 
-           sex.analysis.indicator,
-           ends_with("male"), ends_with("sex")) %>%
+           ends_with("male"), ends_with("sex"),
+           sex.analysis.indicator) %>%
     
     mutate("tempPrevMale" =  case_when(sex.analysis.indicator == 
                                            "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.male, 
@@ -94,7 +95,15 @@ cleanSexDF <- cleanSexDF0 %>%
                                        sex.analysis.indicator == 
                                            "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.male, 
                                        sex.analysis.indicator == 
-                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.male/n.participants.male, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.male/n.participants.male,
+                                        sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
            "tempPrevFemale" = case_when(sex.analysis.indicator == 
                                             "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.female, 
                                         sex.analysis.indicator == 
@@ -102,9 +111,16 @@ cleanSexDF <- cleanSexDF0 %>%
                                         sex.analysis.indicator == 
                                             "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.female, 
                                         sex.analysis.indicator == 
-                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
-    pivot_longer(cols = c(tempPrevMale,
-                          tempPrevFemale), 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.female/n.participants.female, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
+    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
                  names_to = "Sex", 
                  values_to = "Adjusted Prevalence", 
                  names_prefix = "tempPrev") %>% 
@@ -131,7 +147,14 @@ cleanSexDF <- cleanSexDF0 %>%
                                                                  prev100k.ci.lower.smear.positive.tb.male)/3.92,
                                         sex.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
                                             Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
-                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92), 
+                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
+                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
+  
            "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
            "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
            "LogOddsStandardError" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
@@ -173,9 +196,13 @@ cleanSexDF <- cleanSexDF0 %>%
                                                      Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
                                                                             (1-prev100k.ci.upper.smear.positive.tb.female)) -
                                                                         log(prev100k.ci.lower.smear.positive.tb.female /
-                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92
-           ))
-
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
+                                            sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2))
 ```
 
 
@@ -188,7 +215,21 @@ Model specification
 model1 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
                                            sigma=TRUE) ~ 1 + (1|id) + Sex,
                     data = cleanSexDF,
-                    #prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
+                    prior = prior(normal(0,10), class=Intercept) +
+                            prior(normal(0, 10), class = b) +
+                            prior(exponential(1), class=sd), 
+                    family = "gaussian",
+                    control = list(adapt_delta = 0.99),
+                    cores = 4,
+                    chains = 4,
+                    iter = 4000)
+
+model1rev <- brms::brm(formula = `LogOdds`|se(`revisedLogOddsStandardErr`, 
+                                           sigma=TRUE) ~ 1 + (1|id) + Sex,
+                    data = cleanSexDF,
+                    prior = prior(normal(0,10), class=Intercept) +
+                            prior(normal(0, 10), class = b) +
+                            prior(exponential(1), class=sd), 
                     family = "gaussian",
                     control = list(adapt_delta = 0.99),
                     cores = 4,
@@ -248,7 +289,9 @@ Model specification
 model2 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
                                            sigma=TRUE) ~ 1 + Sex + WHO.region + (1|id),
                     data = cleanSexDF,
-                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
+                    prior = prior(normal(0,10), class=Intercept) +
+                            prior(normal(0, 10), class = b) +
+                            prior(exponential(1), class=sd),
                     family = "gaussian",
                     control = list(adapt_delta = 0.90),
                     cores = 4,
@@ -314,7 +357,9 @@ Model specification
 model3 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
                                            sigma=TRUE) ~ 1 + Sex + (1|id/title.extracted),
                     data = cleanSexDF,
-                    prior = prior(cauchy(231/1e5, 90/1e5), class = Intercept),
+                    prior = prior(normal(0,10), class=Intercept) +
+                            prior(normal(0, 10), class = b) +
+                            prior(exponential(1), class=sd),
                     family = "gaussian",
                     control = list(adapt_delta = 0.99),
                     cores = 4,
@@ -370,7 +415,49 @@ ggplot(data = model3_est) +
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 model4 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted),
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) +
+                    (1 + Sex|id/title.extracted),
+                      data = cleanSexDF,
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+
+### What happens to precision when we remove the WHO.region
+
+model4b <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |study.country) + (1 + Sex|id/title.extracted),
+                      data = cleanSexDF,
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+
+model4c <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |study.country) + (1 + Sex|id),
+                      data = cleanSexDF,
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+
+model4d <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id),
                       data = cleanSexDF,
                       prior = prior(normal(0,10), class=Intercept) +
                           prior(normal(0, 10), class = b) +
@@ -411,6 +498,49 @@ nd <- cleanSexDF %>%
            
 model4_est <- model4 %>%
     add_epred_draws(newdata = nd, re_formula = ~(1 + Sex |WHO.region/study.country)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)
+
+model4b_est <- model4 %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex | study.country)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)
+
+
+model4_Mainest <- model4 %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)
+
+model4b_Mainest <- model4b %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex)) %>%
     ungroup() %>%
     mutate(value = expit(.epred)*1e5) %>%
     select(study.country, WHO.region, Sex, value, .draw) %>%
@@ -471,6 +601,7 @@ model5 <- brms::brm(formula = LogOdds | se(LogOddsStandardError,
                       cores = 4,
                       chains = 4,
                       iter = 4000)
+
 ```
 Model diagnostics  
 
@@ -562,7 +693,7 @@ Modify Model 5 above to
  b) model sigma
  c) Look at year effect
  
-Need to centre year
+Need to centre year 
 
 ```{r}
 
@@ -786,7 +917,7 @@ post_model6_country <- cleanSexDF %>% tidybayes::add_epred_rvars(model6, value =
                                                                  re_formula = ~(1 +  Sex*year_z | WHO_region/study.country))
 
 #mutate a new column to get prev scale
-post_model6_rvars <- post_model6 %>%
+post_model6_rvars <- post_model6_country %>%
     select(Sex, WHO.region, study.country, logodds_epred) %>%
     mutate(prev_epred = rvar_apply(.x = logodds_epred, 1, expit_p100k))
 
@@ -901,6 +1032,29 @@ model6_year_sum %>%
                        y=`Adjusted Prevalence`*1e5,
                colour=Sex, shape=Sex)) +
     facet_wrap(~study.country, scales="free_y") +
+    scale_colour_manual(values = c("darkorange", "mediumseagreen")) +
+    scale_fill_manual(values = c("darkorange", "mediumseagreen")) +
+    theme_ggdist()
+
+model6_year_draws2 <- add_epred_draws(object = model6,
+                                     newdata=nd,
+                                     re_formula = ~(1 + Sex*year_z |WHO.region))
+
+model6_year_sum2 <- model6_year_draws2 %>%
+    mutate(prev = expit_p100k(.epred)) %>%
+    group_by(year_z, WHO.region, Sex) %>%
+    mean_qi(prev)
+
+model6_year_sum2 %>%
+    mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    ggplot() +
+    geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper, fill=Sex), alpha=0.5) +
+    geom_line(aes(x=year_z, y=prev, colour=Sex), alpha=0.5) +
+    geom_point(data = cleanSexDF, aes(
+                       x=study.end.year,
+                       y=`Adjusted Prevalence`*1e5,
+               colour=Sex, shape=Sex)) +
+    facet_wrap(~WHO.region, scales="free_y") +
     scale_colour_manual(values = c("darkorange", "mediumseagreen")) +
     scale_fill_manual(values = c("darkorange", "mediumseagreen")) +
     theme_ggdist()
