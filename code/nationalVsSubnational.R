@@ -198,7 +198,8 @@ cleanSexDF <- cleanSexDF0 %>%
 cleanSexDF <- cleanSexDF %>% mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
                                     year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)))
 
-model7 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~  1 + Sex + year_z*natRep + (1 + Sex | study.country) + (1|id),
+model7 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~  
+                              1 + Sex + year_z*natRep + (1 + Sex | study.country) + (1|id),
                        sigma ~  Sex + year_z*natRep,
                        data = cleanSexDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -216,4 +217,24 @@ conditional_effects(model7)
 
 ### temporal trend in the standard deviation of LogOdds
 conditional_effects(model7, dpar="sigma")
+
+
+model7b <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~  1 + Sex*year_z*natRep + (1 + Sex | study.country) + (1|id),
+                    sigma ~  Sex + Sex*year_z*natRep,
+                    data = cleanSexDF,
+                    prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                        prior(normal(0, 10), class = b) +
+                        prior(exponential(2), class = sd) +
+                        prior(lkj(4), class=cor),
+                    family = "gaussian",
+                    control = list(adapt_delta = 0.99),
+                    cores = 4,
+                    chains = 4,
+                    iter = 4000)
+
+### temporal trend of LogOdds over time
+conditional_effects(model7b)
+
+### temporal trend in the standard deviation of LogOdds
+conditional_effects(model7b, dpar="sigma")
 
