@@ -1,0 +1,390 @@
+---
+title: "Sex Stratified Relationships of Tuberculosis Prevalence and Notification in Low- and Middle-income Countries: A Systematic Review and Meta-analysis" 
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+classoption: landscape
+geometry: margin=.5cm
+header-includes:
+  - \pagenumbering{gobble}
+---
+
+ABOUT THIS SCRIPT
+
+This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multivariate multilevel model on the studies that report sex stratified prevalence results. This model aims to estimate sex stratified prevalence adjusted for geographic factors. 
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+##### LOAD IN NECESSARY PACKAGES ##############################################
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(reshape2)
+library(here)
+library(magrittr)
+library(DT)
+library(metafor)
+library(meta)
+library(brms)
+library(posterior)
+library(tidybayes)
+
+library(scales)
+library(ggplot2)
+
+expit <- function (x) {exp(x)/(1 + exp(x))}
+##############################################################################|
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+source(here("code/smearPositiveIndicator.R"))
+cleanSexSmrDF0 <- smrPosIndicator("sex") %>% filter(sex.smr.analysis.indicator !="none")
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanSexSmrDF <- cleanSexSmrDF0 %>% 
+              filter(sex.smr.analysis.indicator != "none") %>% 
+              mutate("id" = row_number(),
+
+           adj.prev100k.smear.positive.tb.male = adj.prev100k.smear.positive.tb.male/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.male = adj.prev100k.ci.upper.smear.positive.tb.male/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.male = adj.prev100k.ci.lower.smear.positive.tb.male/1e5,
+           
+           adj.prev100k.smear.positive.tb.female = adj.prev100k.smear.positive.tb.female/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.female = adj.prev100k.ci.upper.smear.positive.tb.female/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.female = adj.prev100k.ci.lower.smear.positive.tb.female/1e5,
+           
+           prev100k.smear.positive.tb.male = prev100k.smear.positive.tb.male/1e5,
+           prev100k.ci.upper.smear.positive.tb.male = prev100k.ci.upper.smear.positive.tb.male/1e5,
+           prev100k.ci.lower.smear.positive.tb.male = prev100k.ci.lower.smear.positive.tb.male/1e5,
+           
+           prev100k.smear.positive.tb.female = prev100k.smear.positive.tb.female/1e5,
+           prev100k.ci.upper.smear.positive.tb.female = prev100k.ci.upper.smear.positive.tb.female/1e5,
+           prev100k.ci.lower.smear.positive.tb.female = prev100k.ci.lower.smear.positive.tb.female/1e5) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           WHO.region,
+           study.start.year, 
+           study.end.year, 
+           ends_with("male"), ends_with("sex"),
+           sex.smr.analysis.indicator) %>%
+    
+    mutate("tempPrevMale" =  case_when(sex.smr.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.male,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                        sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+           "tempPrevFemale" = case_when(sex.smr.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.female,
+                                        sex.smr.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
+    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
+                 names_to = "Sex", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (adj.prev100k.ci.upper.smear.positive.tb.male-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (adj.prev100k.ci.upper.smear.positive.tb.female-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                       
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (prev100k.ci.upper.smear.positive.tb.male-
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
+                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
+                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.male/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.male /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                              sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.female /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92,
+                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Male" ~ (log(prev100k.ci.upper.smear.positive.tb.male/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.male /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.female /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
+                                            sex.smr.analysis.indicator %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% filter(LogOddsStandardError < Inf)
+```
+
+## Main effect model 
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+model1 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
+                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex | study.country) + (1 + Sex|id),
+                      data = cleanSexSmrDF,
+                      prior = prior(normal(0,10), class=Intercept) +
+                          prior(normal(0, 10), class = b) +
+                          prior(exponential(1), class=sd) +
+                          prior(lkj(4), class=cor),
+                      family = "gaussian",
+                      control = list(adapt_delta = 0.99),
+                      cores = 4,
+                      chains = 4,
+                      iter = 4000)
+```
+
+Model diagnostics  
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+summary(model1)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+plot(model1)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pairs(model1)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pp_check(model1, ndraws =100)
+```
+
+Model results 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- cleanSexSmrDF %>%
+    select(study.country, Sex) %>%
+    distinct() %>%
+    mutate(LogOddsStandardError=1)
+           
+model1_est <- model1 %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex | study.country)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
+    rename(Sex = name)  %>%
+    mutate(type="Region mean and 95% credible interval") 
+
+model1_empirical <- cleanSexSmrDF %>%
+    select(id, study.country, Sex, LogOdds) %>%
+    mutate(value = expit(LogOdds)*1e5) %>%
+    pivot_wider(names_from=Sex,
+                values_from = value,
+                id_cols = c(id, study.country)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) %>% mutate(type = "Survey-specific ratios",
+                                                             type2 = "Survey-specific TB prevalence")
+
+ggplot(data = model1_est %>% filter(study.country != "Gambia")) +
+        stat_pointinterval(aes(x=value, y=study.country), .width = 0.95, size=20) +
+        facet_grid(.~fct_relevel(Sex,
+                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
+        labs(x="", y="") + expand_limits(x=0) + 
+        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
+
+myPal <- c("black", "violet")
+
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+model1_est %>%
+    filter(Sex !="mfRatio") %>%
+    ggplot() +
+    geom_point(data = model1_empirical %>%
+                   filter(name !="mfRatio"), aes(y = name, x = value, color=type2),
+               alpha = 0.5, size=12) +
+    stat_pointinterval(aes(x = value, y = Sex, color = type), .width = 0.95, size=20) +  
+    facet_wrap(~study.country, scale="free_x") +
+    scale_y_discrete(limits=rev) + 
+    expand_limits(x=0) + theme_minimal(base_size = 20) + 
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.83,.1), 
+          panel.grid.minor=element_blank(),
+          panel.border = element_rect(colour = "black",fill=NA, linewidth = 1))  + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("Sex") + 
+    xlab("Smear positive TB prevalence (per 100,000 persons)")
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+model1_est %>%
+    filter(Sex =="mfRatio") %>%
+    ggplot() +
+    geom_point(data = model1_empirical %>%
+                   filter(name =="mfRatio"), aes(y = study.country, x = value, color=type),
+               alpha = 0.6, size=12) +
+    stat_pointinterval(aes(x = value, y = study.country, color = type), .width = 0.95, size=20) +  
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) + 
+    expand_limits(y=0) + theme_bw(base_size = 30) + 
+    scale_x_continuous(breaks = seq(0,7,1))+
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.73,.07), 
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=22)) + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("Study country") + xlab("Male-to-female ratio of smear positive TB prevalence") + 
+    ggtitle("Male-to-female ratios of smear positive TB prevalence by study country")
+
+```
+
+## Region model 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+model2 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
+                                                    sigma=TRUE) ~ 1 + Sex + (1 + Sex | WHO.region/study.country) + (1|id),
+                             data = cleanSexSmrDF,
+                             prior = prior(normal(0,10), class=Intercept) +
+                                 prior(normal(0, 10), class = b) +
+                                 prior(exponential(1), class=sd),
+                             family = "gaussian",
+                             control = list(adapt_delta = 0.90),
+                             cores = 4,
+                             chains = 4,
+                             iter = 4000)
+
+
+```
+Model diagnostics  
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+summary(model2)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+plot(model2)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pairs(model2)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
+pp_check(model2, ndraws =100)
+```
+
+Model results 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- cleanSexSmrDF %>%
+    select(WHO.region, study.country, Sex) %>%
+    distinct() %>%
+    mutate(LogOddsStandardError=1)
+           
+model2_est <- model2 %>%
+    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex | WHO.region)) %>%
+    ungroup() %>%
+    mutate(value = expit(.epred)*1e5) %>%
+    select(study.country, WHO.region, Sex, value, .draw) %>%
+    pivot_wider(
+        names_from = Sex,
+        values_from = value
+    ) %>%
+    unnest_longer(col = c(Male, Female)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Female, Male, mfRatio)) %>% dplyr::rename(Sex = name) %>%
+    mutate(type="Region mean and 95% credible interval",
+           WHO.region = gsub("\\(WHO\\)", "region", WHO.region)) 
+
+model2_empirical <- cleanSexSmrDF %>%
+    select(id, WHO.region, study.country, Sex, LogOdds) %>%
+    mutate(value = expit(LogOdds)*1e5) %>%
+    pivot_wider(names_from=Sex,
+                values_from = value,
+                id_cols = c(id, study.country, WHO.region)) %>%
+    mutate(mfRatio = Male/Female) %>%
+    pivot_longer(cols = c(Male, Female, mfRatio)) %>% mutate(type = "Survey-specific ratios",
+                                                             type2 = "Survey-specific TB prevalence",
+                                                             WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+model2_est %>%
+    ggplot() +
+    stat_pointinterval(aes(x = value, y = WHO.region, color = type), .width = 0.95, size=20) +  
+    facet_wrap(~Sex, scale="free_x") +
+    scale_y_discrete(limits=rev) + 
+    expand_limits(x=0) + theme_minimal(base_size = 20) + 
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = "bottom", 
+          panel.grid.minor=element_blank(),
+          panel.border = element_rect(colour = "black",fill=NA, linewidth = 1))  + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("Sex") + 
+    xlab("Smear positive TB prevalence (per 100,000 persons)")
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+
+model2_est %>%
+    filter(Sex !="mfRatio") %>%
+    # filter(WHO.region != "Americas (WHO)") %>%
+    ggplot() +
+    geom_point(data = model2_empirical %>%
+                   filter(name !="mfRatio"), aes(y = name, x = value, color=type2),
+               alpha = 0.5, size=12) +
+    stat_pointinterval(aes(x = value, y = Sex, color = type), .width = 0.95, size=20) +  
+    facet_wrap(~WHO.region, scale="free_x") +
+    scale_y_discrete(limits=rev) + 
+    expand_limits(x=0) + theme_minimal(base_size = 20) + 
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.83,.1), 
+          panel.grid.minor=element_blank(),
+          panel.border = element_rect(colour = "black",fill=NA, linewidth = 1))  + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("Sex") + 
+    xlab("Smear positive TB prevalence (per 100,000 persons)")
+```
+
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+model2_est %>%
+    filter(Sex =="mfRatio") %>%
+    # filter(WHO.region != "Americas (WHO)") %>%
+    ggplot() +
+    geom_point(data = model2_empirical %>%
+                   filter(name =="mfRatio"), aes(y = WHO.region, x = value, color=type),
+               alpha = 0.6, size=12) +
+    stat_pointinterval(aes(x = value, y = WHO.region, color = type), .width = 0.95, size=20) +  
+    # facet_wrap(~WHO.region, scale="free_x") +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) + 
+    expand_limits(y=0) + theme_bw(base_size = 30) + 
+    scale_x_continuous(breaks = seq(0,7,1))+
+    scale_color_manual(values = myPal) +
+    theme(legend.title = element_blank(), legend.position = c(.73,.07), 
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=22)) + 
+    # geom_vline(aes(xintercept = 1), colour="grey50", linetype=2) + 
+    ylab("WHO region") + xlab("Male-to-female ratio of smear positive TB prevalence") + 
+    ggtitle("Male-to-female ratios of smear positive TB prevalence by WHO region")
+
+
+```
