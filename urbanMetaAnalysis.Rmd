@@ -1,0 +1,982 @@
+---
+title: "Urban/rural meta-analysis"
+output: html_notebook
+---
+
+### Description
+
+This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multivariate multilevel model on the studies that report urban-rural stratified prevalence results. This model aims to estimate urban-rural stratified prevalence adjusted for geographic factors. 
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(reshape2)
+library(here)
+library(magrittr)
+library(DT)
+library(metafor)
+library(meta)
+library(brms)
+library(scales)
+library(posterior)
+library(tidybayes)
+library(ggplot2)
+```
+
+### Functions and options
+
+```{r}
+expit <- function (x) {exp(x)/(1 + exp(x))}
+
+myPal <- c("black", "mediumseagreen")
+
+source(here("code/bacterialPositiveIndicator.R"))
+source(here("code/smearPositiveIndicator.R"))
+
+```
+
+### Data import and prep
+
+Load data and filter to studies reporting urban-rural stratification
+
+```{r}
+cleanRuralityDF0 <- bactPostIndicator("rurality") %>% filter(rurality.analysis.indicator !="none")
+
+```
+
+### Descriptive statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+
+print(paste(dim(cleanRuralityDF0)[1], "unique surveys with urban.rural-stratified bacteriological positive TB"))
+
+# sort(unique(cleanRuralityDF0$title.extracted))
+print(paste(length(unique(cleanRuralityDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanRuralityDF0$n.participants.rural)), "studies report participant numbers totaling", 
+            sum(cleanRuralityDF0$n.participants.rural, cleanRuralityDF0$n.participants.urban, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanRuralityDF0$n.participants.urban, na.rm=TRUE)/sum(cleanRuralityDF0$n.participants.rural, cleanRuralityDF0$n.participants.urban, na.rm = TRUE)*100, 2), "% of participants were male" ))
+```
+
+### Risk of bias statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+table(cleanRuralityDF0$study.quality.summary)
+```
+
+
+### Prepare dataset for bacteriologically-positive modelling
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanRuralityDF <-  cleanRuralityDF0 %>% 
+               filter(rurality.analysis.indicator != "none") %>% 
+               mutate("id" = row_number(),
+               adj.prev100k.bacteriological.tb.urban = adj.prev100k.bacteriological.tb.urban/1e5,
+               adj.prev100k.ci.upper.bacteriological.tb.urban = adj.prev100k.ci.upper.bacteriological.tb.urban/1e5,
+               adj.prev100k.ci.lower.bacteriological.tb.urban = adj.prev100k.ci.lower.bacteriological.tb.urban/1e5,
+               
+               adj.prev100k.bacteriological.tb.rural = adj.prev100k.bacteriological.tb.rural/1e5,
+               adj.prev100k.ci.upper.bacteriological.tb.rural = adj.prev100k.ci.upper.bacteriological.tb.rural/1e5,
+               adj.prev100k.ci.lower.bacteriological.tb.rural = adj.prev100k.ci.lower.bacteriological.tb.rural/1e5,
+               
+               adj.prev100k.smear.positive.tb.urban = adj.prev100k.smear.positive.tb.urban/1e5,
+               adj.prev100k.ci.upper.smear.positive.tb.urban = adj.prev100k.ci.upper.smear.positive.tb.urban/1e5,
+               adj.prev100k.ci.lower.smear.positive.tb.urban = adj.prev100k.ci.lower.smear.positive.tb.urban/1e5,
+               
+               adj.prev100k.smear.positive.tb.rural = adj.prev100k.smear.positive.tb.rural/1e5,
+               adj.prev100k.ci.upper.smear.positive.tb.rural = adj.prev100k.ci.upper.smear.positive.tb.rural/1e5,
+               adj.prev100k.ci.lower.smear.positive.tb.rural = adj.prev100k.ci.lower.smear.positive.tb.rural/1e5,
+               
+               prev100k.bacteriological.tb.urban = prev100k.bacteriological.tb.urban/1e5,
+               prev100k.ci.upper.bacteriological.tb.urban = prev100k.ci.upper.bacteriological.tb.urban/1e5,
+               prev100k.ci.lower.bacteriological.tb.urban = prev100k.ci.lower.bacteriological.tb.urban/1e5,
+               
+               prev100k.bacteriological.tb.rural = prev100k.bacteriological.tb.rural/1e5,
+               prev100k.ci.upper.bacteriological.tb.rural = prev100k.ci.upper.bacteriological.tb.rural/1e5,
+               prev100k.ci.lower.bacteriological.tb.rural = prev100k.ci.lower.bacteriological.tb.rural/1e5,
+               
+               prev100k.smear.positive.tb.urban = prev100k.smear.positive.tb.urban/1e5,
+               prev100k.ci.upper.smear.positive.tb.urban = prev100k.ci.upper.smear.positive.tb.urban/1e5,
+               prev100k.ci.lower.smear.positive.tb.urban = prev100k.ci.lower.smear.positive.tb.urban/1e5,
+               
+               prev100k.smear.positive.tb.rural = prev100k.smear.positive.tb.rural/1e5,
+               prev100k.ci.upper.smear.positive.tb.rural = prev100k.ci.upper.smear.positive.tb.rural/1e5,
+               prev100k.ci.lower.smear.positive.tb.rural = prev100k.ci.lower.smear.positive.tb.rural/1e5) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           WHO.region,
+           screening.tests,
+           study.start.year, 
+           study.end.year, 
+           study.quality.summary,
+           ends_with("urban"), ends_with("rural"),
+           rurality.analysis.indicator) %>%
+    
+    mutate("tempPrevUrban" =  case_when(rurality.analysis.indicator == 
+                                           "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.urban, 
+                                       rurality.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.urban,
+                                       rurality.analysis.indicator == 
+                                           "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.urban, 
+                                       rurality.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.urban, 
+                                       rurality.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.urban/n.participants.urban, 
+                                       rurality.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.urban/n.participants.urban,
+                                       rurality.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.urban/n.participants.urban,
+                                        rurality.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.urban),
+           "tempPrevRural" = case_when(rurality.analysis.indicator == 
+                                            "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.rural, 
+                                        rurality.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.rural,
+                                        rurality.analysis.indicator == 
+                                            "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.rural, 
+                                        rurality.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.rural, 
+                                       rurality.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.rural/n.participants.rural, 
+                                       rurality.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.rural/n.participants.rural,
+                                       rurality.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.rural/n.participants.rural,
+                                       rurality.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.rural)) %>%
+    pivot_longer(cols = c(tempPrevRural,tempPrevUrban), 
+                 names_to = "Rurality", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            Rurality == "Urban" ~ (adj.prev100k.ci.upper.bacteriological.tb.urban-
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.urban)/3.92,
+                                        rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            Rurality == "Rural" ~ (adj.prev100k.ci.upper.bacteriological.tb.rural-
+                                                                   adj.prev100k.ci.lower.bacteriological.tb.rural)/3.92,
+                                        rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Urban" ~ (adj.prev100k.ci.upper.smear.positive.tb.urban-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.urban)/3.92,
+                                        rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Rural" ~ (adj.prev100k.ci.upper.smear.positive.tb.rural-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.rural)/3.92,
+                                        rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            Rurality == "Urban" ~ (prev100k.ci.upper.bacteriological.tb.urban-
+                                                                 prev100k.ci.lower.bacteriological.tb.urban)/3.92,
+                                        rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            Rurality == "Rural" ~ (prev100k.ci.upper.bacteriological.tb.rural-
+                                                                   prev100k.ci.lower.bacteriological.tb.rural)/3.92,
+                                        rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Urban" ~ (prev100k.ci.upper.smear.positive.tb.urban-
+                                                                 prev100k.ci.lower.smear.positive.tb.urban)/3.92,
+                                        rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Rural" ~ (prev100k.ci.upper.smear.positive.tb.rural-
+                                                                   prev100k.ci.lower.smear.positive.tb.rural)/3.92,
+                                        rurality.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Urban" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.urban),
+                                        rurality.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.rural)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.urban/
+                                                                           (1-adj.prev100k.ci.upper.bacteriological.tb.urban)) -
+                                                                       log(adj.prev100k.ci.lower.bacteriological.tb.urban/
+                                                                               (1-adj.prev100k.ci.lower.bacteriological.tb.urban))) /3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Rurality == "Rural" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.rural/
+                                                                             (1-adj.prev100k.ci.upper.bacteriological.tb.rural)) -
+                                                                         log(adj.prev100k.ci.lower.bacteriological.tb.rural /
+                                                                                 (1-adj.prev100k.ci.lower.bacteriological.tb.rural))) /3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.urban/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.urban /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Rural" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.rural/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.rural /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.rural)))/3.92,
+                                              rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Rurality == "Urban" ~ (log(prev100k.ci.upper.bacteriological.tb.urban/
+                                                                     (1-prev100k.ci.upper.bacteriological.tb.urban)) -
+                                                                 log(prev100k.ci.lower.bacteriological.tb.urban/
+                                                                     (1-prev100k.ci.lower.bacteriological.tb.urban))) /3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Rurality == "Rural" ~ (log(prev100k.ci.upper.bacteriological.tb.rural/
+                                                                        (1-prev100k.ci.upper.bacteriological.tb.rural)) -
+                                                                    log(prev100k.ci.lower.bacteriological.tb.rural /
+                                                                        (1-prev100k.ci.lower.bacteriological.tb.rural))) /3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Urban" ~ (log(prev100k.ci.upper.smear.positive.tb.urban/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.urban /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Rural" ~ (log(prev100k.ci.upper.smear.positive.tb.rural/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.rural /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.rural)))/3.92, 
+                                            rurality.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Urban" ~ 
+                                            log(1/(n.participants.urban*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        rurality.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
+                                            log(1/(n.participants.rural*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
+                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       symptomScreen = ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No"),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+```
+
+
+```{r}
+bactModelDF <- cleanRuralityDF %>%
+    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError) %>%
+    pivot_wider(names_from = Rurality,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_Urban - LogOdds_Rural,
+        logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2)
+    )
+```
+
+
+
+#### Bacteriologically-positive: Model 1: Main effect model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|study.country) + (1|id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+
+```{r}
+summary(mainEffectMod)
+plot(mainEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+nd <- bactModelDF %>%
+      select(study.country, LogOdds_Rural) %>%
+      mutate(logOR_se=1)
+
+mainEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1, 
+                                 allow_new_levels = TRUE) %>% 
+                    mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+mainEffectModEst %>% ungroup %>% mean_qi(urRatio)
+```
+
+#### Bacteriologically-positive: Model 2: Effect by world region model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+regionEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|WHO.region) + (1|id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(regionEffectMod)
+plot(regionEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndRegion <- bactModelDF %>%
+      select(WHO.region, LogOdds_Rural) %>%
+      mutate(logOR_se=1)
+
+regionEffectModEst <- add_epred_draws(object = regionEffectMod,
+                                 newdata=ndRegion,
+                                 re_formula = ~ 1 + (1|WHO.region),
+                                 allow_new_levels = TRUE) %>% 
+                       mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+regionEffectModEst %>% group_by(WHO.region) %>% mean_qi(urRatio)
+```
+
+
+```{r}
+### Get the empirical values 
+empirical_prev <- bactModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        bias = bias,
+        symptomScreen = symptomScreen, 
+        p_rural_empirical = plogis(LogOdds_Rural),
+        p_urban_empirical = plogis(LogOdds_Urban),
+        or_empirical = p_urban_empirical / p_rural_empirical,
+        or_empirical = (p_urban_empirical / (1 - p_urban_empirical)) / 
+            (p_rural_empirical / (1 - p_rural_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific TB prevalence")
+
+    ggplot() +
+    geom_vline(aes(xintercept = 1), linetype=2) +
+    geom_point(data = empirical_prev, aes(y=WHO.region, x=or_empirical, color = type2),alpha = 0.5, size=8) +
+    stat_pointinterval(data=regionEffectModEst, aes(x=urRatio, y=WHO.region, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Urban-to-rural prevalence ratio",
+         y = "WHO region") +
+    theme_bw() + theme(legend.title = element_blank(), legend.position = "bottom", 
+          panel.grid.minor=element_blank())
+    
+```
+
+#### Bacteriologically-positive: Model 3: Effect over time 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r}
+summary(timeEffectMod)
+plot(timeEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndTime <- bactModelDF %>%
+    select(logOR_se) %>%
+    crossing(year_z = seq(min(cleanRuralityDF$year_z, na.rm = TRUE), max(cleanRuralityDF$year_z, na.rm = TRUE), 1))
+
+timeEffectModEst <- add_epred_draws(object = timeEffectMod,
+                                 newdata=ndTime,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+
+Main estimate
+
+```{r}
+timeEffectModEst %>% 
+    group_by(year_z) %>% 
+    mean_qi(urRatio) %>% 
+    mutate(Year = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE))) %>%
+    select(Year, urRatio, .lower, .upper)
+
+```
+
+
+```{r}
+    timeEffectModEst %>%
+    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)),
+               y = urRatio)) +
+    stat_lineribbon(.width = 0.95, alpha = 0.25, fill="mediumseagreen") +
+    geom_point(data = empirical_prev, 
+               aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+               colour = "black") +
+    geom_hline(yintercept = 1, linetype = 2) +
+    labs(y = "Urban-to-rural odds ratio",
+         x = "Year") +
+    theme_bw()  + theme(legend.position = "bottom")
+```
+
+
+#### Bacteriologically-positive: Model 4: Region effect over time 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                              1 + year_z * WHO.region + (1 | study.country) + (1 | id), 
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r}
+summary(timeEffectRegionMod)
+plot(timeEffectRegionMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndTimeReg <- bactModelDF %>%
+             select(logOR_se, WHO.region) %>%
+             distinct() %>%
+             crossing(year_z = seq(min(cleanRuralityDF$year_z, na.rm = TRUE),
+                                   max(cleanRuralityDF$year_z, na.rm = TRUE), 1))
+
+timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
+                                 newdata=ndTimeReg,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+timeEffectRegionModEst %>% 
+    group_by(year_z, WHO.region) %>% 
+    mean_qi(urRatio) %>% 
+    mutate(Year = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE))) %>%
+    select(WHO.region, Year, urRatio, .lower, .upper) %>%
+    arrange(WHO.region, Year)
+
+```
+
+
+```{r}
+    timeEffectRegionModEst %>%
+    filter(WHO.region !="Americas region",
+           WHO.region !="Eastern Mediterranean region") %>%
+    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm = TRUE)),
+               y = urRatio,
+               fill = WHO.region, 
+               color = WHO.region)) +
+    stat_lineribbon(aes(color = WHO.region, fill = WHO.region), .width = 0.95, alpha = 0.25) +
+    geom_point(data = empirical_prev %>%
+                   filter(WHO.region !="Americas region",
+                          WHO.region !="Eastern Mediterranean region"), 
+               aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+               colour = "black") +
+    geom_hline(yintercept = 1, linetype = 2) +
+    facet_wrap(~ WHO.region) +
+    labs(y = "Urban-to-rural odds ratio!",
+         x = "Year",
+         fill = "WHO region", 
+         color = "WHO region") +
+    theme_bw()  + theme(legend.position = "bottom")
+```
+
+### Bacteriologically-positive: Univariate analysis of other covariates 
+
+#### Bacteriologically-positive: Model 6: National versus subnational 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + natRep + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(natEffectMod)
+plot(natEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndNat <- bactModelDF %>%
+    select(logOR_se, natRep)
+
+natEffectModEst <- add_epred_draws(object = natEffectMod,
+                                 newdata=ndNat,
+                                 re_formula = NA) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+natEffectModEst %>% 
+    group_by(natRep) %>% 
+    mean_qi(urRatio) %>% 
+    select(natRep, urRatio, .lower, .upper)
+```
+
+
+```{r}
+    ggplot() +
+    # geom_hline(aes(yintercept = 1), linetype=2) +
+    geom_point(data = empirical_prev, aes(y=natRep, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=natEffectModEst, aes(x=urRatio, y=natRep, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Urban-to-rural prevalence ratio", color = "",
+         y = "Survey representativeness") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw() + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank())
+```
+
+#### Bacteriologically-positive: Model 6: Study quality (High vs. not high)
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+biasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + bias + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r}
+summary(biasEffectMod)
+plot(biasEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndBias <- bactModelDF %>%
+    select(logOR_se, bias)
+
+biasEffectModEst <- add_epred_draws(object = biasEffectMod,
+                                 newdata=ndBias,
+                                 re_formula = NA) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+biasEffectModEst %>% 
+    group_by(bias) %>% 
+    mean_qi(urRatio) %>% 
+    select(bias, urRatio, .lower, .upper)
+```
+
+
+```{r}
+    ggplot() +
+    geom_point(data = empirical_prev, aes(y=bias, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=biasEffectModEst, aes(x=urRatio, y=bias, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio", color = "",
+         y = "Low probability of survey bias vs. not low probability of survey bias") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw() + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank())
+```
+
+#### Bacteriologically-positive: Model 7: Symptom screen vs. no symptom screen
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+sympEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + symptomScreen + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r}
+summary(sympEffectMod)
+plot(sympEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndSymp <- bactModelDF %>%
+    select(logOR_se, symptomScreen)
+
+sympEffectModEst <- add_epred_draws(object = sympEffectMod,
+                                 newdata=ndSymp,
+                                 re_formula = NA) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+sympEffectModEst %>% 
+    group_by(symptomScreen) %>% 
+    mean_qi(urRatio) %>% 
+    select(symptomScreen, urRatio, .lower, .upper)
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+    ggplot() +
+    geom_point(data = empirical_prev, aes(y=symptomScreen, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=sympEffectModEst, aes(x=urRatio, y=symptomScreen, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio", color = "",
+         y = "Symptom screening required") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw(base_size = 30) + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+```
+
+
+### Smear positive analysis 
+
+Prepare the dataset for smear positive modelling.
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+cleanRuralitySmrDF0 <- smrPosIndicator("rurality") %>% filter(rurality.smr.analysis.indicator !="none")
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanRuralitySmrDF <- cleanRuralitySmrDF0 %>% 
+              filter(rurality.smr.analysis.indicator != "none") %>% 
+              mutate("id" = row_number(),
+
+           adj.prev100k.smear.positive.tb.urban = adj.prev100k.smear.positive.tb.urban/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.urban = adj.prev100k.ci.upper.smear.positive.tb.urban/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.urban = adj.prev100k.ci.lower.smear.positive.tb.urban/1e5,
+           
+           adj.prev100k.smear.positive.tb.rural = adj.prev100k.smear.positive.tb.rural/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.rural = adj.prev100k.ci.upper.smear.positive.tb.rural/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.rural = adj.prev100k.ci.lower.smear.positive.tb.rural/1e5,
+           
+           prev100k.smear.positive.tb.urban = prev100k.smear.positive.tb.urban/1e5,
+           prev100k.ci.upper.smear.positive.tb.urban = prev100k.ci.upper.smear.positive.tb.urban/1e5,
+           prev100k.ci.lower.smear.positive.tb.urban = prev100k.ci.lower.smear.positive.tb.urban/1e5,
+           
+           prev100k.smear.positive.tb.rural = prev100k.smear.positive.tb.rural/1e5,
+           prev100k.ci.upper.smear.positive.tb.rural = prev100k.ci.upper.smear.positive.tb.rural/1e5,
+           prev100k.ci.lower.smear.positive.tb.rural = prev100k.ci.lower.smear.positive.tb.rural/1e5) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           WHO.region,
+           study.start.year, 
+           study.end.year, 
+           ends_with("urban"), ends_with("rural"),
+           rurality.smr.analysis.indicator) %>%
+    
+    mutate("tempPrevUrban" =  case_when(rurality.smr.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.urban,
+                                       rurality.smr.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.urban, 
+                                       rurality.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.urban/n.participants.urban,
+                                        rurality.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.urban),
+           "tempPrevRural" = case_when(rurality.smr.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.rural,
+                                        rurality.smr.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.rural, 
+                                       rurality.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.rural/n.participants.rural,
+                                       rurality.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.rural)) %>%
+    pivot_longer(cols = c(tempPrevRural,tempPrevUrban), 
+                 names_to = "Rurality", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(rurality.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Urban" ~ (adj.prev100k.ci.upper.smear.positive.tb.urban-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.urban)/3.92,
+                                        rurality.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Rural" ~ (adj.prev100k.ci.upper.smear.positive.tb.rural-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.rural)/3.92,
+                                       
+                                        rurality.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Urban" ~ (prev100k.ci.upper.smear.positive.tb.urban-
+                                                                 prev100k.ci.lower.smear.positive.tb.urban)/3.92,
+                                        rurality.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Rurality == "Rural" ~ (prev100k.ci.upper.smear.positive.tb.rural-
+                                                                   prev100k.ci.lower.smear.positive.tb.rural)/3.92,
+                                        rurality.smr.analysis.indicator %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Rurality == "Urban" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.urban),
+                                        rurality.smr.analysis.indicator  %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.rural)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(rurality.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.urban/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.urban /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                              rurality.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Rural" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.rural/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.rural /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.rural)))/3.92,
+                                                 rurality.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Urban" ~ (log(prev100k.ci.upper.smear.positive.tb.urban/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.urban /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                                 rurality.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Rural" ~ (log(prev100k.ci.upper.smear.positive.tb.rural/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.rural /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.rural)))/3.92, 
+                                            rurality.smr.analysis.indicator %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Urban" ~ 
+                                            log(1/(n.participants.urban*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        rurality.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
+                                            log(1/(n.participants.rural*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
+                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
+
+```
+
+
+```{r}
+smrModelDF <- cleanRuralitySmrDF %>%
+    select(id, WHO.region, study.country, Rurality, year_z, natRep, LogOdds, LogOddsStandardError) %>%
+    pivot_wider(names_from = Rurality,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_Urban - LogOdds_Rural,
+        logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2) 
+    ) 
+```
+
+
+### Smear positive descriptive statistics
+
+```{r}
+
+print(paste(dim(cleanRuralitySmrDF0)[1], "unique surveys with urban/rural-stratified smear positive TB"))
+
+# sort(unique(cleanRuralitySmrDF0$title.extracted))
+print(paste(length(unique(cleanRuralitySmrDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanRuralitySmrDF0$n.participants.rural)), "studies report participant numbers totaling", 
+            sum(cleanRuralitySmrDF0$n.participants.rural, cleanRuralitySmrDF0$n.participants.urban, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanRuralitySmrDF0$n.participants.urban, na.rm=TRUE)/sum(cleanRuralitySmrDF0$n.participants.rural, cleanRuralitySmrDF0$n.participants.urban, na.rm = TRUE)*100, 2), "% of participants were urban" ))
+```
+
+#### Smear positive: Model 1: Smear positive main effect 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1 | study.country) + (1|id),
+                       data = smrModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+
+Summarize and check 
+
+```{r}
+summary(mainEffectSmrMod)
+plot(mainEffectSmrMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+nd <- smrModelDF %>%
+      select(study.country, LogOdds_Rural) %>%
+      mutate(logOR_se=1)
+
+mainEffectSmrModEst <- add_epred_draws(object = mainEffectSmrMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1) %>% 
+                    mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+mainEffectSmrModEst %>% ungroup %>% mean_qi(urRatio)
+```
+#### Smear positive:  Model 2: Smear positive effect by world region model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|WHO.region) + (1|id),
+                       data = smrModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r}
+summary(regionEffectSmrMod)
+plot(regionEffectSmrMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndRegion <- smrModelDF %>%
+      select(WHO.region, LogOdds_Rural) %>%
+      mutate(logOR_se=1)
+
+regionEffectSmrModEst <- add_epred_draws(object = regionEffectSmrMod,
+                                 newdata=ndRegion,
+                                 re_formula = ~ 1 + (1|WHO.region)) %>% 
+                       mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+regionEffectSmrModEst %>% group_by(WHO.region) %>% mean_qi(urRatio)
+```
+
+```{r}
+### Get the empirical values 
+empirical_smr_prev <- smrModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        p_rural_empirical = plogis(LogOdds_Rural),
+        p_urban_empirical = plogis(LogOdds_Urban),
+        or_empirical = p_urban_empirical / p_rural_empirical,
+        or_empirical = (p_urban_empirical / (1 - p_urban_empirical)) / 
+            (p_rural_empirical / (1 - p_rural_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific smear positive TB prevalence")
+
+ggplot() +
+    geom_vline(aes(xintercept = 1), linetype=2) +
+    geom_point(data = empirical_smr_prev, aes(y=WHO.region, x=or_empirical, color = type2),alpha = 0.5, size=8) +
+    stat_pointinterval(data=regionEffectSmrModEst, aes(x=urRatio, y=WHO.region, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Urban-to-rural prevalence ratio",
+         y = "World region") +
+    theme_bw() + theme(legend.title = element_blank(), 
+          panel.grid.minor=element_blank(),
+          legend.position = "bottom")
+    
+```
