@@ -25,57 +25,85 @@ library(DT)
 library(metafor)
 library(meta)
 library(brms)
+library(scales)
 library(posterior)
 library(tidybayes)
 
 library(ggplot2)
 
 expit <- function (x) {exp(x)/(1 + exp(x))}
-##############################################################################|
-##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+
+myPal <- c("black", "violet")
+
 source(here("code/bacterialPositiveIndicator.R"))
-cleanSexDF0 <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="none")
+source(here("code/smearPositiveIndicator.R"))
 
 ##############################################################################|
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+
+
+cleanSexDF0 <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="none")
+```
+
+# Descriptive statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+
+print(paste(dim(cleanSexDF0)[1], "unique surveys with sex-stratified bacteriological positive TB"))
+
+# sort(unique(cleanSexDF0$title.extracted))
+print(paste(length(unique(cleanSexDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanSexDF0$n.participants.female)), "studies report participant numbers totaling", 
+            sum(cleanSexDF0$n.participants.female, cleanSexDF0$n.participants.male, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanSexDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexDF0$n.participants.female, cleanSexDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
+```
+
+# Risk of bias statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+table(cleanSexDF0$study.quality.summary)
+```
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
-cleanSexDF <- cleanSexDF0 %>% 
-    # filter(sex.analysis.indicator %in% c("adj.prev100k.ci.bacteriological.tb",
-    #                                      "adj.prev100k.ci.smear.positive.tb",
-    #                                      "prev100k.ci.bacteriological.tb",
-    #                                      "prev100k.ci.smear.positive.tb")) %>% 
-        filter(sex.analysis.indicator != "none") %>% 
-    mutate("id" = row_number(),
-           adj.prev100k.bacteriological.tb.male = adj.prev100k.bacteriological.tb.male/1e5,
-           adj.prev100k.ci.upper.bacteriological.tb.male = adj.prev100k.ci.upper.bacteriological.tb.male/1e5,
-           adj.prev100k.ci.lower.bacteriological.tb.male = adj.prev100k.ci.lower.bacteriological.tb.male/1e5,
-           
-           adj.prev100k.bacteriological.tb.female = adj.prev100k.bacteriological.tb.female/1e5,
-           adj.prev100k.ci.upper.bacteriological.tb.female = adj.prev100k.ci.upper.bacteriological.tb.female/1e5,
-           adj.prev100k.ci.lower.bacteriological.tb.female = adj.prev100k.ci.lower.bacteriological.tb.female/1e5,
-           
-           adj.prev100k.smear.positive.tb.male = adj.prev100k.smear.positive.tb.male/1e5,
-           adj.prev100k.ci.upper.smear.positive.tb.male = adj.prev100k.ci.upper.smear.positive.tb.male/1e5,
-           adj.prev100k.ci.lower.smear.positive.tb.male = adj.prev100k.ci.lower.smear.positive.tb.male/1e5,
-           
-           adj.prev100k.smear.positive.tb.female = adj.prev100k.smear.positive.tb.female/1e5,
-           adj.prev100k.ci.upper.smear.positive.tb.female = adj.prev100k.ci.upper.smear.positive.tb.female/1e5,
-           adj.prev100k.ci.lower.smear.positive.tb.female = adj.prev100k.ci.lower.smear.positive.tb.female/1e5,
-           
-           prev100k.bacteriological.tb.male = prev100k.bacteriological.tb.male/1e5,
-           prev100k.ci.upper.bacteriological.tb.male = prev100k.ci.upper.bacteriological.tb.male/1e5,
-           prev100k.ci.lower.bacteriological.tb.male = prev100k.ci.lower.bacteriological.tb.male/1e5,
-           
-           prev100k.bacteriological.tb.female = prev100k.bacteriological.tb.female/1e5,
-           prev100k.ci.upper.bacteriological.tb.female = prev100k.ci.upper.bacteriological.tb.female/1e5,
-           prev100k.ci.lower.bacteriological.tb.female = prev100k.ci.lower.bacteriological.tb.female/1e5,
-           
-           prev100k.smear.positive.tb.male = prev100k.smear.positive.tb.male/1e5,
-           prev100k.ci.upper.smear.positive.tb.male = prev100k.ci.upper.smear.positive.tb.male/1e5,
-           prev100k.ci.lower.smear.positive.tb.male = prev100k.ci.lower.smear.positive.tb.male/1e5,
-           
-           prev100k.smear.positive.tb.female = prev100k.smear.positive.tb.female/1e5,
-           prev100k.ci.upper.smear.positive.tb.female = prev100k.ci.upper.smear.positive.tb.female/1e5,
-           prev100k.ci.lower.smear.positive.tb.female = prev100k.ci.lower.smear.positive.tb.female/1e5) %>%
+cleanSexDF <-  cleanSexDF0 %>% 
+               filter(sex.analysis.indicator != "none") %>% 
+               mutate("id" = row_number(),
+               adj.prev100k.bacteriological.tb.male = adj.prev100k.bacteriological.tb.male/1e5,
+               adj.prev100k.ci.upper.bacteriological.tb.male = adj.prev100k.ci.upper.bacteriological.tb.male/1e5,
+               adj.prev100k.ci.lower.bacteriological.tb.male = adj.prev100k.ci.lower.bacteriological.tb.male/1e5,
+               
+               adj.prev100k.bacteriological.tb.female = adj.prev100k.bacteriological.tb.female/1e5,
+               adj.prev100k.ci.upper.bacteriological.tb.female = adj.prev100k.ci.upper.bacteriological.tb.female/1e5,
+               adj.prev100k.ci.lower.bacteriological.tb.female = adj.prev100k.ci.lower.bacteriological.tb.female/1e5,
+               
+               adj.prev100k.smear.positive.tb.male = adj.prev100k.smear.positive.tb.male/1e5,
+               adj.prev100k.ci.upper.smear.positive.tb.male = adj.prev100k.ci.upper.smear.positive.tb.male/1e5,
+               adj.prev100k.ci.lower.smear.positive.tb.male = adj.prev100k.ci.lower.smear.positive.tb.male/1e5,
+               
+               adj.prev100k.smear.positive.tb.female = adj.prev100k.smear.positive.tb.female/1e5,
+               adj.prev100k.ci.upper.smear.positive.tb.female = adj.prev100k.ci.upper.smear.positive.tb.female/1e5,
+               adj.prev100k.ci.lower.smear.positive.tb.female = adj.prev100k.ci.lower.smear.positive.tb.female/1e5,
+               
+               prev100k.bacteriological.tb.male = prev100k.bacteriological.tb.male/1e5,
+               prev100k.ci.upper.bacteriological.tb.male = prev100k.ci.upper.bacteriological.tb.male/1e5,
+               prev100k.ci.lower.bacteriological.tb.male = prev100k.ci.lower.bacteriological.tb.male/1e5,
+               
+               prev100k.bacteriological.tb.female = prev100k.bacteriological.tb.female/1e5,
+               prev100k.ci.upper.bacteriological.tb.female = prev100k.ci.upper.bacteriological.tb.female/1e5,
+               prev100k.ci.lower.bacteriological.tb.female = prev100k.ci.lower.bacteriological.tb.female/1e5,
+               
+               prev100k.smear.positive.tb.male = prev100k.smear.positive.tb.male/1e5,
+               prev100k.ci.upper.smear.positive.tb.male = prev100k.ci.upper.smear.positive.tb.male/1e5,
+               prev100k.ci.lower.smear.positive.tb.male = prev100k.ci.lower.smear.positive.tb.male/1e5,
+               
+               prev100k.smear.positive.tb.female = prev100k.smear.positive.tb.female/1e5,
+               prev100k.ci.upper.smear.positive.tb.female = prev100k.ci.upper.smear.positive.tb.female/1e5,
+               prev100k.ci.lower.smear.positive.tb.female = prev100k.ci.lower.smear.positive.tb.female/1e5) %>%
     select(id,
            covidence.id, 
            figure.id.yr, 
@@ -83,8 +111,10 @@ cleanSexDF <- cleanSexDF0 %>%
            title.extracted,
            study.country,
            WHO.region,
+           screening.tests,
            study.start.year, 
            study.end.year, 
+           study.quality.summary,
            ends_with("male"), ends_with("sex"),
            sex.analysis.indicator) %>%
     
@@ -202,865 +232,739 @@ cleanSexDF <- cleanSexDF0 %>%
                                             log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
                                         sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
-                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2))
+                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
+                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       symptomScreen = ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No"),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+
+bactModelDF <- cleanSexDF %>%
+    select(id, WHO.region, study.country, Sex, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError) %>%
+    pivot_wider(names_from = Sex,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_Male - LogOdds_Female,
+        logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2)
+    )
 ```
 
-
-Model building 
-
-## Model 1: Only survey level random effects
+# Model 1: Main effect model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-model1 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
-                                           sigma=TRUE) ~ 1 + (1|id) + Sex,
-                    data = cleanSexDF,
-                    prior = prior(normal(0,10), class=Intercept) +
-                            prior(normal(0, 10), class = b) +
-                            prior(exponential(1), class=sd), 
-                    family = "gaussian",
-                    control = list(adapt_delta = 0.99),
-                    cores = 4,
-                    chains = 4,
-                    iter = 4000)
-
-model1rev <- brms::brm(formula = `LogOdds`|se(`revisedLogOddsStandardErr`, 
-                                           sigma=TRUE) ~ 1 + (1|id) + Sex,
-                    data = cleanSexDF,
-                    prior = prior(normal(0,10), class=Intercept) +
-                            prior(normal(0, 10), class = b) +
-                            prior(exponential(1), class=sd), 
-                    family = "gaussian",
-                    control = list(adapt_delta = 0.99),
-                    cores = 4,
-                    chains = 4,
-                    iter = 4000)
+mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|study.country) + (1|id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
 ```
 
-Model diagnostics  
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(mainEffectMod)
+plot(mainEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- bactModelDF %>%
+      select(study.country, LogOdds_Female) %>%
+      mutate(logOR_se=1)
+
+mainEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1, 
+                                 allow_new_levels = TRUE) %>% 
+                    mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+mainEffectModEst %>% ungroup %>% mean_qi(mfRatio)
+```
+
+# Model 2: Effect by world region model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+regionEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|WHO.region) + (1|id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(regionEffectMod)
+plot(regionEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndRegion <- bactModelDF %>%
+      select(WHO.region, LogOdds_Female) %>%
+      mutate(logOR_se=1)
+
+regionEffectModEst <- add_epred_draws(object = regionEffectMod,
+                                 newdata=ndRegion,
+                                 re_formula = ~ 1 + (1|WHO.region),
+                                 allow_new_levels = TRUE) %>% 
+                       mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+regionEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+### Get the empirical values 
+empirical_prev <- bactModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        bias = bias,
+        symptomScreen = symptomScreen, 
+        p_female_empirical = plogis(LogOdds_Female),
+        p_male_empirical = plogis(LogOdds_Male),
+        or_empirical = p_male_empirical / p_female_empirical,
+        or_empirical = (p_male_empirical / (1 - p_male_empirical)) / 
+            (p_female_empirical / (1 - p_female_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific TB prevalence")
+
+    ggplot() +
+    # geom_hline(aes(yintercept = 1), linetype=2) +
+    geom_point(data = empirical_prev, aes(y=WHO.region, x=or_empirical, color = type2),alpha = 0.5, size=8) +
+    stat_pointinterval(data=regionEffectModEst, aes(x=mfRatio, y=WHO.region, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio",
+         y = "World region") +
+    theme_bw(base_size = 30) + theme(legend.title = element_blank(), legend.position = c(.83,.1), 
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+    
+```
+
+# Model 3: Effect over time 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 + year_z | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd) +
+                           prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectMod)
+plot(timeEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndTime <- bactModelDF %>%
+    select(logOR_se) %>%
+    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1))
+
+timeEffectModEst <- add_epred_draws(object = timeEffectMod,
+                                 newdata=ndTime,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+timeEffectModEst %>% 
+    group_by(year_z) %>% 
+    mean_qi(mfRatio) %>% 
+    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    select(Year, mfRatio, .lower, .upper)
+
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    timeEffectModEst %>%
+    ggplot(aes(x = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)),
+               y = mfRatio)) +
+    stat_lineribbon(width = 0.95, alpha = 0.25) +
+    geom_point(data = empirical_prev, 
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+               colour = "black") +
+    geom_hline(yintercept = 1, linetype = 2) +
+    labs(y = "Male-to-female odds ratio",
+         x = "Year") +
+    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
+```
+
+
+# Model 4: Region effect over time 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                              1 + year_z * WHO.region + (1 + year_z | study.country) + (1 | id), 
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd) +
+                           prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectRegionMod)
+plot(timeEffectRegionMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndTimeReg <- bactModelDF %>%
+             select(logOR_se, WHO.region) %>%
+             distinct() %>%
+             crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE),
+                                   max(cleanSexDF$year_z, na.rm = TRUE), 1))
+
+timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
+                                 newdata=ndTimeReg,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+timeEffectRegionModEst %>% 
+    group_by(year_z) %>% 
+    mean_qi(mfRatio) %>% 
+    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    select(Year, mfRatio, .lower, .upper)
+
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    timeEffectRegionModEst %>%
+    filter(WHO.region !="Americas region",
+           WHO.region !="Eastern Mediterranean region") %>%
+    ggplot(aes(x = year_z + round(mean(cleanSexDF$study.end.year, na.rm = TRUE)),
+               y = mfRatio,
+               fill = WHO.region, 
+               color = WHO.region)) +
+    stat_lineribbon(aes(color = WHO.region, fill = WHO.region), .width = 0.95, alpha = 0.25) +
+    geom_point(data = empirical_prev %>%
+                   filter(WHO.region !="Americas region",
+                          WHO.region !="Eastern Mediterranean region"), 
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+               colour = "black") +
+    geom_hline(yintercept = 1, linetype = 2) +
+    facet_wrap(~ WHO.region) +
+    labs(y = "Male-to-female odds ratio!",
+         x = "Year",
+         fill = "WHO region", 
+         color = "WHO region") +
+    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
+```
+
+# Univariate analysis of other covariates 
+
+## Model 6: National versus subnational 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + natRep + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(natEffectMod)
+plot(natEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndNat <- bactModelDF %>%
+    select(logOR_se, natRep)
+
+natEffectModEst <- add_epred_draws(object = natEffectMod,
+                                 newdata=ndNat,
+                                 re_formula = NA) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+natEffectModEst %>% 
+    group_by(natRep) %>% 
+    mean_qi(mfRatio) %>% 
+    select(natRep, mfRatio, .lower, .upper)
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    ggplot() +
+    # geom_hline(aes(yintercept = 1), linetype=2) +
+    geom_point(data = empirical_prev, aes(y=natRep, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=natEffectModEst, aes(x=mfRatio, y=natRep, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio", color = "",
+         y = "Survey representativeness") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw(base_size = 30) + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+```
+
+## Model 6: Study quality (High vs. not high)
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+biasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + bias + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(biasEffectMod)
+plot(biasEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndBias <- bactModelDF %>%
+    select(logOR_se, bias)
+
+biasEffectModEst <- add_epred_draws(object = biasEffectMod,
+                                 newdata=ndBias,
+                                 re_formula = NA) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+biasEffectModEst %>% 
+    group_by(bias) %>% 
+    mean_qi(mfRatio) %>% 
+    select(bias, mfRatio, .lower, .upper)
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    ggplot() +
+    geom_point(data = empirical_prev, aes(y=bias, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=biasEffectModEst, aes(x=mfRatio, y=bias, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio", color = "",
+         y = "Low probability of survey bias vs. not low probability of survey bias") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw(base_size = 30) + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+```
+
+## Model 7: Symptom screen vs. no symptom screen
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+sympEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + symptomScreen + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(sympEffectMod)
+plot(sympEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndSymp <- bactModelDF %>%
+    select(logOR_se, symptomScreen)
+
+sympEffectModEst <- add_epred_draws(object = sympEffectMod,
+                                 newdata=ndSymp,
+                                 re_formula = NA) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+sympEffectModEst %>% 
+    group_by(symptomScreen) %>% 
+    mean_qi(mfRatio) %>% 
+    select(symptomScreen, mfRatio, .lower, .upper)
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    ggplot() +
+    geom_point(data = empirical_prev, aes(y=symptomScreen, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
+    stat_pointinterval(data=sympEffectModEst, aes(x=mfRatio, y=symptomScreen, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio", color = "",
+         y = "Symptom screening required") +
+    scale_size_continuous(range = c(8,16)) +
+    theme_bw(base_size = 30) + theme(
+                                     legend.position = c(.83,.2), legend.box.just = "right",
+                                     # legend.direction = "horizontal",
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+```
+
+# Smear positive analysis 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(model1)
-```
+cleanSexSmrDF0 <- smrPosIndicator("sex") %>% filter(sex.smr.analysis.indicator !="none")
 
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanSexSmrDF <- cleanSexSmrDF0 %>% 
+              filter(sex.smr.analysis.indicator != "none") %>% 
+              mutate("id" = row_number(),
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-plot(model1)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-pairs(model1)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-pp_check(model1, ndraws = 100)
-```
-
-Model results
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-model1_est0 <- model1 %>% 
-               as_draws_df() %>%
-               select(b_Intercept, b_SexMale) %>%
-               transmute(Female = expit(b_Intercept)*1e5, 
-                         Male = expit(b_Intercept + b_SexMale)*1e5) %>%
-               mutate(mfRatio = Male/Female, 
-                      model = "Only random effects")
-
-model1_est <- melt(model1_est0)
-
-model1_est_summary <- model1_est %>% reframe(meanPrev = mean(value), .by = c(variable)); model1_est_summary
-
-ggplot(data = model1_est) +
-    stat_halfeye(aes(x=value, fill=model), normalize="panels", alpha=0.5, size =20) +
-    facet_grid(model~fct_relevel(variable,
-                                 "Male", "Female", "mfRatio"), 
-               scales = "free_x") +
-    labs(x="", y="") +
-    theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-```
-
-## Model 2: survey level random effects + WHO region level fixed effects
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-model2 <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
-                                           sigma=TRUE) ~ 1 + Sex + WHO.region + (1|id),
-                    data = cleanSexDF,
-                    prior = prior(normal(0,10), class=Intercept) +
-                            prior(normal(0, 10), class = b) +
-                            prior(exponential(1), class=sd),
-                    family = "gaussian",
-                    control = list(adapt_delta = 0.90),
-                    cores = 4,
-                    chains = 4,
-                    iter = 4000)
-```
-
-Model diagnostics  
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(model2)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-plot(model2)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-pairs(model2)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-pp_check(model2, ndraws = 100)
-```
-
-Model results
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-model2_est0 <- model2 %>% 
-    add_epred_draws(newdata = crossing(WHO.region = unique(cleanSexDF$WHO.region), 
-                                       Sex = c("Male", "Female"),
-                                       LogOddsStandardError = 1),
-                    re_formula = NA) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    dplyr::select(WHO.region, Sex, .draw, value) %>%
-    pivot_wider(names_from = Sex, values_from = value) %>%
-    mutate(mfRatio = Male/Female) %>%
-    select(-.draw) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>%
-    mutate(model = "Country level fixed effects") %>%
-    rename(Sex = name)
-
-model2_est_summary <- model2_est0 %>% reframe(meanPrev = mean(value), .by = c(Sex, WHO.region)); model2_est_summary
-
-# ggplot(data = model2_est0) + geom_density(aes(x=value, fill = WHO.region, group=WHO.region))
-
-ggplot(data = model2_est0) +
-    stat_pointinterval(aes(x=value, colour=WHO.region), position = position_dodge(width=0.5), size =20) +
-    facet_grid(model~fct_relevel(Sex,
-                                 "Male prev", "Female prev", "mfRatio"),
-               scales = "free_x") +
-    labs(x="", y="") + 
-    theme_minimal( base_size = 30) + theme(legend.position = "bottom")
-```
-
-## Model 3: survey level random effects + study level effects (multi-level model)
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-model3 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                           sigma=TRUE) ~ 1 + Sex + (1|id/title.extracted),
-                    data = cleanSexDF,
-                    prior = prior(normal(0,10), class=Intercept) +
-                            prior(normal(0, 10), class = b) +
-                            prior(exponential(1), class=sd),
-                    family = "gaussian",
-                    control = list(adapt_delta = 0.99),
-                    cores = 4,
-                    chains = 4,
-                    iter = 4000)
-```
-
-Model diagnostics  
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-summary(model3)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-plot(model3)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pairs(model3)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pp_check(model3, ndraws =100)
-```
-
-Model results 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-model3_est0 <- model3 %>% 
-               as_draws_df() %>%
-               select(b_Intercept, b_SexMale) %>%
-               transmute(Female = expit(b_Intercept)*1e5, 
-                         Male = expit(b_Intercept + b_SexMale)*1e5) %>%
-               mutate(mfRatio = Male/Female, 
-                      model = "survey level random effects + study level effects (multi-level model)")
-
-model3_est <- melt(model3_est0)
-model3_est_summary <- model3_est %>% reframe(meanPrev = mean(value), .by = c(variable)); model3_est_summary
-
-
-ggplot(data = model3_est) +
-    stat_halfeye(aes(x=value, fill=model), normalize="panels", alpha=0.5, size =20) +
-    facet_grid(model~fct_relevel(variable,
-                                 "Male", "Female", "mfRatio"), 
-               scales = "free_x") +
-    labs(x="", y="") +
-    theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
-```
-
-## Model 4: random intercepts for countries nested within regions, and surveys nested within studies
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-model4 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) +
-                    (1 + Sex|id/title.extracted),
-                      data = cleanSexDF,
-                      prior = prior(normal(0,10), class=Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(1), class=sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-### What happens to precision when we remove the WHO.region
-
-model4b <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |study.country) + (1 + Sex|id/title.extracted),
-                      data = cleanSexDF,
-                      prior = prior(normal(0,10), class=Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(1), class=sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-model4c <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |study.country) + (1 + Sex|id),
-                      data = cleanSexDF,
-                      prior = prior(normal(0,10), class=Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(1), class=sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-model4d <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id),
-                      data = cleanSexDF,
-                      prior = prior(normal(0,10), class=Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(1), class=sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-```
-
-Model diagnostics  
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-summary(model4)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-plot(model4)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pairs(model4)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pp_check(model4, ndraws =100)
-```
-
-Model results 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-nd <- cleanSexDF %>%
-    select(WHO.region, study.country, Sex) %>%
-    distinct() %>%
-    mutate(LogOddsStandardError=1)
+           adj.prev100k.smear.positive.tb.male = adj.prev100k.smear.positive.tb.male/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.male = adj.prev100k.ci.upper.smear.positive.tb.male/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.male = adj.prev100k.ci.lower.smear.positive.tb.male/1e5,
            
-model4_est <- model4 %>%
-    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex |WHO.region/study.country)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(study.country, WHO.region, Sex, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
+           adj.prev100k.smear.positive.tb.female = adj.prev100k.smear.positive.tb.female/1e5,
+           adj.prev100k.ci.upper.smear.positive.tb.female = adj.prev100k.ci.upper.smear.positive.tb.female/1e5,
+           adj.prev100k.ci.lower.smear.positive.tb.female = adj.prev100k.ci.lower.smear.positive.tb.female/1e5,
+           
+           prev100k.smear.positive.tb.male = prev100k.smear.positive.tb.male/1e5,
+           prev100k.ci.upper.smear.positive.tb.male = prev100k.ci.upper.smear.positive.tb.male/1e5,
+           prev100k.ci.lower.smear.positive.tb.male = prev100k.ci.lower.smear.positive.tb.male/1e5,
+           
+           prev100k.smear.positive.tb.female = prev100k.smear.positive.tb.female/1e5,
+           prev100k.ci.upper.smear.positive.tb.female = prev100k.ci.upper.smear.positive.tb.female/1e5,
+           prev100k.ci.lower.smear.positive.tb.female = prev100k.ci.lower.smear.positive.tb.female/1e5) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           WHO.region,
+           study.start.year, 
+           study.end.year, 
+           ends_with("male"), ends_with("sex"),
+           sex.smr.analysis.indicator) %>%
+    
+    mutate("tempPrevMale" =  case_when(sex.smr.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.male,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                        sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+           "tempPrevFemale" = case_when(sex.smr.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.female,
+                                        sex.smr.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
+    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
+                 names_to = "Sex", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (adj.prev100k.ci.upper.smear.positive.tb.male-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (adj.prev100k.ci.upper.smear.positive.tb.female-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                       
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (prev100k.ci.upper.smear.positive.tb.male-
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
+                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
+                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.male/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.male /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                              sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.female /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92,
+                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Male" ~ (log(prev100k.ci.upper.smear.positive.tb.male/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.male /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.female /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
+                                            sex.smr.analysis.indicator %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
+                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
 
-model4b_est <- model4 %>%
-    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex | study.country)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(study.country, WHO.region, Sex, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
-
-
-model4_Mainest <- model4 %>%
-    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(study.country, WHO.region, Sex, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
-
-model4b_Mainest <- model4b %>%
-    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(study.country, WHO.region, Sex, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
-
-
-ggplot(data = model4_est) +
-        stat_pointinterval(aes(x=value, y=study.country, color = WHO.region), .width = 0.95, size=20) +
-        facet_grid(.~fct_relevel(Sex,
-                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
-        labs(x="", y="") + expand_limits(x=0) + 
-        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
-model4_estb <- model4 %>%
-    add_epred_draws(newdata = nd, re_formula = ~(1 + Sex |WHO.region)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(study.country, WHO.region, Sex, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name)
-
-
-ggplot(data = model4_estb) +
-        stat_pointinterval(aes(x=value, y=WHO.region), .width = 0.95, size=20) +
-        facet_grid(.~fct_relevel(Sex,
-                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
-        labs(x="", y="") + #expand_limits(x=0) + 
-        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
+smrModelDF <- cleanSexSmrDF %>%
+    select(id, WHO.region, study.country, Sex, year_z, natRep, LogOdds, LogOddsStandardError) %>%
+    pivot_wider(names_from = Sex,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_Male - LogOdds_Female,
+        logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2) 
+    ) 
 ```
 
-## Model 5: random intercepts for countries nested within regions, and surveys nested within studies; add in survey end years
+# Smear positive descriptive statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+
+print(paste(dim(cleanSexSmrDF0)[1], "unique surveys with sex-stratified smear positive TB"))
+
+# sort(unique(cleanSexDF0$title.extracted))
+print(paste(length(unique(cleanSexSmrDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanSexSmrDF0$n.participants.female)), "studies report participant numbers totaling", 
+            sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanSexSmrDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
+```
+
+# Model X: Smear positive main effect 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-model5 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, 
-                                             sigma=TRUE) ~ 1 + Sex + (1 + Sex |WHO.region/study.country) + (1 + Sex|id/title.extracted) + (1 + Sex | study.end.year),
-                      data = cleanSexDF,
-                      prior = prior(normal(0,10), class=Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(1), class=sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-```
-Model diagnostics  
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-summary(model5)
+mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1 | study.country) + (1|id),
+                       data = smrModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
 ```
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-plot(model5)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pairs(model5)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE,fig.height = 20, fig.width = 28}
-pp_check(model5, ndraws =100)
-```
-
-Model results 
+Summarize and check 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-nd <- cleanSexDF %>%
-    filter(!is.na(study.end.year)) %>%
-    select(Sex, study.country, id, WHO.region, study.end.year, title.extracted) %>%
-    distinct() %>%
-    mutate(LogOddsStandardError=1)
-           
-model5_est <- model5 %>%
-    add_epred_draws(newdata = nd, re_formula = ~ (1 + Sex | study.end.year)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(Sex, study.end.year,  value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name) %>%
-    mutate(study.end.year = as.factor(study.end.year))
-
-
-ggplot(data = model5_est) +
-        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
-        facet_grid(.~fct_relevel(Sex,
-                                     "Male", "Female", "mfRatio"), scale = "free_x") + 
-        labs(x="", y="") + expand_limits(x=0) + 
-        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
-model5_estb <- model5 %>%
-    add_epred_draws(newdata = nd, re_formula = ~ (1 + Sex | study.end.year) + (1 + Sex | WHO.region)) %>%
-    ungroup() %>%
-    mutate(value = expit(.epred)*1e5) %>%
-    select(Sex, study.end.year, WHO.region, value, .draw) %>%
-    pivot_wider(
-        names_from = Sex,
-        values_from = value
-    ) %>%
-    unnest_longer(col = c(Male, Female)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Female, Male, mfRatio)) %>% 
-    rename(Sex = name) %>%
-    mutate(study.end.year = as.factor(study.end.year))
-
-
-ggplot(data = model5_estb %>% filter(Sex != "mfRatio")) +
-        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
-        facet_grid(.~fct_relevel(Sex,
-                                     "Male", "Female", "mfRatio") ~ WHO.region, scale = "free_x") + 
-        labs(x="", y="") + expand_limits(x=0) + 
-        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
-ggplot(data = model5_estb %>% filter(Sex == "mfRatio")) +
-        stat_pointinterval(aes(x=value, y=study.end.year), .width = 0.95, size=20) +
-        facet_grid(.~fct_relevel(Sex,
-                                     "Male", "Female", "mfRatio") ~ WHO.region, scale = "free_x") + 
-        labs(x="", y="") + expand_limits(x=0) + 
-        theme_minimal(base_size = 30) + theme(legend.position = "bottom")
-
+summary(mainEffectSmrMod)
+plot(mainEffectSmrMod)
 ```
 
+Prediction
 
-Peter MacP: 7th April 2025
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- smrModelDF %>%
+      select(study.country, LogOdds_Female) %>%
+      mutate(logOR_se=1)
 
-Modify Model 5 above to 
- a) Look at priors
- b) model sigma
- c) Look at year effect
- 
-Need to centre year 
-
-```{r}
-
-cleanSexDF <- cleanSexDF %>%
-    mutate(year_z =study.end.year - round(mean(study.end.year, na.rm=TRUE)))
-
-cleanSexDF %>%
-    ggplot(aes(x=year_z)) +
-    geom_histogram()
-
-
+mainEffectSmrModEst <- add_epred_draws(object = mainEffectSmrMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1) %>% 
+                    mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
 ```
 
-
-
-
+Main estimate
 ```{r}
-
-set.seed(123)
-
-data.frame(theta = plogis(ggdist::rstudent_t(n=20000, df=7, mu=0, sigma=1.5))) |>
-  bayesplot::mcmc_hist() +
-  xlim(c(0,1)) +
-  labs(title='student_t(7, 0, 1.5) for Intercept')
-
+mainEffectSmrModEst %>% ungroup %>% mean_qi(mfRatio)
 ```
 
+# Model 2: Smear positive effect by world region model
 
-Fit a model, sampling from the prior distributions only (i.e. not including data)
-
-
-```{r}
-
-model6_priors <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
-                               1 + Sex + year_z +  (1 + Sex |WHO.region/study.country),
-                               sigma ~ Sex + year_z,
-                      data = cleanSexDF,
-                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(2), class = sd) +
-                          prior(lkj(2), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      sample_prior = "only",
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-
-summary(model6_priors)
-plot(model6_priors)
-conditional_effects(model6_priors)
-
-```
-Now fit the model with the data
- 
-```{r}
-
-model6 <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
-                               1 + Sex*year_z +  (1 + Sex*year_z |WHO.region/study.country),
-                               sigma ~ Sex*year_z,
-                      data = cleanSexDF,
-                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(2), class = sd) +
-                          prior(lkj(4), class=cor),
-                      family = "gaussian",
-                      control = list(adapt_delta = 0.99),
-                      cores = 4,
-                      chains = 4,
-                      iter = 4000)
-
-
-summary(model6)
-plot(model6)
-conditional_effects(model6)
-
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|WHO.region) + (1|id),
+                       data = smrModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
 ```
 
-Overall sex effect, ignoring random effects.
- 
-```{r}
+Summarize and check 
 
-as_draws_df(model6) %>%
-    select(b_Intercept, b_SexMale) %>%
-    transmute(Female = expit(b_Intercept)*1e5, 
-              Male = expit(b_Intercept + b_SexMale)*1e5) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(everything()) %>%
-    group_by(name) %>%
-    mean_qi()
-
-
-
-```
- 
-Random effect for country
-
-```{r}
-
-nd_country <-  cleanSexDF %>%
-    select(id, WHO.region, study.country, Sex, year_z) %>%
-    distinct() %>%
-    mutate(LogOddsStandardError = 1)
-
-
-model6_draws_country <- 
-    add_epred_draws(object = model6,
-                    newdata = nd_country,
-                    re_formula = ~(1 +  Sex*year_z | WHO_region/study.country)) %>%
-    ungroup() %>%
-    group_by(id, study.country) %>%
-    mutate(value = expit(.epred) * 1e5) %>%
-    select(id, study.country, Sex, value, .draw) %>%
-    ungroup()
-
-model6_draws_country <- model6_draws_country %>%
-    pivot_wider(names_from = Sex, values_from = value) %>%
-    mutate(mfRatio = Male / Female) %>%
-    pivot_longer(cols = c(Male, Female, mfRatio)) 
-
-
-model6_draws_country %>%
-    group_by(study.country, name) %>%
-    mean_qi(value)
-
-
-#EMPERICAL VALUES
-m6_empirical <- cleanSexDF %>%
-  select(id, WHO.region, study.country, Sex,LogOdds) %>%
-  mutate(value = expit(LogOdds)*1e5) %>%
-    pivot_wider(names_from=Sex,
-                values_from = value,
-                id_cols = c(id, study.country, WHO.region)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Male, Female, mfRatio))
-
-model6_draws_country %>%
-  ggplot() +
-    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
-               aes(xintercept = 1), colour="grey50", linetype=2) +
-  stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +
-  geom_point(data = m6_empirical, aes(y = study.country, x = value),
-             colour = "mediumseagreen", shape = 1) +
-  scale_y_discrete(limits=rev) +
-  facet_grid(. ~ fct_relevel(name, "Male", "Female"), scale = "free_x") +
-  theme_tidybayes() +
-  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
-  labs(x="", y="")
-
-
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(regionEffectSmrMod)
+plot(regionEffectSmrMod)
 ```
 
+Prediction
 
-Random effect for country
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+ndRegion <- smrModelDF %>%
+      select(WHO.region, LogOdds_Female) %>%
+      mutate(logOR_se=1)
 
-```{r}
-
-nd_region <-  cleanSexDF %>%
-    select(id, WHO.region, Sex, year_z) %>%
-    distinct() %>%
-    mutate(LogOddsStandardError = 1)
-
-
-model6_draws_region <- 
-    add_epred_draws(object = model6,
-                    newdata = nd_region,
-                    re_formula = ~(1 +  Sex*year_z | WHO_region)) %>%
-    ungroup() %>%
-    group_by(id, WHO.region) %>%
-    mutate(value = expit(.epred) * 1e5) %>%
-    select(id, WHO.region, Sex, value, .draw) %>%
-    ungroup()
-
-model6_draws_region <- model6_draws_region %>%
-    pivot_wider(names_from = Sex, values_from = value) %>%
-    mutate(mfRatio = Male / Female) %>%
-    pivot_longer(cols = c(Male, Female, mfRatio)) 
-
-
-model6_draws_region %>%
-    group_by(WHO.region, name) %>%
-    mean_qi(value, na.rm=TRUE)
-
-
-#EMPERICAL VALUES
-m6_empirical <- cleanSexDF %>%
-  select(id, WHO.region, study.country, Sex,LogOdds) %>%
-  mutate(value = expit(LogOdds)*1e5) %>%
-    pivot_wider(names_from=Sex,
-                values_from = value,
-                id_cols = c(id, study.country, WHO.region)) %>%
-    mutate(mfRatio = Male/Female) %>%
-    pivot_longer(cols = c(Male, Female, mfRatio))
-
-model6_draws_region %>%
-  ggplot() +
-    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
-               aes(xintercept = 1), colour="grey50", linetype=2) +
-  stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +
-  geom_point(data = m6_empirical, aes(y = WHO.region, x = value),
-             colour = "mediumseagreen", shape = 1) +
-  scale_y_discrete(limits=rev) +
-  facet_grid(. ~ fct_relevel(name, "Male", "Female"), scale = "free_x") +
-  theme_tidybayes() +
-  theme(panel.background = element_rect(fill = NA, colour = "grey78")) +
-  labs(x="", y="")
-
-
+regionEffectSmrModEst <- add_epred_draws(object = regionEffectSmrMod,
+                                 newdata=ndRegion,
+                                 re_formula = ~ 1 + (1|WHO.region)) %>% 
+                       mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
 ```
 
-Experiment a bit more with taking draws and summarising.
-
+Main estimate
 ```{r}
+regionEffectSmrModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
+```
 
-#updated function to also convert to prev per 100k scale
-expit_p100k <- function (x) {(exp(x)/(1 + exp(x)))*1e5}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+### Get the empirical values 
+empirical_smr_prev <- smrModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        p_female_empirical = plogis(LogOdds_Female),
+        p_male_empirical = plogis(LogOdds_Male),
+        or_empirical = p_male_empirical / p_female_empirical,
+        or_empirical = (p_male_empirical / (1 - p_male_empirical)) / 
+            (p_female_empirical / (1 - p_female_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific smear positive TB prevalence")
 
-#get posteriors in rvars format
-post_model6_country <- cleanSexDF %>% tidybayes::add_epred_rvars(model6, value = "logodds_epred",
-                                                                 re_formula = ~(1 +  Sex*year_z | WHO_region/study.country))
-
-#mutate a new column to get prev scale
-post_model6_rvars <- post_model6_country %>%
-    select(Sex, WHO.region, study.country, logodds_epred) %>%
-    mutate(prev_epred = rvar_apply(.x = logodds_epred, 1, expit_p100k))
-
-#now get the m-to-f ratio
-post_model6_rvars_ratio <- post_model6_rvars %>%
-  group_by(WHO.region, study.country) %>%
-  reframe(
-    Male = prev_epred[Sex == "Male"],
-    Female = prev_epred[Sex == "Female"],
-    mfRatio = Male / Female
-  ) %>%
-    mutate(id = 1:n())
-
-#pivot and unnesay to dataframe for summary and plotting
-post_model6_rvars_long <- post_model6_rvars_ratio %>%
-    ungroup() %>%
-    pivot_longer(cols = c(Male, Female, mfRatio)) %>%
-    unnest_rvars() %>%
-    ungroup()
-
-#Country summaries
-post_model6_rvars_long %>%
-    group_by(study.country, name) %>%
-    mean_qi(value, na.rm=TRUE)
-
-#Now plot
-post_model6_rvars_long %>%
     ggplot() +
-    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
-               aes(xintercept = 1), colour="grey50", linetype=2) +
-    stat_pointinterval(aes(x = value, y = study.country), .width = 0.95) +  
-    geom_point(data = m6_empirical, aes(y = study.country, x = value),
-             colour = "mediumseagreen", shape = 1) +
-    facet_wrap(~name, scale="free_x") +
-    scale_y_discrete(limits=rev)
-
-
+    # geom_hline(aes(yintercept = 1), linetype=2) +
+    geom_point(data = empirical_smr_prev, aes(y=WHO.region, x=or_empirical, color = type2),alpha = 0.5, size=8) +
+    stat_pointinterval(data=regionEffectSmrModEst, aes(x=mfRatio, y=WHO.region, color=type), .width = 0.95, size=20) +
+    scale_color_manual(values = myPal) +
+    scale_y_discrete(limits=rev, 
+                     labels = label_wrap(10)) +
+    labs(x = "Male-to-female prevalence ratio",
+         y = "World region") +
+    theme_bw(base_size = 30) + theme(legend.title = element_blank(), legend.position = c(.83,.07), 
+          panel.grid.minor=element_blank(),
+          plot.title = element_text(size=36))
+    
 ```
-
-```{r}
-
-
-#get posteriors in rvars format
-post_model6_region <- cleanSexDF %>% tidybayes::add_epred_rvars(model6, value = "logodds_epred",
-                                                                 re_formula = ~(1 +  Sex*year_z | WHO_region))
-
-#mutate a new column to get prev scale
-post_model6_rvars_region <- post_model6_region %>%
-    select(Sex, WHO.region, logodds_epred) %>%
-    mutate(prev_epred = rvar_apply(.x = logodds_epred, 1, expit_p100k))
-
-#now get the m-to-f ratio
-post_model6_rvars_ratio_region <- post_model6_rvars_region %>%
-  group_by(WHO.region) %>%
-  reframe(
-    Male = prev_epred[Sex == "Male"],
-    Female = prev_epred[Sex == "Female"],
-    mfRatio = Male / Female
-  ) %>%
-    mutate(id = 1:n())
-
-#pivot and unnesay to dataframe for summary and plotting
-post_model6_rvars_long_region <- post_model6_rvars_ratio_region %>%
-    ungroup() %>%
-    pivot_longer(cols = c(Male, Female, mfRatio)) %>%
-    unnest_rvars() %>%
-    ungroup()
-
-#Country summaries
-post_model6_rvars_long_region %>%
-    group_by(WHO.region, name) %>%
-    mean_qi(value, na.rm=TRUE)
-
-#Now plot
-post_model6_rvars_long_region %>%
-    ggplot() +
-    geom_vline(data = m6_empirical %>% filter(name=="mfRatio"),
-               aes(xintercept = 1), colour="grey50", linetype=2) +
-    stat_pointinterval(aes(x = value, y = WHO.region), .width = 0.95) +  
-    geom_point(data = m6_empirical, aes(y = WHO.region, x = value),
-             colour = "mediumseagreen", shape = 1) +
-    facet_wrap(~name, scale="free_x") +
-    scale_y_discrete(limits=rev)
-
-```
-
-Year effects by country and sex
-
-```{r}
-
-nd <- cleanSexDF %>%
-    select(id, study.country, WHO.region, LogOddsStandardError) %>%
-    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1),
-             Sex = c("Male", "Female"))
-
-model6_year_draws <- add_epred_draws(object = model6,
-                                     newdata=nd,
-                                     re_formula = ~(1 + Sex*year_z |WHO.region/study.country))
-
-model6_year_sum <- model6_year_draws %>%
-    mutate(prev = expit_p100k(.epred)) %>%
-    group_by(year_z, study.country, Sex) %>%
-    mean_qi(prev)
-
-model6_year_sum %>%
-    mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
-    ggplot() +
-    geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper, fill=Sex), alpha=0.5) +
-    geom_line(aes(x=year_z, y=prev, colour=Sex), alpha=0.5) +
-    geom_point(data = cleanSexDF, aes(
-                       x=study.end.year,
-                       y=`Adjusted Prevalence`*1e5,
-               colour=Sex, shape=Sex)) +
-    facet_wrap(~study.country, scales="free_y") +
-    scale_colour_manual(values = c("darkorange", "mediumseagreen")) +
-    scale_fill_manual(values = c("darkorange", "mediumseagreen")) +
-    theme_ggdist()
-
-model6_year_draws2 <- add_epred_draws(object = model6,
-                                     newdata=nd,
-                                     re_formula = ~(1 + Sex*year_z |WHO.region))
-
-model6_year_sum2 <- model6_year_draws2 %>%
-    mutate(prev = expit_p100k(.epred)) %>%
-    group_by(year_z, WHO.region, Sex) %>%
-    mean_qi(prev)
-
-model6_year_sum2 %>%
-    mutate(year_z = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
-    ggplot() +
-    geom_ribbon(aes(x=year_z, ymin=.lower, ymax=.upper, fill=Sex), alpha=0.5) +
-    geom_line(aes(x=year_z, y=prev, colour=Sex), alpha=0.5) +
-    geom_point(data = cleanSexDF, aes(
-                       x=study.end.year,
-                       y=`Adjusted Prevalence`*1e5,
-               colour=Sex, shape=Sex)) +
-    facet_wrap(~WHO.region, scales="free_y") +
-    scale_colour_manual(values = c("darkorange", "mediumseagreen")) +
-    scale_fill_manual(values = c("darkorange", "mediumseagreen")) +
-    theme_ggdist()
-
-
-```
-
-
-
