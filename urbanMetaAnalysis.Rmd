@@ -1285,4 +1285,171 @@ ggplot() +
     
 ```
 
+```{r}
+###### Incidence rates and models with incidence rates
+###### Get the incidence rates
+incidence <- read.csv("C:/Users/Alireza/Downloads/TB_burden_countries_2025-05-06.csv")
+incidence <- read.csv(here("models/TB_burden_countries_2025-05-06.csv"))
+# 1. Standardize country names in cleanRuralityDF
+incidence <- incidence %>%
+  mutate(country = case_when(
+    country == "Viet Nam" ~ "Vietnam",
+    country == "Lao People's Democratic Republic" ~ "Laos",
+    country == "Democratic People's Republic of Korea" ~ "North Korea",
+    country == "United Republic of Tanzania" ~ "Tanzania",
+    TRUE ~ country
+  ))
+
+
+# 2. Perform the join
+cleanRuralityDF <- cleanRuralityDF %>%
+  left_join(
+    incidence %>% 
+      select(country, year, incidence = e_inc_100k),
+    by = c("study.country" = "country", "study.start.year" = "year")
+  )
+bactModelDF <- cleanRuralityDF %>%
+    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, incidence) %>%
+    pivot_wider(names_from = Rurality,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_Urban - LogOdds_Rural,
+        logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2)
+    )
+```
+
+```{r}
+###### Model with incidence
+incidenceEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + incidence + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+#######
+summary(incidenceEffectMod)
+plot(incidenceEffectMod)
+
+#######
+
+ndIncidence <- bactModelDF %>%
+  select(study.country, incidence) %>%
+  mutate(logOR_se = 1)
+
+# Generate predictions with fixed effects only
+incidenceEffectModEst <- add_epred_draws(
+  object = incidenceEffectMod,
+  newdata = ndIncidence,
+  re_formula = ~1 + (1 | study.country),  # include study.country random effects
+  allow_new_levels = TRUE  # allows predictions even for unseen levels
+) %>%
+  mutate(urRatio = exp(.epred),
+         type = "Posterior mean and 95% credible interval")
+
+summary_df <- incidenceEffectModEst %>%
+  group_by(study.country) %>%
+  mean_qi(urRatio)
+
+# Summarize predictions
+incidencePredictions %>%
+  group_by(incidence) %>%
+  mean_qi(logOR) %>%
+  ggplot(aes(x = incidence, y = logOR)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.2) +
+  labs(title = "Predicted logOR across incidence levels",
+       y = "Predicted logOR",
+       x = "Incidence per 100,000")
+
+
+
+ggplot(summary_df, aes(x = reorder(study.country, urRatio), y = urRatio)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = .lower, ymax = .upper), width = 0.2) +
+  coord_flip() +  # flips axes for better readability
+  labs(
+    title = "Predicted Odds Ratio by Study Country",
+    x = "Study Country",
+    y = "Posterior Mean Odds Ratio (with 95% Credible Interval)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+###### Model with incidence and region
+incidenceRegionMod <- brms::brm(
+  formula = logOR | se(logOR_se, sigma = TRUE) ~ 
+    incidence + (1 | WHO.region) + (1 | id),
+  data = bactModelDF,
+  prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+          prior(normal(0, 10), class = b) +
+          prior(exponential(2), class = sd),
+  family = gaussian(),
+  control = list(adapt_delta = 0.99),
+  chains = 4,
+  cores = 4,
+  iter = 4000
+)
+
+######
+summary(incidenceRegionMod)
+plot(incidenceRegionMod)
+
+######
+ndRegion2 <- bactModelDF %>%
+  select(WHO.region, incidence) %>%
+  mutate(logOR_se = 1)
+
+incidenceRegionModEst <- add_epred_draws(
+  object = incidenceRegionMod,
+  newdata = ndRegion2,
+  re_formula = ~ 1 + (1 | WHO.region),  # include WHO.region random effects
+  allow_new_levels = TRUE
+) %>%
+  mutate(
+    urRatio = exp(.epred),
+    type = "Posterior mean and 95% credible interval"
+  )
+
+incidenceRegionModEst %>%
+  group_by(WHO.region) %>%
+  mean_qi(urRatio)
+
+######### Plot the model
+ggplot() +
+  geom_vline(aes(xintercept = 1), linetype = 2) +
+  
+  # Empirical data points
+  geom_point(data = empirical_prev, 
+             aes(y = WHO.region, x = or_empirical, color = type2), 
+             alpha = 0.5, size = 8) +
+  
+  # Model estimates with intervals
+  stat_pointinterval(data = incidenceRegionModEst, 
+                     aes(x = urRatio, y = WHO.region, color = type), 
+                     .width = 0.95, size = 20) +
+  
+  scale_color_manual(values = myPal) +
+  scale_y_discrete(limits = rev, 
+                   labels = label_wrap(10)) +
+  
+  labs(x = "Urban-to-rural prevalence ratio",
+       y = "WHO region") +
+  
+  theme_bw() + 
+  theme(
+    legend.title = element_blank(), 
+    legend.position = "bottom", 
+    panel.grid.minor = element_blank()
+  )
+
+```
 
