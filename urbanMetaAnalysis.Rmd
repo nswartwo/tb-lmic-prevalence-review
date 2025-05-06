@@ -1288,7 +1288,6 @@ ggplot() +
 ```{r}
 ###### Incidence rates and models with incidence rates
 ###### Get the incidence rates
-incidence <- read.csv("C:/Users/Alireza/Downloads/TB_burden_countries_2025-05-06.csv")
 incidence <- read.csv(here("models/TB_burden_countries_2025-05-06.csv"))
 # 1. Standardize country names in cleanRuralityDF
 incidence <- incidence %>%
