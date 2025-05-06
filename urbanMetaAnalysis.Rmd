@@ -451,8 +451,91 @@ timeEffectModEst %>%
     theme_bw()  + theme(legend.position = "bottom")
 ```
 
+#### Bacteriologically-positive: Model 8: Change in prevalence over time.
 
-#### Bacteriologically-positive: Model 4: Region effect over time 
+Only for countries with more than one survey
+
+```{r}
+
+multipleSurveysBactModelDF <- bactModelDF %>%
+    group_by(study.country) %>%
+    mutate(surveys = n()) %>%
+    filter(surveys >1)
+
+#one study has missing study.end.date
+#reading the manuscript, not clearly stated, but most likely date of prevalence survey is 2010
+
+multipleSurveysBactModelDF <- multipleSurveysBactModelDF %>%
+    mutate(year_z = case_when(
+        is.na(year_z) ~ 2010 - round(mean(cleanRuralityDF$study.start.year, na.rm=TRUE)),
+              TRUE ~ year_z)
+    )
+
+```
+
+fit the model
+
+```{r}
+
+timeEffectMod2 <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 + year_z | study.country) + (1 | id),
+                       data = multipleSurveysBactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+```
+
+Summarize and check 
+
+```{r}
+summary(timeEffectMod2)
+plot(timeEffectMod2)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+timeEffectModEst2 <- add_epred_draws(object = timeEffectMod2,
+                                 newdata=multipleSurveysBactModelDF,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+
+Effect by country
+
+```{r}
+    timeEffectModEst2 %>%
+    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)),
+               y = urRatio, fill=study.country, group=study.country)) +
+    stat_lineribbon(.width = 0.95, alpha = 0.25) +
+    geom_point(data = empirical_prev %>% 
+                   inner_join(multipleSurveysBactModelDF), 
+                aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+                colour = "black", shape=1) +
+    geom_hline(yintercept = 1, linetype = 2) +
+    facet_wrap(study.country~., scales = "free_y") +
+    labs(y = "Urban-to-rural odds ratio",
+         x = "Year") +
+    theme_bw()  + 
+    theme(legend.position = "none")
+```
+
+
+
+
+
+#### Bacteriologically-positive: Model 3b: Region effect over time 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
@@ -722,6 +805,227 @@ sympEffectModEst %>%
           panel.grid.minor=element_blank(),
           plot.title = element_text(size=36))
 ```
+ 
+#### Bacteriologically-positive: Model 8: country level urbanisation
+
+Import the urbanisation data, and check
+https://ourworldindata.org/urbanization
+
+
+```{r}
+
+urbanization <- read.csv("data/share-of-population-urban.csv")
+
+countries_in_review <- bactModelDF %>%
+    select(study.country) %>%
+    distinct() %>%
+    pull()
+
+urbanizationClean <- urbanization %>%
+    filter(Entity %in% countries_in_review) %>%
+    janitor::clean_names() %>%
+    mutate(pct_urban = urban_population_of_total_population/100)
+
+urbanizationClean %>%
+    ggplot() +
+    geom_line(aes(x = year, y=pct_urban, colour = entity)) +
+    scale_y_continuous(labels = scales::percent)
+
+```
+
+Now get the percentage of population that was urban in the year of the survey
+
+```{r}
+
+urbanizationClean <- urbanizationClean %>%
+    mutate(year_z = year - round(mean(cleanRuralityDF0$study.start.year, na.rm=TRUE))) %>%
+    select(study.country = entity,
+           year_z,
+           pct_urban)
+    
+urbanizationModelDF <- left_join(bactModelDF, urbanizationClean)
+
+
+```
+
+Construct a model to look at the effect of urbanization in country at time of survey
+
+```{r}
+
+urbanizationEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + pct_urban + (1 | study.country) + (1 | id),
+                       data = urbanizationModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+    
+
+
+```
+
+
+```{r}
+summary(urbanizationEffectMod)
+plot(urbanizationEffectMod)
+
+
+
+```
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndUrbanization <- crossing(
+    pct_urban = modelr::seq_range(urbanizationModelDF$pct_urban, n=30),
+    logOR_se = 1
+)
+
+urbanizationEffectModEst <- add_epred_draws(object = urbanizationEffectMod,
+                                 newdata=ndUrbanization,
+                                 re_formula = NA) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+    ggplot() +
+    geom_hline(aes(yintercept = 1), linetype=2) +
+    stat_lineribbon(data=urbanizationEffectModEst, aes(y=urRatio, x=pct_urban), .width = 0.95, alpha=0.5) +
+    scale_color_manual(values = myPal) +
+    labs(y = "Male-to-female prevalence ratio", color = "",
+         x = "Percent of population living in urban areas") +
+    theme_bw() + theme(panel.grid.minor=element_blank())
+```
+
+
+#### Bacteriologically-positive: Model 8: country level urbanisation by region
+
+```{r}
+
+urbanizationEffectMod2 <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + pct_urban*WHO.region + (1 | study.country) + (1 | id),
+                       data = urbanizationModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+
+```{r}
+summary(urbanizationEffectMod2)
+plot(urbanizationEffectMod2)
+
+
+
+```
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+ndUrbanization2 <- crossing(
+    pct_urban = modelr::seq_range(urbanizationModelDF$pct_urban, n=30),
+    WHO.region = unique(urbanizationModelDF$WHO.region),
+    logOR_se = 1
+)
+
+urbanizationEffectModEst2 <- add_epred_draws(object = urbanizationEffectMod2,
+                                 newdata=ndUrbanization2,
+                                 re_formula = NA) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+empirical_prev_urban <- urbanizationModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        bias = bias,
+        pct_urban = pct_urban,
+        p_rural_empirical = plogis(LogOdds_Rural),
+        p_urban_empirical = plogis(LogOdds_Urban),
+        or_empirical = p_urban_empirical / p_rural_empirical,
+        or_empirical = (p_urban_empirical / (1 - p_urban_empirical)) / 
+            (p_rural_empirical / (1 - p_rural_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific TB prevalence")
+
+
+urbanizationEffectModEst2 %>%
+    filter(WHO.region !="Eastern Mediterranean region") %>%
+    ggplot() +
+    geom_hline(aes(yintercept = 1), linetype=2) +
+    stat_lineribbon(aes(y=urRatio, x=pct_urban, fill=WHO.region), 
+                    .width = 0.95, alpha=0.5) +
+    geom_point(data = empirical_prev_urban %>% filter(WHO.region !="Eastern Mediterranean region"),
+               aes(x=pct_urban, y=or_empirical, size = logOR_se), shape = 1) +
+    facet_wrap(WHO.region ~.) +
+    scale_x_continuous(labels = scales::percent) +
+    scale_fill_brewer(palette = "Set1") +
+    labs(y = "Urban-to-rural prevalence ratio", color = "",
+         x = "Percent of population living in urban areas") +
+    theme_bw() + theme(panel.grid.minor=element_blank())
+```
+
+#### Multlivariate model, with all covariates
+
+
+```{r}
+
+mvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + pct_urban + WHO.region + year_z + natRep + bias + symptomScreen +
+                       (1 | study.country) + (1 | id),
+                       data = urbanizationModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+```{r}
+
+summary(mvMod)
+plot(mvMod)
+
+
+
+```
+
+```{r}
+
+summarize_draws(mvMod) %>%
+    filter(stringr::str_detect(variable, "b_"),
+           variable !="b_Intercept") %>%
+    select(variable, mean, q5, q95) %>%
+    mutate(across(is.numeric, exp)) %>%
+    ggplot() +
+    geom_hline(aes(yintercept = 1), linetype=2) +
+    geom_pointinterval(aes(y=mean, ymin=q5, ymax =q95, x=variable)) +
+    coord_flip() +
+    scale_y_log10() +
+    theme(panel.background = element_rect(colour="grey78"))
+
+
+```
+
 
 
 ### Smear positive analysis 
@@ -980,3 +1284,5 @@ ggplot() +
           legend.position = "bottom")
     
 ```
+
+
