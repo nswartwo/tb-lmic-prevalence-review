@@ -1051,6 +1051,7 @@ summarize_draws(mvMod) %>%
 Bring estimates from regional model together to make a forest plot for the manuscript.
 
 ```{r}
+
 # Join survey labels
 names <- cleanRuralityDF0 %>%
   mutate(id = row_number()) %>%
@@ -1084,15 +1085,15 @@ forestDF <- bind_rows(survey_sum, region_sum, global_sum)
 # Fill display label and facet group
 forestDF <- forestDF %>%
   mutate(
-    display_label = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
+    display_label_raw = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
     facet_group = case_when(
       grouping == "survey" ~ WHO.region,
-      grouping == "regional" ~ figure.id.yr,  # already WHO region
+      grouping == "regional" ~ figure.id.yr,
       grouping == "Overall" ~ "Overall"
     )
   )
 
-# Define order of facets (with Overall at bottom)
+# Define facet order
 group_order <- c(
   "Africa region", 
   "Eastern Mediterranean region", 
@@ -1101,47 +1102,50 @@ group_order <- c(
   "Overall"
 )
 
-# Set factor order for facets and display labels
-forestDF <- forestDF %>%
-  mutate(is_summary = grouping %in% c("regional", "Overall")) %>%
+# Separate surveys and summaries
+surveys_only <- forestDF %>%
+  filter(grouping == "survey") %>%
   group_by(facet_group) %>%
   arrange(desc(urRatio), .by_group = TRUE) %>%
-  arrange(is_summary, .by_group = TRUE) %>%
-  mutate(display_label = factor(display_label, levels = rev(display_label))) %>%
-  ungroup() %>%
-  mutate(facet_group = factor(facet_group, levels = group_order))
+  ungroup()
 
-#empirical with labels
+summaries_only <- forestDF %>%
+  filter(grouping != "survey")
+
+# Recombine with surveys first, then summaries (preserves facet-wise order)
+forestDF_plot <- bind_rows(surveys_only, summaries_only) %>%
+  mutate(facet_group = factor(facet_group, levels = group_order)) %>%
+  mutate(display_label = case_when(
+    grouping == "Overall" ~ "<b>Overall</b>",
+    grouping == "regional" ~ paste0("<b>", display_label_raw, "</b>"),
+    TRUE ~ display_label_raw
+  )) %>%
+  mutate(display_label = factor(display_label, levels = rev(unique(display_label))))
+
+# Prepare empirical data
 empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
-        rename(display_label = figure.id.yr) %>%
-    select(display_label, WHO.region, or_empirical) %>%
-    mutate(grouping = "survey") %>%
-    mutate(facet_group = case_when(
-      grouping == "survey" ~ WHO.region,
-      grouping == "regional" ~ display_label,  # already WHO region
-      grouping == "Overall" ~ "Overall"
-    )) %>%
+  rename(display_label_raw = figure.id.yr) %>%
+  select(display_label_raw, WHO.region, or_empirical) %>%
+  mutate(
+    grouping = "survey",
+    facet_group = WHO.region,
+    display_label = display_label_raw
+  ) %>%
   mutate(facet_group = factor(facet_group, levels = group_order))
 
 # Plot
-forestDF %>%
-  mutate(display_label = case_when(
-    grouping == "Overall" ~ "<b>Overall</b>",  # Global becomes Overall and bold
-    grouping == "regional" ~ paste0("<b>", display_label, "</b>"),  # Bold WHO regions
-    TRUE ~ display_label
-  )) %>%
-ggplot() +
-  geom_hline(yintercept = 1, linetype = "dashed", colour="darkred") +
-  geom_pointinterval(aes(x = display_label, y = urRatio, ymin = .lower, ymax = .upper), 
+ggplot(forestDF_plot) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "darkred") +
+  geom_pointinterval(aes(x = display_label, y = urRatio, ymin = .lower, ymax = .upper),
                      size = 0.25) +
-  geom_point(data=empirical_prev_labels,
-             aes(x=display_label, y=or_empirical), colour="mediumseagreen", shape=1) +
+  geom_point(data = empirical_prev_labels,
+             aes(x = display_label, y = or_empirical), colour = "mediumseagreen", shape = 1) +
   coord_flip() +
   facet_grid(facet_group ~ ., scales = "free", space = "free") +
   scale_y_log10(
-  breaks = c(0.25, 0.5, 1, 2, 4),
-  labels = c("0.25", "0.5", "1", "2", "4")
-) +
+    breaks = c(0.25, 0.5, 1, 2, 4),
+    labels = c("0.25", "0.5", "1", "2", "4")
+  ) +
   labs(
     x = NULL,
     y = "Urban-to-rural bacteriologically-confirmed TB prevalence ratio\n(Posterior mean, 95% credible interval)"
@@ -1154,9 +1158,12 @@ ggplot() +
     axis.text.y = ggtext::element_markdown(hjust = 1),
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
-    plot.background = element_rect(fill="white"))
+    plot.background = element_rect(fill = "white")
+  )
 
-ggsave("output/urFigure2.png", height=10)
+# Save
+ggsave("output/urFigure2.png", height = 10)
+
 
 ```
 

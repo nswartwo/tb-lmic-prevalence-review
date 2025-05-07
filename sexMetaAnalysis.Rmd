@@ -357,6 +357,133 @@ empirical_prev <- bactModelDF %>%
     
 ```
 
+Bring estimates from regional model together to make a forest plot for the manuscript.
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.width = 20, fig.height = 28}
+
+# Join survey labels
+names <- cleanSexDF0 %>%
+    mutate(id = row_number()) %>%
+    select(id, figure.id.yr)
+
+# Survey-level estimates
+survey_sum <- surveyEffectModEst %>%
+    group_by(id) %>%
+    mean_qi(mfRatio) %>%
+    mutate(grouping = "survey") %>%
+    left_join(names, by = "id") %>%
+    left_join(bactModelDF %>% select(id, WHO.region), by = "id")
+
+# Regional summaries
+region_sum <- regionEffectModEst %>%
+    group_by(WHO.region) %>%
+    mean_qi(mfRatio) %>%
+    mutate(grouping = "regional") %>%
+    rename(figure.id.yr = WHO.region)
+
+# Global summary
+global_sum <- mainEffectModEst %>%
+    ungroup() %>%
+    mean_qi(mfRatio) %>%
+    mutate(grouping = "Overall",  
+           figure.id.yr = "Overall")
+
+# Combine all
+forestDF <- bind_rows(survey_sum, region_sum, global_sum)
+
+# Fill display label and facet group
+forestDF <- forestDF %>%
+    mutate(
+        display_label_raw = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
+        facet_group = case_when(
+            grouping == "survey" ~ WHO.region,
+            grouping == "regional" ~ figure.id.yr,
+            grouping == "Overall" ~ "Overall"
+        ), 
+        type="Posterior mean and 95% credible interval"
+    )
+
+# Define facet order
+group_order <- c(
+    "Africa region", 
+    "Americas region",
+    "Eastern Mediterranean region", 
+    "South-East Asia region", 
+    "Western Pacific region", 
+    "Overall"
+)
+
+# Separate surveys and summaries
+surveys_only <- forestDF %>%
+    filter(grouping == "survey") %>%
+    group_by(facet_group) %>%
+    arrange(desc(mfRatio), .by_group = TRUE) %>%
+    ungroup()
+
+summaries_only <- forestDF %>%
+    filter(grouping != "survey")
+
+# Recombine with surveys first, then summaries (preserves facet-wise order)
+forestDF_plot <- bind_rows(surveys_only, summaries_only) %>%
+    mutate(facet_group = factor(facet_group, levels = group_order)) %>%
+    mutate(display_label = case_when(
+        grouping == "Overall" ~ "<b>Overall</b>",
+        grouping == "regional" ~ paste0("<b>", display_label_raw, "</b>"),
+        TRUE ~ display_label_raw
+    )) %>%
+    mutate(display_label = factor(display_label, levels = rev(unique(display_label))))
+
+# Prepare empirical data
+empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
+    rename(display_label_raw = figure.id.yr) %>%
+    select(display_label_raw, WHO.region, or_empirical) %>%
+    mutate(
+        grouping = "survey",
+        facet_group = WHO.region,
+        display_label = display_label_raw
+    ) %>%
+    mutate(facet_group = factor(facet_group, levels = group_order),
+           type = "Ratios calculated from reported prevalence")
+
+# Plot
+forestRatio <- ggplot(forestDF_plot) +
+    geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+    geom_point(data = empirical_prev_labels,
+               aes(x = display_label, y = or_empirical, color=type), alpha=0.5) +
+    geom_pointinterval(aes(x = display_label, y = mfRatio, ymin = .lower, ymax = .upper, color=type),
+                       size = 0.25) +
+    coord_flip() +
+    facet_grid(facet_group ~ ., scales = "free", space = "free") +
+    scale_color_manual(values = myPal) +
+    scale_y_log10(
+        breaks = c(0.25, 0.5, 1, 2, 4),
+        labels = c("0.25", "0.5", "1", "2", "4"),
+    ) +
+    # scale_x_discrete(labels = label_wrap(30)) + 
+    labs(
+        x = NULL,
+        y = "Male-to-female ratio of bacteriologically-confirmed TB prevalence"
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(
+        strip.text.y = element_blank(),
+        strip.background = element_blank(),
+        panel.spacing.y = unit(1, "lines"),
+        axis.text.y = ggtext::element_markdown(hjust = 1),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        legend.position = "bottom", legend.title=element_blank(),
+        legend.spacing.y = unit(-.25, 'cm'),
+        legend.box.margin=margin(-10,-10,-6,-10),
+        panel.spacing = unit(0.18, "cm"),
+        plot.margin = unit(c(.1, .7, 0, .1), "cm")
+    )
+
+# Save
+ggsave(plot = forestRatio, "output/mfFigure2.png", height = 12.5, width=8.5, units = "in")
+```
+
 # Model 3: Effect over time 
 
 Model specification
