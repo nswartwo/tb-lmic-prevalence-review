@@ -37,6 +37,7 @@ myPal <- c("black", "violet")
 
 source(here("code/bacterialPositiveIndicator.R"))
 source(here("code/smearPositiveIndicator.R"))
+source(here("code/varianceComponentModel.R"))
 
 ##############################################################################|
 ##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
@@ -63,18 +64,18 @@ print(paste0(round(sum(cleanSexDF0$n.participants.male, na.rm=TRUE)/sum(cleanSex
 # Risk of bias statistics
 
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-
 table(cleanSexDF0$study.quality.summary)
 ```
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
 cleanSexDF <-  cleanSexDF0 %>% 
                filter(sex.analysis.indicator != "none") %>% 
                mutate("id" = row_number()) %>% 
     ### Scale all prevalence estimates back to decimals 
-    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.')),  ~ (. / 1e5)) %>%
+    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>%
     select(id,
            covidence.id, 
            figure.id.yr, 
@@ -215,16 +216,22 @@ cleanSexDF <-  cleanSexDF0 %>%
 ##############################################################################|
 #### Dataset for modeling #####################################################
 ##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdj <- varianceAdjust("sex")
 
 bactModelDF <- cleanSexDF %>%
-    select(id, WHO.region, study.country, Sex, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError) %>%
+    select(id, WHO.region, study.country, Sex, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, sex.analysis.indicator) %>%
     pivot_wider(names_from = Sex,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
-    mutate(
-        logOR = LogOdds_Male - LogOdds_Female,
-        logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2)
-    )
+    mutate(logOR = LogOdds_Male - LogOdds_Female,
+           unadj_logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2), 
+           logOR_se = ifelse(grepl("adj", sex.analysis.indicator), 
+                                     unadj_logOR_se,
+                                     ifelse(grepl("smear", sex.analysis.indicator),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
+
 ```
 
 # Model 1: Main effect model
@@ -386,16 +393,16 @@ ndTime <- bactModelDF %>%
 timeEffectModEst <- add_epred_draws(object = timeEffectMod,
                                  newdata=ndTime,
                                  re_formula = NA,
-                                 allow_new_levels = TRUE) %>% 
+                                 allow_new_levels = TRUE) %>%
                            mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
+                           type="Posterior mean and 95% credible interval")
 ```
 
 Main estimate
 ```{r}
-timeEffectModEst %>% 
-    group_by(year_z) %>% 
-    mean_qi(mfRatio) %>% 
+timeEffectModEst %>%
+    group_by(year_z) %>%
+    mean_qi(mfRatio) %>%
     mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper)
 
@@ -407,8 +414,8 @@ timeEffectModEst %>%
     ggplot(aes(x = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)),
                y = mfRatio)) +
     stat_lineribbon(width = 0.95, alpha = 0.25) +
-    geom_point(data = empirical_prev, 
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+    geom_point(data = empirical_prev,
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se),
                colour = "black") +
     geom_hline(yintercept = 1, linetype = 2) +
     labs(y = "Male-to-female odds ratio",
@@ -454,16 +461,16 @@ ndTimeReg <- bactModelDF %>%
 timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
                                  newdata=ndTimeReg,
                                  re_formula = NA,
-                                 allow_new_levels = TRUE) %>% 
+                                 allow_new_levels = TRUE) %>%
                            mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
+                           type="Posterior mean and 95% credible interval")
 ```
 
 Main estimate
 ```{r}
-timeEffectRegionModEst %>% 
-    group_by(year_z) %>% 
-    mean_qi(mfRatio) %>% 
+timeEffectRegionModEst %>%
+    group_by(year_z) %>%
+    mean_qi(mfRatio) %>%
     mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper)
 
@@ -476,19 +483,19 @@ timeEffectRegionModEst %>%
            WHO.region !="Eastern Mediterranean region") %>%
     ggplot(aes(x = year_z + round(mean(cleanSexDF$study.end.year, na.rm = TRUE)),
                y = mfRatio,
-               fill = WHO.region, 
+               fill = WHO.region,
                color = WHO.region)) +
     stat_lineribbon(aes(color = WHO.region, fill = WHO.region), .width = 0.95, alpha = 0.25) +
     geom_point(data = empirical_prev %>%
                    filter(WHO.region !="Americas region",
-                          WHO.region !="Eastern Mediterranean region"), 
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
+                          WHO.region !="Eastern Mediterranean region"),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se),
                colour = "black") +
     geom_hline(yintercept = 1, linetype = 2) +
     facet_wrap(~ WHO.region) +
     labs(y = "Male-to-female odds ratio!",
          x = "Year",
-         fill = "WHO region", 
+         fill = "WHO region",
          color = "WHO region") +
     theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
 ```
