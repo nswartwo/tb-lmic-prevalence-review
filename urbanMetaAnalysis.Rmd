@@ -34,7 +34,7 @@ myPal <- c("black", "mediumseagreen")
 
 source(here("code/bacterialPositiveIndicator.R"))
 source(here("code/smearPositiveIndicator.R"))
-
+source(here("code/varianceComponentModel.R"))
 ```
 
 ### Data import and prep
@@ -245,18 +245,26 @@ cleanRuralityDF <-  cleanRuralityDF0 %>%
                                                                     ignore.case=TRUE), "Yes", "No"),
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
 ```
+```{r}
+#### Calculate the variance adjustment for non-adjusted studies
+varAdj <- varianceAdjust("rurality")
+```
 
 
 ```{r}
 bactModelDF <- cleanRuralityDF %>%
-    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError) %>%
+    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, rurality.analysis.indicator) %>%
     pivot_wider(names_from = Rurality,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
     mutate(
         logOR = LogOdds_Urban - LogOdds_Rural,
-        logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2)
-    )
+        unadj_logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2), 
+        logOR_se = ifelse(grepl("adj", rurality.analysis.indicator), 
+                                     unadj_logOR_se,
+                                     ifelse(grepl("smear", rurality.analysis.indicator),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
 ```
 
 
