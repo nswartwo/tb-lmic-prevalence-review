@@ -267,6 +267,18 @@ bactModelDF <- cleanRuralityDF %>%
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
 ```
 
+```{r}
+#one study has missing study.end.date
+#reading the manuscript, not clearly stated, but most likely date of prevalence survey is 2010
+
+bactModelDF <- bactModelDF %>%
+    mutate(year_z = case_when(
+        is.na(year_z) ~ 2010 - round(mean(cleanRuralityDF$study.start.year, na.rm=TRUE)),
+              TRUE ~ year_z)
+    )
+
+
+```
 
 
 #### Bacteriologically-positive: Model 1: Main effect model
@@ -490,14 +502,7 @@ multipleSurveysBactModelDF <- bactModelDF %>%
     mutate(surveys = n()) %>%
     filter(surveys >1)
 
-#one study has missing study.end.date
-#reading the manuscript, not clearly stated, but most likely date of prevalence survey is 2010
 
-multipleSurveysBactModelDF <- multipleSurveysBactModelDF %>%
-    mutate(year_z = case_when(
-        is.na(year_z) ~ 2010 - round(mean(cleanRuralityDF$study.start.year, na.rm=TRUE)),
-              TRUE ~ year_z)
-    )
 
 ```
 
@@ -1063,7 +1068,13 @@ Bring estimates from regional model together to make a forest plot for the manus
 # Join survey labels
 names <- cleanRuralityDF0 %>%
   mutate(id = row_number()) %>%
-  select(id, figure.id.yr)
+  select(id, figure.id.yr)  %>%
+  mutate(figure.id.yr = case_when(
+        figure.id.yr == "Kenya (Karemo) NA" ~ "Kenya (Karemo) 2010",
+              TRUE ~ figure.id.yr)
+    )
+
+    
 
 # Survey-level estimates
 survey_sum <- surveyEffectModEst %>%
