@@ -220,7 +220,7 @@ cleanSexDF <-  cleanSexDF0 %>%
 varAdj <- varianceAdjust("sex")
 
 bactModelDF <- cleanSexDF %>%
-    select(id, WHO.region, study.country, Sex, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, sex.analysis.indicator) %>%
+    select(id, WHO.region, study.country, Sex, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, sex.analysis.indicator, n.participants.male, n.participants.female) %>%
     pivot_wider(names_from = Sex,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
@@ -232,6 +232,22 @@ bactModelDF <- cleanSexDF %>%
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
 
+```
+More descriptives 
+
+```{r}
+table(bactModelDF$WHO.region)
+bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=WHO.region)
+bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
+table(bactModelDF$natRep)
+bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=natRep)
+bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=natRep)
+table(bactModelDF$bias)
+bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=bias)
+bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=bias)
+table(bactModelDF$symptomScreen)
+bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=symptomScreen)
+bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=symptomScreen)
 ```
 
 # Model 1: Main effect model
@@ -917,7 +933,8 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
 
 smrModelDF <- cleanSexSmrDF %>%
-    select(id, WHO.region, study.country, Sex, year_z, natRep, LogOdds, LogOddsStandardError) %>%
+    select(id, WHO.region, study.country, Sex, year_z, natRep, LogOdds, LogOddsStandardError, 
+           n.participants.male, n.participants.female) %>%
     pivot_wider(names_from = Sex,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
@@ -940,6 +957,13 @@ print(paste(sum(!is.na(cleanSexSmrDF0$n.participants.female)), "studies report p
             sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE), "participants"))
 
 print(paste0(round(sum(cleanSexSmrDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
+```
+More descriptives 
+
+```{r}
+table(smrModelDF$WHO.region)
+smrModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=WHO.region)
+smrModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
 ```
 
 # Model X: Smear positive main effect 
