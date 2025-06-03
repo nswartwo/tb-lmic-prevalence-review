@@ -292,6 +292,11 @@ mainEffectModEst <- add_epred_draws(object = mainEffectMod,
 Main estimate
 ```{r}
 mainEffectModEst %>% ungroup %>% mean_qi(mfRatio)
+
+### output for contribution table
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][1]))
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][3]))
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][4]))
 ```
 
 Survey-level effects
@@ -580,6 +585,11 @@ timeEffectModEst %>%
     mean_qi(mfRatio) %>%
     mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper)
+
+### output for contribution table
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
 
 timeEffectHortModEst %>%
     group_by(year_z) %>%
@@ -1016,17 +1026,29 @@ tbBurdenEst <- read_csv("data/WHOEstimates.csv") %>%
              rename("study.country" = country,
                     "tb.inc.100k" = e_inc_100k, 
                     "tb.cases" = e_inc_num, 
-                    "tb.hiv.perc" = e_tbhiv_prct)
+                    "tb.hiv.perc" = e_tbhiv_prct) %>% 
+            mutate("tb.inc.100k_z" = tb.inc.100k - mean(tb.inc.100k, na.rm=TRUE),
+                   "tb.cases_z" = tb.cases - mean(tb.cases, na.rm=TRUE), 
+                   "tb.hiv.perc_z" = tb.hiv.perc - mean(tb.hiv.perc, na.rm=TRUE))
+
+### Gender development index 
+GDI <- read_csv("data/GenderDevelopmentIndex.csv")[,1:2] %>% 
+       mutate(GDI = as.numeric(Value), 
+              GDI_z = GDI - mean(GDI, na.rm=TRUE)) %>% select(!Value) %>%
+       rename(study.country = Country)
+
+### Join 
+covariates <- full_join(tbBurdenEst, GDI,  by=c("study.country"))
 
 ### Join these to the modeling dataset 
-bactModelDF <- full_join(bactModelDF, tbBurdenEst, by=c("study.country"))
+bactModelDF <- full_join(bactModelDF, covariates, by=c("study.country"))
 ```
 
 Model specification 
 
 ```{r}
 tbIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + tb.inc.100k + 
+                           1 + tb.inc.100k_z + 
                                (1 | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -1038,11 +1060,13 @@ tbIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        cores = 4,
                        iter = 4000)
 
+summary(tbIncMod)
+
 bayes_R2(tbIncMod)
 
 ndTbInc <- bactModelDF %>%
              select(logOR_se,
-                    tb.inc.100k) %>%
+                    tb.inc.100k_z) %>%
              distinct()
 
 tbIncModEst <- add_epred_draws(object = tbIncMod,
@@ -1052,50 +1076,20 @@ tbIncModEst <- add_epred_draws(object = tbIncMod,
                            type="Posterior mean and 95% credible interval")
 
 tbIncModEst %>% ungroup() %>%
-    mean_qi(mfRatio)
+    mean_qi(mfRatio) 
 
+### output for contribution table
+round(exp(as.numeric(summary(tbIncMod)[["fixed"]][2,1])),2)
+round(exp(as.numeric(summary(tbIncMod)[["fixed"]][2,3])),2)
+round(exp(as.numeric(summary(tbIncMod)[["fixed"]][2,4])),2)
 ```
-Model specification 
 
-```{r}
-tbIncYrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + tb.inc.100k + year_z +
-                               (1 | study.country) + (1 | id),
-                       data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-bayes_R2(tbIncYrMod)
-
-ndTbIncYr <- bactModelDF %>%
-             select(logOR_se,
-                    tb.inc.100k) %>%
-             distinct() %>% 
-             crossing(year_z = seq(min(bactModelDF$year_z, na.rm = TRUE),
-                                   max(bactModelDF$year_z, na.rm = TRUE), 1))
-
-tbIncYrModEst <- add_epred_draws(object = tbIncYrMod,
-                                 newdata=ndTbIncYr %>% na.omit(),
-                                 re_formula = NA) %>%
-                           mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval")
-
-tbIncYrModEst %>% ungroup() %>%
-    mean_qi(mfRatio)
-
-```
 
 Model specification 
 
 ```{r}
 tbHivMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + tb.hiv.perc + 
+                           1 + tb.hiv.perc_z + 
                                (1 | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -1111,7 +1105,7 @@ bayes_R2(tbHivMod)
 
 ndtbHiv <- bactModelDF %>%
              select(logOR_se,
-                    tb.hiv.perc) %>%
+                    tb.hiv.perc_z) %>%
              distinct()
 
 tbHivModEst <- add_epred_draws(object = tbHivMod,
@@ -1123,13 +1117,18 @@ tbHivModEst <- add_epred_draws(object = tbHivMod,
 tbHivModEst %>% ungroup() %>%
     mean_qi(mfRatio)
 
+### output for contribution table
+exp(as.numeric(summary(tbHivMod)[["fixed"]][2,1]))
+exp(as.numeric(summary(tbHivMod)[["fixed"]][2,3]))
+exp(as.numeric(summary(tbHivMod)[["fixed"]][2,4]))
+
 ```
 
 Model specification 
 
 ```{r}
-tbIncYrHivMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + tb.inc.100k + year_z + tb.hiv.perc + 
+gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + GDI_z + 
                                (1 | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -1141,34 +1140,37 @@ tbIncYrHivMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        cores = 4,
                        iter = 4000)
 
-bayes_R2(tbIncYrHivMod)
+summary(gdiMod)
 
-ndtbIncYrHiv <- bactModelDF %>%
+bayes_R2(gdiMod)
+
+ndGDI <- bactModelDF %>%
              select(logOR_se,
-                    tb.inc.100k, tb.hiv.perc) %>%
-             distinct() %>% 
-             crossing(year_z = seq(min(bactModelDF$year_z, na.rm = TRUE),
-                                   max(bactModelDF$year_z, na.rm = TRUE), 1))
+                    GDI_z) %>%
+             distinct()
 
-tbIncYrHivModEst <- add_epred_draws(object = tbIncYrHivMod,
-                                 newdata=ndtbIncYrHiv %>% na.omit(),
+gdiModEst <- add_epred_draws(object = gdiMod,
+                                 newdata=ndGDI %>% na.omit(),
                                  re_formula = NA) %>%
                            mutate(mfRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval")
 
-tbIncYrHivModEst %>% ungroup() %>%
-    mean_qi(mfRatio)
+gdiModEst %>% ungroup() %>%
+    mean_qi(mfRatio) 
 
+### output for contribution table
+round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,1])),2)
+round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,3])),2)
+round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,4])),2)
 ```
 
 Model specification 
 
 ```{r}
 multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + tb.inc.100k + tb.hiv.perc + 
-                               WHO.region + year_z + natRep + 
-                               bias + symptomScreen +
-                               (1 | study.country) + (1 | id),
+                                1 + year_z + 
+                                tb.inc.100k_z + tb.hiv.perc_z + 
+                                GDI_z + (1 | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 10), class = b) +
@@ -1184,69 +1186,154 @@ Summarize and check
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(multiMod)
+
+### output for contribution table
+x <- data.frame(parameter = rownames(summary(multiMod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(multiMod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(multiMod)[["fixed"]][,3])),2), 
+                          ",",
+                    round(exp(as.numeric(summary(multiMod)[["fixed"]][,4])),2)))
+
+print(x)
+
 bayes_R2(multiMod)
 plot(multiMod)
 
 stanplot(multiMod)
 ```
 
-Prediction
+# Replicate the covariate analysis by world region
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+regCoVList <- list()
 
-ndTimeReg <- bactModelDF %>%
-             select(logOR_se, WHO.region,
-                    tb.inc.100k, tb.hiv.perc, 
-                    natRep, 
-                    bias, symptomScreen) %>%
-             distinct() %>%
-             crossing(year_z = seq(min(bactModelDF$year_z, na.rm = TRUE),
-                                   max(bactModelDF$year_z, na.rm = TRUE), 1))
-
-timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
-                                 newdata=ndTimeReg,
-                                 re_formula = NA,
-                                 allow_new_levels = TRUE) %>%
-                           mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval")
-
-  fitted(multiMod) %>%
-  as_tibble() %>%
-  bind_cols(predict(bactModelDF))
-
-
-multiModEst <-fitted(multiMod) %>%
-                    as_tibble() %>%
-                    bind_cols(bactModelDF %>% distinct()) %>%
-                           mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
+for (i in 2:length(unique(bactModelDF$WHO.region))){
+    region <- unique(bactModelDF$WHO.region)[i]
+    print(region)
+    
+    regionMainMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                                1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(WHO.region == region),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+    
+    regionTBIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                                1 + tb.inc.100k_z + 
+                                (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(WHO.region == region),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+    
+    regionTBHivIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                            1 + tb.hiv.perc_z + 
+                            (1 | study.country) + (1 | id),
+                   data = bactModelDF %>% filter(WHO.region == region),
+                   prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                       prior(normal(0, 10), class = b) +
+                       prior(exponential(2), class = sd),
+                   family = gaussian(),
+                   control = list(adapt_delta = 0.99),
+                   chains = 4,
+                   cores = 4,
+                   iter = 4000)
+    
+    regionTBYearMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                            1 + year_z + 
+                            (1 | study.country) + (1 | id),
+                   data = bactModelDF %>% filter(WHO.region == region),
+                   prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                       prior(normal(0, 10), class = b) +
+                       prior(exponential(2), class = sd),
+                   family = gaussian(),
+                   control = list(adapt_delta = 0.99),
+                   chains = 4,
+                   cores = 4,
+                   iter = 4000)
+    
+    regionTBGdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                            1 + GDI_z + 
+                            (1 | study.country) + (1 | id),
+                   data = bactModelDF %>% filter(WHO.region == region),
+                   prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                       prior(normal(0, 10), class = b) +
+                       prior(exponential(2), class = sd),
+                   family = gaussian(),
+                   control = list(adapt_delta = 0.99),
+                   chains = 4,
+                   cores = 4,
+                   iter = 4000)
+    
+    tmp <- data.frame(parameter = c(rownames(summary(regionMainMod)[["fixed"]]), 
+                                  rownames(summary(regionTBGdiMod)[["fixed"]])[2], 
+                                  rownames(summary(regionTBYearMod)[["fixed"]])[2],
+                                  rownames(summary(regionTBIncMod)[["fixed"]])[2],
+                                  rownames(summary(regionTBHivIncMod)[["fixed"]])[2]), 
+                    PE = c(round(exp(as.numeric(summary(regionMainMod)[["fixed"]][1,1])),2), 
+                           round(exp(as.numeric(summary(regionTBGdiMod)[["fixed"]][2,1])),2), 
+                           round(exp(as.numeric(summary(regionTBYearMod)[["fixed"]][2,1])),2), 
+                           round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,1])),2), 
+                           round(exp(as.numeric(summary(regionTBHivIncMod)[["fixed"]][2,1])),2)), 
+                    CrI = c(paste(round(exp(as.numeric(summary(regionMainMod)[["fixed"]][1,3])),2), ",",
+                                round(exp(as.numeric(summary(regionMainMod)[["fixed"]][1,4])),2)),
+                        paste(round(exp(as.numeric(summary(regionTBGdiMod)[["fixed"]][2,3])),2), ",",
+                                    round(exp(as.numeric(summary(regionTBGdiMod)[["fixed"]][2,4])),2)),
+                        paste(round(exp(as.numeric(summary(regionTBYearMod)[["fixed"]][2,3])),2), ",",
+                                    round(exp(as.numeric(summary(regionTBYearMod)[["fixed"]][2,4])),2)), 
+                        paste(round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,3])),2), ",",
+                                    round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,4])),2)), 
+                        paste(round(exp(as.numeric(summary(regionTBHivIncMod)[["fixed"]][2,3])),2), ",",
+                                    round(exp(as.numeric(summary(regionTBHivIncMod)[["fixed"]][2,4])),2))))
+    
+    regCoVList[[region]] <- tmp
+    rm(tmp)
+}
 ```
-
-Main estimate
-```{r}
-sympEffectModEst %>% 
-    group_by(symptomScreen) %>% 
-    mean_qi(mfRatio) %>% 
-    select(symptomScreen, mfRatio, .lower, .upper)
-```
-
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-    ggplot() +
-    geom_point(data = empirical_prev, aes(y=symptomScreen, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
-    stat_pointinterval(data=sympEffectModEst, aes(x=mfRatio, y=symptomScreen, color=type), .width = 0.95, size=20) +
-    scale_color_manual(values = myPal) +
-    scale_y_discrete(limits=rev, 
-                     labels = label_wrap(10)) +
-    labs(x = "Male-to-female prevalence ratio", color = "",
-         y = "Symptom screening required") +
-    scale_size_continuous(range = c(8,16)) +
-    theme_bw(base_size = 30) + theme(
-                                     legend.position = c(.83,.2), legend.box.just = "right",
-                                     # legend.direction = "horizontal",
-          panel.grid.minor=element_blank(),
-          plot.title = element_text(size=36))
+regMultiList <- list()
+
+for (i in 1:length(unique(bactModelDF$WHO.region))){
+    region <- unique(bactModelDF$WHO.region)[i]
+    print(region)
+    
+    regionMultiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                                1 + year_z + 
+                                tb.inc.100k_z + tb.hiv.perc_z + 
+                                GDI_z + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(WHO.region == region),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+    
+    x <- data.frame(parameter = rownames(summary(regionMultiMod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,3])),2), 
+                          ",",
+                    round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,4])),2)))
+    
+    regMultiList[[region]] <- x 
+    rm(x)
+}
 ```
+
+
+
 # Smear positive analysis 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
