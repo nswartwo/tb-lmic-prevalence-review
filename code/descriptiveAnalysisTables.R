@@ -161,17 +161,41 @@ gtsave(data = ageTbl, filename = "output/descriptive/ageTable.pdf")
 ### We will use these to create formatted tables in word.
 
 ### Sex studies 
-sexSurveys <- cleanDF %>% filter(report.sex == "Yes")
+source(here("code/bacterialPositiveIndicator.R"))
+
+sexSurveys <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="none")
 studySexDetails <- data.frame("Survey ID" = sexSurveys$figure.id, 
-                              "WHO region" = sexSurveys$World.regions.according.to.WHO,
                               "Year(s) of study" = sexSurveys$study.years,
-                              "Female participants (N)" = sexSurveys$n.participants.female,
-                              "Female TB positive (N)" = sexSurveys$n.bacteriological.tb.female, 
-                              "Male participants (N)" = sexSurveys$n.participants.male,
-                              "Male TB positive (N)" = sexSurveys$n.bacteriological.tb.male, 
-                              "Total participants (N)" = sexSurveys$n.participants.female + sexSurveys$n.participants.male,
-                              "Total TB positive (N)" = sexSurveys$n.bacteriological.tb.female + sexSurveys$n.bacteriological.tb.male, 
-                              check.names = FALSE)
+                              "WHO region" = gsub("\\(WHO\\)", "region", sexSurveys$WHO.region),
+                              "Reported measure of bacteriological TB" = case_when(sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" ~ "Adjusted bacteriological TB prevalence with confidence interval",
+                                                                                   sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" ~ "Adjusted smear positive TB prevalence with confidence interval",
+                                                                                   sexSurveys$sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ "Crude bacteriological TB prevalence with confidence interval",
+                                                                                   sexSurveys$sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ "Crude smear positive TB prevalence with confidence interval",
+                                                                                   sexSurveys$sex.analysis.indicator == "n.bacteriological.tb"  ~ "Count of persons with bacteriologically positive TB",
+                                                                                   sexSurveys$sex.analysis.indicator == "n.smear.positive.tb"  ~ "Count of persons with smear positive TB",
+                                                                                   sexSurveys$sex.analysis.indicator == "n.culture.positive.tb"  ~ "Count of persons with culture positive TB",
+                                                                                   sexSurveys$sex.analysis.indicator == "prev100k.smear.positive.tb"  ~ "Crude smear positive TB prevalence"),
+                              "Reported female bacteriological TB prevalence" = case_when(sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" ~ sexSurveys$adj.prev100k.bacteriological.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" ~ sexSurveys$adj.prev100k.smear.positive.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ sexSurveys$prev100k.bacteriological.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ sexSurveys$prev100k.smear.positive.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.bacteriological.tb"  ~ sexSurveys$n.bacteriological.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.smear.positive.tb"  ~ sexSurveys$n.smear.positive.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.culture.positive.tb"  ~ sexSurveys$n.culture.positive.tb.female,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.smear.positive.tb"  ~ sexSurveys$prev100k.smear.positive.tb.female),
+                              "Reported male bacteriological TB prevalence" = case_when(sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" ~ sexSurveys$adj.prev100k.bacteriological.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" ~ sexSurveys$adj.prev100k.smear.positive.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ sexSurveys$prev100k.bacteriological.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ sexSurveys$prev100k.smear.positive.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.bacteriological.tb"  ~ sexSurveys$n.bacteriological.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.smear.positive.tb"  ~ sexSurveys$n.smear.positive.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "n.culture.positive.tb"  ~ sexSurveys$n.culture.positive.tb.male,
+                                                                                        sexSurveys$sex.analysis.indicator == "prev100k.smear.positive.tb"  ~ sexSurveys$prev100k.smear.positive.tb.male),
+                              "Total participants (N)" = sexSurveys$n.participants.sex.total,
+                              "Male participants (%) " = (sexSurveys$n.participants.male/sexSurveys$n.participants.sex.total)*100,
+                              "Probability of bias" = ifelse(grepl("Low", sexSurveys$study.quality.summary), "Low", 
+                                                    ifelse(grepl("High", sexSurveys$study.quality.summary), "High", "Moderate")),
+                                                            check.names = FALSE)
 
 write.csv(studySexDetails, file = here("output/descriptive/sexStudyTable.csv"))              
 
