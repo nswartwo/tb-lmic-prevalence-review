@@ -47,19 +47,15 @@ names(indicatorLabels) <- unique(sexSurveys$sex.analysis.indicator)
 studySexDetails <- data.frame("Survey ID" = sexSurveys$figure.id, 
                               # "title" = sexSurveys$title.extracted,
                               "Year(s) of study" = sexSurveys$study.years,
-                              "WHO region" = sexSurveys$WHO.region,
-                              "Female participants (N)" = sexSurveys$n.participants.female,
-                              "Male participants (N)" = sexSurveys$n.participants.male,
-                              "Reported estimate used" = indicatorLabels[sexSurveys$sex.analysis.indicator],
+                              "WHO region" = gsub("\\(WHO\\)", "region", sexSurveys$WHO.region),
+
+                              "Reported measure of bacteriological TB" = indicatorLabels[sexSurveys$sex.analysis.indicator],
                               "Female TB prevalence (as reported)" = femaleEstimates, 
                               "Male TB prevalence (as reported)" = maleEstimates,       
-                              
-                              
-                              
-                              
-                              # "Female TB positive (N)" = sexSurveys$n.bacteriological.tb.female, 
-                              # "Male TB positive (N)" = sexSurveys$n.bacteriological.tb.male, 
-                              # "Total TB positive (N)" = sexSurveys$n.bacteriological.tb.female + sexSurveys$n.bacteriological.tb.male, 
+                              "Total participants (N)" = sexSurveys$n.participants.sex.total,
+                              "Male participants (%)" = round((sexSurveys$n.participants.male/sexSurveys$n.participants.sex.total)*100,2),
+                              "Probability of bias" = ifelse(grepl("Low", sexSurveys$study.quality.summary), "Low", 
+                                                             ifelse(grepl("High", sexSurveys$study.quality.summary), "High", "Moderate")),
                               check.names = FALSE)
 
 write.csv(studySexDetails, file = here("output/descriptive/sexStudyTableV2.csv"))    
@@ -74,7 +70,7 @@ sexTbl <- matrix(sexTbl0,3,length(sexTbl0)/3, byrow = FALSE)[-3,]
 rownames(sexTbl) <- c("Male (N)", "Female (N)")
 
 
-sexTbl <- sexTbl %>% t() %>% as.data.frame() %>% 
+sexTblGT <- sexTbl %>% t() %>% as.data.frame() %>% 
     mutate("Description" = unique(sapply(names(sexTbl0), function(x) sub("[^.]+\\.([^.]+)\\..*", "\\1", x))),
            "Total (N)" = `Male (N)` + `Female (N)`, 
            "Female (%)" = round(`Female (N)`/`Total (N)`*100,1), 
@@ -83,9 +79,17 @@ sexTbl <- sexTbl %>% t() %>% as.data.frame() %>%
     gt() %>% 
     tab_header(
         title = paste("Sex distribution totals across", sum(sexSurveys$sex.analysis.indicator!="None"),  "TB prevalence surveys")) %>%
-    fmt_number(drop_trailing_zeros = TRUE); sexTbl
+    fmt_number(drop_trailing_zeros = TRUE); sexTblGT
 
-gtsave(data = sexTbl, filename = "output/descriptive/sexTable.pdf") 
+sexTblCSV <- sexTbl %>% t() %>% as.data.frame() %>% 
+    mutate("Description" = unique(sapply(names(sexTbl0), function(x) sub("[^.]+\\.([^.]+)\\..*", "\\1", x))),
+           "Total (N)" = `Male (N)` + `Female (N)`, 
+           "Female (%)" = round(`Female (N)`/`Total (N)`*100,1), 
+           "Male (%)" = round(`Male (N)`/`Total (N)`*100,1)) %>% 
+    dplyr::select(Description, `Female (N)`, `Female (%)`, `Male (N)`,`Male (%)`, `Total (N)`) 
+
+gtsave(data = sexTblGT, filename = "output/descriptive/sexTable.pdf") 
+write_csv(x = sexTblCSV, file= "output/descriptive/sexTableCumulative.csv") 
 
 
 #### Number of countries in each WHO region
