@@ -1,0 +1,1849 @@
+﻿covariate_name_short,location_id,location_name,year_id,age_group_id,age_group_name,sex_id,sex,mean_value,lower_value,upper_value
+adult_underweight,161,Bangladesh,1994,27,Age-standardized,1,Male,0.13615277,0.13615277,0.13615277
+adult_underweight,161,Bangladesh,1994,27,Age-standardized,2,Female,0.14912643,0.14912643,0.14912643
+adult_underweight,161,Bangladesh,1995,27,Age-standardized,1,Male,0.13675246,0.13675246,0.13675246
+adult_underweight,161,Bangladesh,1995,27,Age-standardized,2,Female,0.14934072,0.14934072,0.14934072
+adult_underweight,161,Bangladesh,1996,27,Age-standardized,1,Male,0.13725855,0.13725855,0.13725855
+adult_underweight,161,Bangladesh,1996,27,Age-standardized,2,Female,0.14960669,0.14960669,0.14960669
+adult_underweight,161,Bangladesh,1997,27,Age-standardized,1,Male,0.13738182,0.13738182,0.13738182
+adult_underweight,161,Bangladesh,1997,27,Age-standardized,2,Female,0.14587902,0.14587902,0.14587902
+adult_underweight,161,Bangladesh,1998,27,Age-standardized,1,Male,0.13708935,0.13708935,0.13708935
+adult_underweight,161,Bangladesh,1998,27,Age-standardized,2,Female,0.14153097,0.14153097,0.14153097
+adult_underweight,161,Bangladesh,1999,27,Age-standardized,1,Male,0.13236469,0.13236469,0.13236469
+adult_underweight,161,Bangladesh,1999,27,Age-standardized,2,Female,0.1365595,0.1365595,0.1365595
+adult_underweight,161,Bangladesh,2000,27,Age-standardized,1,Male,0.12953514,0.12953514,0.12953514
+adult_underweight,161,Bangladesh,2000,27,Age-standardized,2,Female,0.13103006,0.13103006,0.13103006
+adult_underweight,161,Bangladesh,2001,27,Age-standardized,1,Male,0.12522830000000001,0.12522830000000001,0.12522830000000001
+adult_underweight,161,Bangladesh,2001,27,Age-standardized,2,Female,0.12512919,0.12512919,0.12512919
+adult_underweight,161,Bangladesh,2002,27,Age-standardized,1,Male,0.121903,0.121903,0.121903
+adult_underweight,161,Bangladesh,2002,27,Age-standardized,2,Female,0.12020833,0.12020833,0.12020833
+adult_underweight,161,Bangladesh,2003,27,Age-standardized,1,Male,0.11898983,0.11898983,0.11898983
+adult_underweight,161,Bangladesh,2003,27,Age-standardized,2,Female,0.1177613,0.1177613,0.1177613
+adult_underweight,161,Bangladesh,2004,27,Age-standardized,1,Male,0.11568718,0.11568718,0.11568718
+adult_underweight,161,Bangladesh,2004,27,Age-standardized,2,Female,0.11575537,0.11575537,0.11575537
+adult_underweight,161,Bangladesh,2005,27,Age-standardized,1,Male,0.11245923,0.11245923,0.11245923
+adult_underweight,161,Bangladesh,2005,27,Age-standardized,2,Female,0.11289697,0.11289697,0.11289697
+adult_underweight,161,Bangladesh,2006,27,Age-standardized,1,Male,0.10952693,0.10952693,0.10952693
+adult_underweight,161,Bangladesh,2006,27,Age-standardized,2,Female,0.11043342,0.11043342,0.11043342
+adult_underweight,161,Bangladesh,2007,27,Age-standardized,1,Male,0.10687267,0.10687267,0.10687267
+adult_underweight,161,Bangladesh,2007,27,Age-standardized,2,Female,0.10984891,0.10984891,0.10984891
+adult_underweight,161,Bangladesh,2008,27,Age-standardized,1,Male,0.10388259,0.10388259,0.10388259
+adult_underweight,161,Bangladesh,2008,27,Age-standardized,2,Female,0.10865341,0.10865341,0.10865341
+adult_underweight,161,Bangladesh,2009,27,Age-standardized,1,Male,0.10103726,0.10103726,0.10103726
+adult_underweight,161,Bangladesh,2009,27,Age-standardized,2,Female,0.10737431,0.10737431,0.10737431
+adult_underweight,161,Bangladesh,2010,27,Age-standardized,1,Male,0.09680482,0.09680482,0.09680482
+adult_underweight,161,Bangladesh,2010,27,Age-standardized,2,Female,0.10605973,0.10605973,0.10605973
+adult_underweight,161,Bangladesh,2011,27,Age-standardized,1,Male,0.09344019,0.09344019,0.09344019
+adult_underweight,161,Bangladesh,2011,27,Age-standardized,2,Female,0.10499712,0.10499712,0.10499712
+adult_underweight,161,Bangladesh,2012,27,Age-standardized,1,Male,0.08864583,0.08864583,0.08864583
+adult_underweight,161,Bangladesh,2012,27,Age-standardized,2,Female,0.10286279999999999,0.10286279999999999,0.10286279999999999
+adult_underweight,161,Bangladesh,2013,27,Age-standardized,1,Male,0.08745758,0.08745758,0.08745758
+adult_underweight,161,Bangladesh,2013,27,Age-standardized,2,Female,0.10286236,0.10286236,0.10286236
+adult_underweight,161,Bangladesh,2014,27,Age-standardized,1,Male,0.08637925,0.08637925,0.08637925
+adult_underweight,161,Bangladesh,2014,27,Age-standardized,2,Female,0.10287851,0.10287851,0.10287851
+adult_underweight,161,Bangladesh,2015,27,Age-standardized,1,Male,0.08567965,0.08567965,0.08567965
+adult_underweight,161,Bangladesh,2015,27,Age-standardized,2,Female,0.10348019,0.10348019,0.10348019
+adult_underweight,161,Bangladesh,2016,27,Age-standardized,1,Male,0.08377095,0.08377095,0.08377095
+adult_underweight,161,Bangladesh,2016,27,Age-standardized,2,Female,0.10311265,0.10311265,0.10311265
+adult_underweight,161,Bangladesh,2017,27,Age-standardized,1,Male,0.08377095,0.08377095,0.08377095
+adult_underweight,161,Bangladesh,2017,27,Age-standardized,2,Female,0.10311265,0.10311265,0.10311265
+adult_underweight,161,Bangladesh,2018,27,Age-standardized,1,Male,0.082789955,0.082789955,0.082789955
+adult_underweight,161,Bangladesh,2018,27,Age-standardized,2,Female,0.101953084,0.101953084,0.101953084
+adult_underweight,161,Bangladesh,2019,27,Age-standardized,1,Male,0.081956719,0.081956719,0.081956719
+adult_underweight,161,Bangladesh,2019,27,Age-standardized,2,Female,0.10096754107011098,0.10096754107011098,0.10096754107011098
+adult_underweight,161,Bangladesh,2020,27,Age-standardized,1,Male,0.081260959,0.081260959,0.081260959
+adult_underweight,161,Bangladesh,2020,27,Age-standardized,2,Female,0.10021382869275698,0.10021382869275698,0.10021382869275698
+adult_underweight,161,Bangladesh,2021,27,Age-standardized,1,Male,0.080599889,0.080599889,0.080599889
+adult_underweight,161,Bangladesh,2021,27,Age-standardized,2,Female,0.099496916,0.099496916,0.099496916
+adult_underweight,135,Brazil,1994,27,Age-standardized,1,Male,0.00987062,0.00987062,0.00987062
+adult_underweight,135,Brazil,1994,27,Age-standardized,2,Female,0.02664888,0.02664888,0.02664888
+adult_underweight,135,Brazil,1995,27,Age-standardized,1,Male,0.00958683,0.00958683,0.00958683
+adult_underweight,135,Brazil,1995,27,Age-standardized,2,Female,0.02650464,0.02650464,0.02650464
+adult_underweight,135,Brazil,1996,27,Age-standardized,1,Male,0.00957139,0.00957139,0.00957139
+adult_underweight,135,Brazil,1996,27,Age-standardized,2,Female,0.02658731,0.02658731,0.02658731
+adult_underweight,135,Brazil,1997,27,Age-standardized,1,Male,0.00968255,0.00968255,0.00968255
+adult_underweight,135,Brazil,1997,27,Age-standardized,2,Female,0.02651467,0.02651467,0.02651467
+adult_underweight,135,Brazil,1998,27,Age-standardized,1,Male,0.01026516,0.01026516,0.01026516
+adult_underweight,135,Brazil,1998,27,Age-standardized,2,Female,0.02608955,0.02608955,0.02608955
+adult_underweight,135,Brazil,1999,27,Age-standardized,1,Male,0.0110472,0.0110472,0.0110472
+adult_underweight,135,Brazil,1999,27,Age-standardized,2,Female,0.02576742,0.02576742,0.02576742
+adult_underweight,135,Brazil,2000,27,Age-standardized,1,Male,0.01174729,0.01174729,0.01174729
+adult_underweight,135,Brazil,2000,27,Age-standardized,2,Female,0.02541791,0.02541791,0.02541791
+adult_underweight,135,Brazil,2001,27,Age-standardized,1,Male,0.01235739,0.01235739,0.01235739
+adult_underweight,135,Brazil,2001,27,Age-standardized,2,Female,0.02507073,0.02507073,0.02507073
+adult_underweight,135,Brazil,2002,27,Age-standardized,1,Male,0.01279389,0.01279389,0.01279389
+adult_underweight,135,Brazil,2002,27,Age-standardized,2,Female,0.02465265,0.02465265,0.02465265
+adult_underweight,135,Brazil,2003,27,Age-standardized,1,Male,0.01340178,0.01340178,0.01340178
+adult_underweight,135,Brazil,2003,27,Age-standardized,2,Female,0.02428531,0.02428531,0.02428531
+adult_underweight,135,Brazil,2004,27,Age-standardized,1,Male,0.01366865,0.01366865,0.01366865
+adult_underweight,135,Brazil,2004,27,Age-standardized,2,Female,0.02447524,0.02447524,0.02447524
+adult_underweight,135,Brazil,2005,27,Age-standardized,1,Male,0.0138707,0.0138707,0.0138707
+adult_underweight,135,Brazil,2005,27,Age-standardized,2,Female,0.02475988,0.02475988,0.02475988
+adult_underweight,135,Brazil,2006,27,Age-standardized,1,Male,0.01422445,0.01422445,0.01422445
+adult_underweight,135,Brazil,2006,27,Age-standardized,2,Female,0.02485495,0.02485495,0.02485495
+adult_underweight,135,Brazil,2007,27,Age-standardized,1,Male,0.01463848,0.01463848,0.01463848
+adult_underweight,135,Brazil,2007,27,Age-standardized,2,Female,0.02530994,0.02530994,0.02530994
+adult_underweight,135,Brazil,2008,27,Age-standardized,1,Male,0.01536286,0.01536286,0.01536286
+adult_underweight,135,Brazil,2008,27,Age-standardized,2,Female,0.026268,0.026268,0.026268
+adult_underweight,135,Brazil,2009,27,Age-standardized,1,Male,0.01634689,0.01634689,0.01634689
+adult_underweight,135,Brazil,2009,27,Age-standardized,2,Female,0.0278215,0.0278215,0.0278215
+adult_underweight,135,Brazil,2010,27,Age-standardized,1,Male,0.01732953,0.01732953,0.01732953
+adult_underweight,135,Brazil,2010,27,Age-standardized,2,Female,0.02905347,0.02905347,0.02905347
+adult_underweight,135,Brazil,2011,27,Age-standardized,1,Male,0.01809962,0.01809962,0.01809962
+adult_underweight,135,Brazil,2011,27,Age-standardized,2,Female,0.02936323,0.02936323,0.02936323
+adult_underweight,135,Brazil,2012,27,Age-standardized,1,Male,0.01857874,0.01857874,0.01857874
+adult_underweight,135,Brazil,2012,27,Age-standardized,2,Female,0.02955908,0.02955908,0.02955908
+adult_underweight,135,Brazil,2013,27,Age-standardized,1,Male,0.01895689,0.01895689,0.01895689
+adult_underweight,135,Brazil,2013,27,Age-standardized,2,Female,0.03020611,0.03020611,0.03020611
+adult_underweight,135,Brazil,2014,27,Age-standardized,1,Male,0.01934677,0.01934677,0.01934677
+adult_underweight,135,Brazil,2014,27,Age-standardized,2,Female,0.03098963,0.03098963,0.03098963
+adult_underweight,135,Brazil,2015,27,Age-standardized,1,Male,0.01963587,0.01963587,0.01963587
+adult_underweight,135,Brazil,2015,27,Age-standardized,2,Female,0.03176276,0.03176276,0.03176276
+adult_underweight,135,Brazil,2016,27,Age-standardized,1,Male,0.02039938,0.02039938,0.02039938
+adult_underweight,135,Brazil,2016,27,Age-standardized,2,Female,0.03275614,0.03275614,0.03275614
+adult_underweight,135,Brazil,2017,27,Age-standardized,1,Male,0.02039938,0.02039938,0.02039938
+adult_underweight,135,Brazil,2017,27,Age-standardized,2,Female,0.03275614,0.03275614,0.03275614
+adult_underweight,135,Brazil,2018,27,Age-standardized,1,Male,0.020289872,0.020289872,0.020289872
+adult_underweight,135,Brazil,2018,27,Age-standardized,2,Female,0.032585852,0.032585852,0.032585852
+adult_underweight,135,Brazil,2019,27,Age-standardized,1,Male,0.020197229,0.020197229,0.020197229
+adult_underweight,135,Brazil,2019,27,Age-standardized,2,Female,0.032441757,0.032441757,0.032441757
+adult_underweight,135,Brazil,2020,27,Age-standardized,1,Male,0.02012201,0.02012201,0.02012201
+adult_underweight,135,Brazil,2020,27,Age-standardized,2,Female,0.03233466,0.03233466,0.03233466
+adult_underweight,135,Brazil,2021,27,Age-standardized,1,Male,0.020049623,0.020049623,0.020049623
+adult_underweight,135,Brazil,2021,27,Age-standardized,2,Female,0.03223155,0.03223155,0.03223155
+adult_underweight,10,Cambodia,1994,27,Age-standardized,1,Male,0.21288471,0.21288471,0.21288471
+adult_underweight,10,Cambodia,1994,27,Age-standardized,2,Female,0.22393215,0.22393215,0.22393215
+adult_underweight,10,Cambodia,1995,27,Age-standardized,1,Male,0.21240858,0.21240858,0.21240858
+adult_underweight,10,Cambodia,1995,27,Age-standardized,2,Female,0.22402870000000003,0.22402870000000003,0.22402870000000003
+adult_underweight,10,Cambodia,1996,27,Age-standardized,1,Male,0.21227705,0.21227705,0.21227705
+adult_underweight,10,Cambodia,1996,27,Age-standardized,2,Female,0.22397452,0.22397452,0.22397452
+adult_underweight,10,Cambodia,1997,27,Age-standardized,1,Male,0.21208648,0.21208648,0.21208648
+adult_underweight,10,Cambodia,1997,27,Age-standardized,2,Female,0.22384347,0.22384347,0.22384347
+adult_underweight,10,Cambodia,1998,27,Age-standardized,1,Male,0.21171369,0.21171369,0.21171369
+adult_underweight,10,Cambodia,1998,27,Age-standardized,2,Female,0.2226342,0.2226342,0.2226342
+adult_underweight,10,Cambodia,1999,27,Age-standardized,1,Male,0.21148427,0.21148427,0.21148427
+adult_underweight,10,Cambodia,1999,27,Age-standardized,2,Female,0.22094479,0.22094479,0.22094479
+adult_underweight,10,Cambodia,2000,27,Age-standardized,1,Male,0.21091034,0.21091034,0.21091034
+adult_underweight,10,Cambodia,2000,27,Age-standardized,2,Female,0.21886665,0.21886665,0.21886665
+adult_underweight,10,Cambodia,2001,27,Age-standardized,1,Male,0.20986547,0.20986547,0.20986547
+adult_underweight,10,Cambodia,2001,27,Age-standardized,2,Female,0.21494483,0.21494483,0.21494483
+adult_underweight,10,Cambodia,2002,27,Age-standardized,1,Male,0.20851655,0.20851655,0.20851655
+adult_underweight,10,Cambodia,2002,27,Age-standardized,2,Female,0.21047548,0.21047548,0.21047548
+adult_underweight,10,Cambodia,2003,27,Age-standardized,1,Male,0.20719902,0.20719902,0.20719902
+adult_underweight,10,Cambodia,2003,27,Age-standardized,2,Female,0.20626921,0.20626921,0.20626921
+adult_underweight,10,Cambodia,2004,27,Age-standardized,1,Male,0.20598098,0.20598098,0.20598098
+adult_underweight,10,Cambodia,2004,27,Age-standardized,2,Female,0.20275981,0.20275981,0.20275981
+adult_underweight,10,Cambodia,2005,27,Age-standardized,1,Male,0.20512372,0.20512372,0.20512372
+adult_underweight,10,Cambodia,2005,27,Age-standardized,2,Female,0.20044323,0.20044323,0.20044323
+adult_underweight,10,Cambodia,2006,27,Age-standardized,1,Male,0.20420042,0.20420042,0.20420042
+adult_underweight,10,Cambodia,2006,27,Age-standardized,2,Female,0.19868222,0.19868222,0.19868222
+adult_underweight,10,Cambodia,2007,27,Age-standardized,1,Male,0.20351492,0.20351492,0.20351492
+adult_underweight,10,Cambodia,2007,27,Age-standardized,2,Female,0.19718398,0.19718398,0.19718398
+adult_underweight,10,Cambodia,2008,27,Age-standardized,1,Male,0.20291319,0.20291319,0.20291319
+adult_underweight,10,Cambodia,2008,27,Age-standardized,2,Female,0.19604133,0.19604133,0.19604133
+adult_underweight,10,Cambodia,2009,27,Age-standardized,1,Male,0.20242989,0.20242989,0.20242989
+adult_underweight,10,Cambodia,2009,27,Age-standardized,2,Female,0.19549146,0.19549146,0.19549146
+adult_underweight,10,Cambodia,2010,27,Age-standardized,1,Male,0.2018541,0.2018541,0.2018541
+adult_underweight,10,Cambodia,2010,27,Age-standardized,2,Female,0.19499754,0.19499754,0.19499754
+adult_underweight,10,Cambodia,2011,27,Age-standardized,1,Male,0.20095119,0.20095119,0.20095119
+adult_underweight,10,Cambodia,2011,27,Age-standardized,2,Female,0.19410682,0.19410682,0.19410682
+adult_underweight,10,Cambodia,2012,27,Age-standardized,1,Male,0.19990055,0.19990055,0.19990055
+adult_underweight,10,Cambodia,2012,27,Age-standardized,2,Female,0.19358458,0.19358458,0.19358458
+adult_underweight,10,Cambodia,2013,27,Age-standardized,1,Male,0.19894898,0.19894898,0.19894898
+adult_underweight,10,Cambodia,2013,27,Age-standardized,2,Female,0.19292568,0.19292568,0.19292568
+adult_underweight,10,Cambodia,2014,27,Age-standardized,1,Male,0.198358,0.198358,0.198358
+adult_underweight,10,Cambodia,2014,27,Age-standardized,2,Female,0.19261997,0.19261997,0.19261997
+adult_underweight,10,Cambodia,2015,27,Age-standardized,1,Male,0.19764919,0.19764919,0.19764919
+adult_underweight,10,Cambodia,2015,27,Age-standardized,2,Female,0.19233507,0.19233507,0.19233507
+adult_underweight,10,Cambodia,2016,27,Age-standardized,1,Male,0.19682671,0.19682671,0.19682671
+adult_underweight,10,Cambodia,2016,27,Age-standardized,2,Female,0.19183068,0.19183068,0.19183068
+adult_underweight,10,Cambodia,2017,27,Age-standardized,1,Male,0.19682671,0.19682671,0.19682671
+adult_underweight,10,Cambodia,2017,27,Age-standardized,2,Female,0.19183068,0.19183068,0.19183068
+adult_underweight,10,Cambodia,2018,27,Age-standardized,1,Male,0.19531251805036604,0.19531251805036604,0.19531251805036604
+adult_underweight,10,Cambodia,2018,27,Age-standardized,2,Female,0.19037442159225698,0.19037442159225698,0.19037442159225698
+adult_underweight,10,Cambodia,2019,27,Age-standardized,1,Male,0.19395544085849603,0.19395544085849603,0.19395544085849603
+adult_underweight,10,Cambodia,2019,27,Age-standardized,2,Female,0.189069242,0.189069242,0.189069242
+adult_underweight,10,Cambodia,2020,27,Age-standardized,1,Male,0.192965527,0.192965527,0.192965527
+adult_underweight,10,Cambodia,2020,27,Age-standardized,2,Female,0.188197856,0.188197856,0.188197856
+adult_underweight,10,Cambodia,2021,27,Age-standardized,1,Male,0.19202087933085896,0.19202087933085896,0.19202087933085896
+adult_underweight,10,Cambodia,2021,27,Age-standardized,2,Female,0.18736603395954002,0.18736603395954002,0.18736603395954002
+adult_underweight,6,China,1994,27,Age-standardized,1,Male,0.05986008,0.05986008,0.05986008
+adult_underweight,6,China,1994,27,Age-standardized,2,Female,0.06045707,0.06045707,0.06045707
+adult_underweight,6,China,1995,27,Age-standardized,1,Male,0.05809772,0.05809772,0.05809772
+adult_underweight,6,China,1995,27,Age-standardized,2,Female,0.05934031,0.05934031,0.05934031
+adult_underweight,6,China,1996,27,Age-standardized,1,Male,0.05651143,0.05651143,0.05651143
+adult_underweight,6,China,1996,27,Age-standardized,2,Female,0.05815593,0.05815593,0.05815593
+adult_underweight,6,China,1997,27,Age-standardized,1,Male,0.05497554,0.05497554,0.05497554
+adult_underweight,6,China,1997,27,Age-standardized,2,Female,0.05682312,0.05682312,0.05682312
+adult_underweight,6,China,1998,27,Age-standardized,1,Male,0.05403193,0.05403193,0.05403193
+adult_underweight,6,China,1998,27,Age-standardized,2,Female,0.05439441,0.05439441,0.05439441
+adult_underweight,6,China,1999,27,Age-standardized,1,Male,0.0531733,0.0531733,0.0531733
+adult_underweight,6,China,1999,27,Age-standardized,2,Female,0.05228979,0.05228979,0.05228979
+adult_underweight,6,China,2000,27,Age-standardized,1,Male,0.05247183,0.05247183,0.05247183
+adult_underweight,6,China,2000,27,Age-standardized,2,Female,0.05081188,0.05081188,0.05081188
+adult_underweight,6,China,2001,27,Age-standardized,1,Male,0.05225098,0.05225098,0.05225098
+adult_underweight,6,China,2001,27,Age-standardized,2,Female,0.05083969,0.05083969,0.05083969
+adult_underweight,6,China,2002,27,Age-standardized,1,Male,0.05211309,0.05211309,0.05211309
+adult_underweight,6,China,2002,27,Age-standardized,2,Female,0.05140454,0.05140454,0.05140454
+adult_underweight,6,China,2003,27,Age-standardized,1,Male,0.05164514,0.05164514,0.05164514
+adult_underweight,6,China,2003,27,Age-standardized,2,Female,0.05217965,0.05217965,0.05217965
+adult_underweight,6,China,2004,27,Age-standardized,1,Male,0.05085765,0.05085765,0.05085765
+adult_underweight,6,China,2004,27,Age-standardized,2,Female,0.05351826,0.05351826,0.05351826
+adult_underweight,6,China,2005,27,Age-standardized,1,Male,0.04861707,0.04861707,0.04861707
+adult_underweight,6,China,2005,27,Age-standardized,2,Female,0.05511711,0.05511711,0.05511711
+adult_underweight,6,China,2006,27,Age-standardized,1,Male,0.04611403,0.04611403,0.04611403
+adult_underweight,6,China,2006,27,Age-standardized,2,Female,0.05668808,0.05668808,0.05668808
+adult_underweight,6,China,2007,27,Age-standardized,1,Male,0.04400426,0.04400426,0.04400426
+adult_underweight,6,China,2007,27,Age-standardized,2,Female,0.05740255,0.05740255,0.05740255
+adult_underweight,6,China,2008,27,Age-standardized,1,Male,0.04181279,0.04181279,0.04181279
+adult_underweight,6,China,2008,27,Age-standardized,2,Female,0.05684887,0.05684887,0.05684887
+adult_underweight,6,China,2009,27,Age-standardized,1,Male,0.03993551,0.03993551,0.03993551
+adult_underweight,6,China,2009,27,Age-standardized,2,Female,0.05478134,0.05478134,0.05478134
+adult_underweight,6,China,2010,27,Age-standardized,1,Male,0.03869815,0.03869815,0.03869815
+adult_underweight,6,China,2010,27,Age-standardized,2,Female,0.05292738,0.05292738,0.05292738
+adult_underweight,6,China,2011,27,Age-standardized,1,Male,0.03775637,0.03775637,0.03775637
+adult_underweight,6,China,2011,27,Age-standardized,2,Female,0.05136411,0.05136411,0.05136411
+adult_underweight,6,China,2012,27,Age-standardized,1,Male,0.03691192,0.03691192,0.03691192
+adult_underweight,6,China,2012,27,Age-standardized,2,Female,0.05044464,0.05044464,0.05044464
+adult_underweight,6,China,2013,27,Age-standardized,1,Male,0.03614066,0.03614066,0.03614066
+adult_underweight,6,China,2013,27,Age-standardized,2,Female,0.04990307,0.04990307,0.04990307
+adult_underweight,6,China,2014,27,Age-standardized,1,Male,0.03541078,0.03541078,0.03541078
+adult_underweight,6,China,2014,27,Age-standardized,2,Female,0.0494297,0.0494297,0.0494297
+adult_underweight,6,China,2015,27,Age-standardized,1,Male,0.0347318,0.0347318,0.0347318
+adult_underweight,6,China,2015,27,Age-standardized,2,Female,0.04905486,0.04905486,0.04905486
+adult_underweight,6,China,2016,27,Age-standardized,1,Male,0.03428082,0.03428082,0.03428082
+adult_underweight,6,China,2016,27,Age-standardized,2,Female,0.04874686,0.04874686,0.04874686
+adult_underweight,6,China,2017,27,Age-standardized,1,Male,0.03428082,0.03428082,0.03428082
+adult_underweight,6,China,2017,27,Age-standardized,2,Female,0.04874686,0.04874686,0.04874686
+adult_underweight,6,China,2018,27,Age-standardized,1,Male,0.033729019,0.033729019,0.033729019
+adult_underweight,6,China,2018,27,Age-standardized,2,Female,0.0479886,0.0479886,0.0479886
+adult_underweight,6,China,2019,27,Age-standardized,1,Male,0.033354358,0.033354358,0.033354358
+adult_underweight,6,China,2019,27,Age-standardized,2,Female,0.047473423,0.047473423,0.047473423
+adult_underweight,6,China,2020,27,Age-standardized,1,Male,0.033118029,0.033118029,0.033118029
+adult_underweight,6,China,2020,27,Age-standardized,2,Female,0.047175837,0.047175837,0.047175837
+adult_underweight,6,China,2021,27,Age-standardized,1,Male,0.032892873,0.032892873,0.032892873
+adult_underweight,6,China,2021,27,Age-standardized,2,Female,0.046892072,0.046892072,0.046892072
+adult_underweight,122,Ecuador,1994,27,Age-standardized,1,Male,0.04063403,0.04063403,0.04063403
+adult_underweight,122,Ecuador,1994,27,Age-standardized,2,Female,0.02844674,0.02844674,0.02844674
+adult_underweight,122,Ecuador,1995,27,Age-standardized,1,Male,0.04074307,0.04074307,0.04074307
+adult_underweight,122,Ecuador,1995,27,Age-standardized,2,Female,0.02811246,0.02811246,0.02811246
+adult_underweight,122,Ecuador,1996,27,Age-standardized,1,Male,0.0407673,0.0407673,0.0407673
+adult_underweight,122,Ecuador,1996,27,Age-standardized,2,Female,0.02774773,0.02774773,0.02774773
+adult_underweight,122,Ecuador,1997,27,Age-standardized,1,Male,0.04072786,0.04072786,0.04072786
+adult_underweight,122,Ecuador,1997,27,Age-standardized,2,Female,0.02749709,0.02749709,0.02749709
+adult_underweight,122,Ecuador,1998,27,Age-standardized,1,Male,0.04013002,0.04013002,0.04013002
+adult_underweight,122,Ecuador,1998,27,Age-standardized,2,Female,0.02711373,0.02711373,0.02711373
+adult_underweight,122,Ecuador,1999,27,Age-standardized,1,Male,0.03891436,0.03891436,0.03891436
+adult_underweight,122,Ecuador,1999,27,Age-standardized,2,Female,0.02672723,0.02672723,0.02672723
+adult_underweight,122,Ecuador,2000,27,Age-standardized,1,Male,0.03769124,0.03769124,0.03769124
+adult_underweight,122,Ecuador,2000,27,Age-standardized,2,Female,0.02624153,0.02624153,0.02624153
+adult_underweight,122,Ecuador,2001,27,Age-standardized,1,Male,0.036575699999999996,0.036575699999999996,0.036575699999999996
+adult_underweight,122,Ecuador,2001,27,Age-standardized,2,Female,0.02585032,0.02585032,0.02585032
+adult_underweight,122,Ecuador,2002,27,Age-standardized,1,Male,0.03542504,0.03542504,0.03542504
+adult_underweight,122,Ecuador,2002,27,Age-standardized,2,Female,0.02545603,0.02545603,0.02545603
+adult_underweight,122,Ecuador,2003,27,Age-standardized,1,Male,0.03431463,0.03431463,0.03431463
+adult_underweight,122,Ecuador,2003,27,Age-standardized,2,Female,0.0251639,0.0251639,0.0251639
+adult_underweight,122,Ecuador,2004,27,Age-standardized,1,Male,0.03072207,0.03072207,0.03072207
+adult_underweight,122,Ecuador,2004,27,Age-standardized,2,Female,0.0233761,0.0233761,0.0233761
+adult_underweight,122,Ecuador,2005,27,Age-standardized,1,Male,0.02586583,0.02586583,0.02586583
+adult_underweight,122,Ecuador,2005,27,Age-standardized,2,Female,0.02256697,0.02256697,0.02256697
+adult_underweight,122,Ecuador,2006,27,Age-standardized,1,Male,0.02045188,0.02045188,0.02045188
+adult_underweight,122,Ecuador,2006,27,Age-standardized,2,Female,0.0218138,0.0218138,0.0218138
+adult_underweight,122,Ecuador,2007,27,Age-standardized,1,Male,0.01525245,0.01525245,0.01525245
+adult_underweight,122,Ecuador,2007,27,Age-standardized,2,Female,0.02111273,0.02111273,0.02111273
+adult_underweight,122,Ecuador,2008,27,Age-standardized,1,Male,0.011163600000000001,0.011163600000000001,0.011163600000000001
+adult_underweight,122,Ecuador,2008,27,Age-standardized,2,Female,0.02052952,0.02052952,0.02052952
+adult_underweight,122,Ecuador,2009,27,Age-standardized,1,Male,0.00828977,0.00828977,0.00828977
+adult_underweight,122,Ecuador,2009,27,Age-standardized,2,Female,0.02000323,0.02000323,0.02000323
+adult_underweight,122,Ecuador,2010,27,Age-standardized,1,Male,0.00638936,0.00638936,0.00638936
+adult_underweight,122,Ecuador,2010,27,Age-standardized,2,Female,0.01948286,0.01948286,0.01948286
+adult_underweight,122,Ecuador,2011,27,Age-standardized,1,Male,0.00516785,0.00516785,0.00516785
+adult_underweight,122,Ecuador,2011,27,Age-standardized,2,Female,0.01896491,0.01896491,0.01896491
+adult_underweight,122,Ecuador,2012,27,Age-standardized,1,Male,0.0044093,0.0044093,0.0044093
+adult_underweight,122,Ecuador,2012,27,Age-standardized,2,Female,0.01834026,0.01834026,0.01834026
+adult_underweight,122,Ecuador,2013,27,Age-standardized,1,Male,0.00433788,0.00433788,0.00433788
+adult_underweight,122,Ecuador,2013,27,Age-standardized,2,Female,0.01843607,0.01843607,0.01843607
+adult_underweight,122,Ecuador,2014,27,Age-standardized,1,Male,0.00440312,0.00440312,0.00440312
+adult_underweight,122,Ecuador,2014,27,Age-standardized,2,Female,0.01864425,0.01864425,0.01864425
+adult_underweight,122,Ecuador,2015,27,Age-standardized,1,Male,0.00462568,0.00462568,0.00462568
+adult_underweight,122,Ecuador,2015,27,Age-standardized,2,Female,0.0188358,0.0188358,0.0188358
+adult_underweight,122,Ecuador,2016,27,Age-standardized,1,Male,0.00435815,0.00435815,0.00435815
+adult_underweight,122,Ecuador,2016,27,Age-standardized,2,Female,0.01873157,0.01873157,0.01873157
+adult_underweight,122,Ecuador,2017,27,Age-standardized,1,Male,0.00435815,0.00435815,0.00435815
+adult_underweight,122,Ecuador,2017,27,Age-standardized,2,Female,0.01873157,0.01873157,0.01873157
+adult_underweight,122,Ecuador,2018,27,Age-standardized,1,Male,0.004331919,0.004331919,0.004331919
+adult_underweight,122,Ecuador,2018,27,Age-standardized,2,Female,0.018622586,0.018622586,0.018622586
+adult_underweight,122,Ecuador,2019,27,Age-standardized,1,Male,0.004311069,0.004311069,0.004311069
+adult_underweight,122,Ecuador,2019,27,Age-standardized,2,Female,0.018535939,0.018535939,0.018535939
+adult_underweight,122,Ecuador,2020,27,Age-standardized,1,Male,0.004295587,0.004295587,0.004295587
+adult_underweight,122,Ecuador,2020,27,Age-standardized,2,Female,0.018477037822731003,0.018477037822731003,0.018477037822731003
+adult_underweight,122,Ecuador,2021,27,Age-standardized,1,Male,0.004281165,0.004281165,0.004281165
+adult_underweight,122,Ecuador,2021,27,Age-standardized,2,Female,0.018422151,0.018422151,0.018422151
+adult_underweight,178,Eritrea,1994,27,Age-standardized,1,Male,0.44642566,0.44642566,0.44642566
+adult_underweight,178,Eritrea,1994,27,Age-standardized,2,Female,0.40732755,0.40732755,0.40732755
+adult_underweight,178,Eritrea,1995,27,Age-standardized,1,Male,0.44647474,0.44647474,0.44647474
+adult_underweight,178,Eritrea,1995,27,Age-standardized,2,Female,0.40752404,0.40752404,0.40752404
+adult_underweight,178,Eritrea,1996,27,Age-standardized,1,Male,0.44650073,0.44650073,0.44650073
+adult_underweight,178,Eritrea,1996,27,Age-standardized,2,Female,0.40480474,0.40480474,0.40480474
+adult_underweight,178,Eritrea,1997,27,Age-standardized,1,Male,0.44661926,0.44661926,0.44661926
+adult_underweight,178,Eritrea,1997,27,Age-standardized,2,Female,0.40055156,0.40055156,0.40055156
+adult_underweight,178,Eritrea,1998,27,Age-standardized,1,Male,0.44699489,0.44699489,0.44699489
+adult_underweight,178,Eritrea,1998,27,Age-standardized,2,Female,0.39465494,0.39465494,0.39465494
+adult_underweight,178,Eritrea,1999,27,Age-standardized,1,Male,0.44732586,0.44732586,0.44732586
+adult_underweight,178,Eritrea,1999,27,Age-standardized,2,Female,0.388446,0.388446,0.388446
+adult_underweight,178,Eritrea,2000,27,Age-standardized,1,Male,0.44750922,0.44750922,0.44750922
+adult_underweight,178,Eritrea,2000,27,Age-standardized,2,Female,0.38306414,0.38306414,0.38306414
+adult_underweight,178,Eritrea,2001,27,Age-standardized,1,Male,0.44754510000000003,0.44754510000000003,0.44754510000000003
+adult_underweight,178,Eritrea,2001,27,Age-standardized,2,Female,0.3788283,0.3788283,0.3788283
+adult_underweight,178,Eritrea,2002,27,Age-standardized,1,Male,0.44747739,0.44747739,0.44747739
+adult_underweight,178,Eritrea,2002,27,Age-standardized,2,Female,0.37544747,0.37544747,0.37544747
+adult_underweight,178,Eritrea,2003,27,Age-standardized,1,Male,0.44744125,0.44744125,0.44744125
+adult_underweight,178,Eritrea,2003,27,Age-standardized,2,Female,0.37357365,0.37357365,0.37357365
+adult_underweight,178,Eritrea,2004,27,Age-standardized,1,Male,0.44765589,0.44765589,0.44765589
+adult_underweight,178,Eritrea,2004,27,Age-standardized,2,Female,0.37212,0.37212,0.37212
+adult_underweight,178,Eritrea,2005,27,Age-standardized,1,Male,0.44832085,0.44832085,0.44832085
+adult_underweight,178,Eritrea,2005,27,Age-standardized,2,Female,0.37224471,0.37224471,0.37224471
+adult_underweight,178,Eritrea,2006,27,Age-standardized,1,Male,0.44928708,0.44928708,0.44928708
+adult_underweight,178,Eritrea,2006,27,Age-standardized,2,Female,0.37303827,0.37303827,0.37303827
+adult_underweight,178,Eritrea,2007,27,Age-standardized,1,Male,0.45032871,0.45032871,0.45032871
+adult_underweight,178,Eritrea,2007,27,Age-standardized,2,Female,0.37428522,0.37428522,0.37428522
+adult_underweight,178,Eritrea,2008,27,Age-standardized,1,Male,0.45134695,0.45134695,0.45134695
+adult_underweight,178,Eritrea,2008,27,Age-standardized,2,Female,0.37585081,0.37585081,0.37585081
+adult_underweight,178,Eritrea,2009,27,Age-standardized,1,Male,0.45219605,0.45219605,0.45219605
+adult_underweight,178,Eritrea,2009,27,Age-standardized,2,Female,0.37773017,0.37773017,0.37773017
+adult_underweight,178,Eritrea,2010,27,Age-standardized,1,Male,0.45282446,0.45282446,0.45282446
+adult_underweight,178,Eritrea,2010,27,Age-standardized,2,Female,0.37950157,0.37950157,0.37950157
+adult_underweight,178,Eritrea,2011,27,Age-standardized,1,Male,0.45336566,0.45336566,0.45336566
+adult_underweight,178,Eritrea,2011,27,Age-standardized,2,Female,0.38097776,0.38097776,0.38097776
+adult_underweight,178,Eritrea,2012,27,Age-standardized,1,Male,0.45372290000000004,0.45372290000000004,0.45372290000000004
+adult_underweight,178,Eritrea,2012,27,Age-standardized,2,Female,0.38226269,0.38226269,0.38226269
+adult_underweight,178,Eritrea,2013,27,Age-standardized,1,Male,0.45398387,0.45398387,0.45398387
+adult_underweight,178,Eritrea,2013,27,Age-standardized,2,Female,0.38333629999999996,0.38333629999999996,0.38333629999999996
+adult_underweight,178,Eritrea,2014,27,Age-standardized,1,Male,0.45407716,0.45407716,0.45407716
+adult_underweight,178,Eritrea,2014,27,Age-standardized,2,Female,0.38403015,0.38403015,0.38403015
+adult_underweight,178,Eritrea,2015,27,Age-standardized,1,Male,0.45413412,0.45413412,0.45413412
+adult_underweight,178,Eritrea,2015,27,Age-standardized,2,Female,0.38449190000000005,0.38449190000000005,0.38449190000000005
+adult_underweight,178,Eritrea,2016,27,Age-standardized,1,Male,0.45439708,0.45439708,0.45439708
+adult_underweight,178,Eritrea,2016,27,Age-standardized,2,Female,0.38550133,0.38550133,0.38550133
+adult_underweight,178,Eritrea,2017,27,Age-standardized,1,Male,0.45439708,0.45439708,0.45439708
+adult_underweight,178,Eritrea,2017,27,Age-standardized,2,Female,0.38550133,0.38550133,0.38550133
+adult_underweight,178,Eritrea,2018,27,Age-standardized,1,Male,0.45217156289638794,0.45217156289638794,0.45217156289638794
+adult_underweight,178,Eritrea,2018,27,Age-standardized,2,Female,0.383417165,0.383417165,0.383417165
+adult_underweight,178,Eritrea,2019,27,Age-standardized,1,Male,0.4502732755082029,0.4502732755082029,0.4502732755082029
+adult_underweight,178,Eritrea,2019,27,Age-standardized,2,Female,0.381641414,0.381641414,0.381641414
+adult_underweight,178,Eritrea,2020,27,Age-standardized,1,Male,0.448704187,0.448704187,0.448704187
+adult_underweight,178,Eritrea,2020,27,Age-standardized,2,Female,0.38029938945108005,0.38029938945108005,0.38029938945108005
+adult_underweight,178,Eritrea,2021,27,Age-standardized,1,Male,0.447177244,0.447177244,0.447177244
+adult_underweight,178,Eritrea,2021,27,Age-standardized,2,Female,0.378994329,0.378994329,0.378994329
+adult_underweight,197,Eswatini,1994,27,Age-standardized,1,Male,0.05736383,0.05736383,0.05736383
+adult_underweight,197,Eswatini,1994,27,Age-standardized,2,Female,0.04628608,0.04628608,0.04628608
+adult_underweight,197,Eswatini,1995,27,Age-standardized,1,Male,0.05770056,0.05770056,0.05770056
+adult_underweight,197,Eswatini,1995,27,Age-standardized,2,Female,0.04601353,0.04601353,0.04601353
+adult_underweight,197,Eswatini,1996,27,Age-standardized,1,Male,0.05771631,0.05771631,0.05771631
+adult_underweight,197,Eswatini,1996,27,Age-standardized,2,Female,0.04553194,0.04553194,0.04553194
+adult_underweight,197,Eswatini,1997,27,Age-standardized,1,Male,0.05796933,0.05796933,0.05796933
+adult_underweight,197,Eswatini,1997,27,Age-standardized,2,Female,0.04513861,0.04513861,0.04513861
+adult_underweight,197,Eswatini,1998,27,Age-standardized,1,Male,0.058063699999999996,0.058063699999999996,0.058063699999999996
+adult_underweight,197,Eswatini,1998,27,Age-standardized,2,Female,0.04439924,0.04439924,0.04439924
+adult_underweight,197,Eswatini,1999,27,Age-standardized,1,Male,0.05779141,0.05779141,0.05779141
+adult_underweight,197,Eswatini,1999,27,Age-standardized,2,Female,0.04333625,0.04333625,0.04333625
+adult_underweight,197,Eswatini,2000,27,Age-standardized,1,Male,0.05711476,0.05711476,0.05711476
+adult_underweight,197,Eswatini,2000,27,Age-standardized,2,Female,0.04226569,0.04226569,0.04226569
+adult_underweight,197,Eswatini,2001,27,Age-standardized,1,Male,0.05611592,0.05611592,0.05611592
+adult_underweight,197,Eswatini,2001,27,Age-standardized,2,Female,0.04114542,0.04114542,0.04114542
+adult_underweight,197,Eswatini,2002,27,Age-standardized,1,Male,0.05489124,0.05489124,0.05489124
+adult_underweight,197,Eswatini,2002,27,Age-standardized,2,Female,0.03993574,0.03993574,0.03993574
+adult_underweight,197,Eswatini,2003,27,Age-standardized,1,Male,0.05356436,0.05356436,0.05356436
+adult_underweight,197,Eswatini,2003,27,Age-standardized,2,Female,0.03867038,0.03867038,0.03867038
+adult_underweight,197,Eswatini,2004,27,Age-standardized,1,Male,0.0533649,0.0533649,0.0533649
+adult_underweight,197,Eswatini,2004,27,Age-standardized,2,Female,0.03683218,0.03683218,0.03683218
+adult_underweight,197,Eswatini,2005,27,Age-standardized,1,Male,0.05347841,0.05347841,0.05347841
+adult_underweight,197,Eswatini,2005,27,Age-standardized,2,Female,0.03548145,0.03548145,0.03548145
+adult_underweight,197,Eswatini,2006,27,Age-standardized,1,Male,0.05398149,0.05398149,0.05398149
+adult_underweight,197,Eswatini,2006,27,Age-standardized,2,Female,0.03461819,0.03461819,0.03461819
+adult_underweight,197,Eswatini,2007,27,Age-standardized,1,Male,0.05554995,0.05554995,0.05554995
+adult_underweight,197,Eswatini,2007,27,Age-standardized,2,Female,0.03412428,0.03412428,0.03412428
+adult_underweight,197,Eswatini,2008,27,Age-standardized,1,Male,0.05607679,0.05607679,0.05607679
+adult_underweight,197,Eswatini,2008,27,Age-standardized,2,Female,0.03401523,0.03401523,0.03401523
+adult_underweight,197,Eswatini,2009,27,Age-standardized,1,Male,0.05672927,0.05672927,0.05672927
+adult_underweight,197,Eswatini,2009,27,Age-standardized,2,Female,0.03413699,0.03413699,0.03413699
+adult_underweight,197,Eswatini,2010,27,Age-standardized,1,Male,0.05728768,0.05728768,0.05728768
+adult_underweight,197,Eswatini,2010,27,Age-standardized,2,Female,0.03432671,0.03432671,0.03432671
+adult_underweight,197,Eswatini,2011,27,Age-standardized,1,Male,0.05779433,0.05779433,0.05779433
+adult_underweight,197,Eswatini,2011,27,Age-standardized,2,Female,0.03463518,0.03463518,0.03463518
+adult_underweight,197,Eswatini,2012,27,Age-standardized,1,Male,0.05822535,0.05822535,0.05822535
+adult_underweight,197,Eswatini,2012,27,Age-standardized,2,Female,0.03488652,0.03488652,0.03488652
+adult_underweight,197,Eswatini,2013,27,Age-standardized,1,Male,0.05860927,0.05860927,0.05860927
+adult_underweight,197,Eswatini,2013,27,Age-standardized,2,Female,0.03539711,0.03539711,0.03539711
+adult_underweight,197,Eswatini,2014,27,Age-standardized,1,Male,0.05936518,0.05936518,0.05936518
+adult_underweight,197,Eswatini,2014,27,Age-standardized,2,Female,0.03600822,0.03600822,0.03600822
+adult_underweight,197,Eswatini,2015,27,Age-standardized,1,Male,0.06027334,0.06027334,0.06027334
+adult_underweight,197,Eswatini,2015,27,Age-standardized,2,Female,0.03692763,0.03692763,0.03692763
+adult_underweight,197,Eswatini,2016,27,Age-standardized,1,Male,0.0609607,0.0609607,0.0609607
+adult_underweight,197,Eswatini,2016,27,Age-standardized,2,Female,0.037763099999999994,0.037763099999999994,0.037763099999999994
+adult_underweight,197,Eswatini,2017,27,Age-standardized,1,Male,0.0609607,0.0609607,0.0609607
+adult_underweight,197,Eswatini,2017,27,Age-standardized,2,Female,0.037763099999999994,0.037763099999999994,0.037763099999999994
+adult_underweight,197,Eswatini,2018,27,Age-standardized,1,Male,0.060598577,0.060598577,0.060598577
+adult_underweight,197,Eswatini,2018,27,Age-standardized,2,Female,0.037537697,0.037537697,0.037537697
+adult_underweight,197,Eswatini,2019,27,Age-standardized,1,Male,0.060338126,0.060338126,0.060338126
+adult_underweight,197,Eswatini,2019,27,Age-standardized,2,Female,0.037375605,0.037375605,0.037375605
+adult_underweight,197,Eswatini,2020,27,Age-standardized,1,Male,0.060021995,0.060021995,0.060021995
+adult_underweight,197,Eswatini,2020,27,Age-standardized,2,Female,0.037195551,0.037195551,0.037195551
+adult_underweight,197,Eswatini,2021,27,Age-standardized,1,Male,0.059723675,0.059723675,0.059723675
+adult_underweight,197,Eswatini,2021,27,Age-standardized,2,Female,0.037025595,0.037025595,0.037025595
+adult_underweight,179,Ethiopia,1994,27,Age-standardized,1,Male,0.35584829,0.35584829,0.35584829
+adult_underweight,179,Ethiopia,1994,27,Age-standardized,2,Female,0.34887208,0.34887208,0.34887208
+adult_underweight,179,Ethiopia,1995,27,Age-standardized,1,Male,0.35491957,0.35491957,0.35491957
+adult_underweight,179,Ethiopia,1995,27,Age-standardized,2,Female,0.34932138,0.34932138,0.34932138
+adult_underweight,179,Ethiopia,1996,27,Age-standardized,1,Male,0.35264434,0.35264434,0.35264434
+adult_underweight,179,Ethiopia,1996,27,Age-standardized,2,Female,0.34886419,0.34886419,0.34886419
+adult_underweight,179,Ethiopia,1997,27,Age-standardized,1,Male,0.34943751,0.34943751,0.34943751
+adult_underweight,179,Ethiopia,1997,27,Age-standardized,2,Female,0.34736397,0.34736397,0.34736397
+adult_underweight,179,Ethiopia,1998,27,Age-standardized,1,Male,0.34479575,0.34479575,0.34479575
+adult_underweight,179,Ethiopia,1998,27,Age-standardized,2,Female,0.34238628,0.34238628,0.34238628
+adult_underweight,179,Ethiopia,1999,27,Age-standardized,1,Male,0.33899567,0.33899567,0.33899567
+adult_underweight,179,Ethiopia,1999,27,Age-standardized,2,Female,0.33620813,0.33620813,0.33620813
+adult_underweight,179,Ethiopia,2000,27,Age-standardized,1,Male,0.33192423,0.33192423,0.33192423
+adult_underweight,179,Ethiopia,2000,27,Age-standardized,2,Female,0.33054705,0.33054705,0.33054705
+adult_underweight,179,Ethiopia,2001,27,Age-standardized,1,Male,0.32361302,0.32361302,0.32361302
+adult_underweight,179,Ethiopia,2001,27,Age-standardized,2,Female,0.32030639,0.32030639,0.32030639
+adult_underweight,179,Ethiopia,2002,27,Age-standardized,1,Male,0.31395676,0.31395676,0.31395676
+adult_underweight,179,Ethiopia,2002,27,Age-standardized,2,Female,0.31086931,0.31086931,0.31086931
+adult_underweight,179,Ethiopia,2003,27,Age-standardized,1,Male,0.3034389,0.3034389,0.3034389
+adult_underweight,179,Ethiopia,2003,27,Age-standardized,2,Female,0.30211899,0.30211899,0.30211899
+adult_underweight,179,Ethiopia,2004,27,Age-standardized,1,Male,0.29284593,0.29284593,0.29284593
+adult_underweight,179,Ethiopia,2004,27,Age-standardized,2,Female,0.296856,0.296856,0.296856
+adult_underweight,179,Ethiopia,2005,27,Age-standardized,1,Male,0.28290295,0.28290295,0.28290295
+adult_underweight,179,Ethiopia,2005,27,Age-standardized,2,Female,0.29189085,0.29189085,0.29189085
+adult_underweight,179,Ethiopia,2006,27,Age-standardized,1,Male,0.27396213,0.27396213,0.27396213
+adult_underweight,179,Ethiopia,2006,27,Age-standardized,2,Female,0.28288159999999996,0.28288159999999996,0.28288159999999996
+adult_underweight,179,Ethiopia,2007,27,Age-standardized,1,Male,0.26946254,0.26946254,0.26946254
+adult_underweight,179,Ethiopia,2007,27,Age-standardized,2,Female,0.27581098,0.27581098,0.27581098
+adult_underweight,179,Ethiopia,2008,27,Age-standardized,1,Male,0.26616388,0.26616388,0.26616388
+adult_underweight,179,Ethiopia,2008,27,Age-standardized,2,Female,0.26837294,0.26837294,0.26837294
+adult_underweight,179,Ethiopia,2009,27,Age-standardized,1,Male,0.26434109999999994,0.26434109999999994,0.26434109999999994
+adult_underweight,179,Ethiopia,2009,27,Age-standardized,2,Female,0.26195653,0.26195653,0.26195653
+adult_underweight,179,Ethiopia,2010,27,Age-standardized,1,Male,0.26329984,0.26329984,0.26329984
+adult_underweight,179,Ethiopia,2010,27,Age-standardized,2,Female,0.25518921,0.25518921,0.25518921
+adult_underweight,179,Ethiopia,2011,27,Age-standardized,1,Male,0.25933084,0.25933084,0.25933084
+adult_underweight,179,Ethiopia,2011,27,Age-standardized,2,Female,0.24871743,0.24871743,0.24871743
+adult_underweight,179,Ethiopia,2012,27,Age-standardized,1,Male,0.25669917,0.25669917,0.25669917
+adult_underweight,179,Ethiopia,2012,27,Age-standardized,2,Female,0.24297246,0.24297246,0.24297246
+adult_underweight,179,Ethiopia,2013,27,Age-standardized,1,Male,0.25482292,0.25482292,0.25482292
+adult_underweight,179,Ethiopia,2013,27,Age-standardized,2,Female,0.23782853,0.23782853,0.23782853
+adult_underweight,179,Ethiopia,2014,27,Age-standardized,1,Male,0.2536183,0.2536183,0.2536183
+adult_underweight,179,Ethiopia,2014,27,Age-standardized,2,Female,0.23313043,0.23313043,0.23313043
+adult_underweight,179,Ethiopia,2015,27,Age-standardized,1,Male,0.25292187,0.25292187,0.25292187
+adult_underweight,179,Ethiopia,2015,27,Age-standardized,2,Female,0.22894355,0.22894355,0.22894355
+adult_underweight,179,Ethiopia,2016,27,Age-standardized,1,Male,0.25098922,0.25098922,0.25098922
+adult_underweight,179,Ethiopia,2016,27,Age-standardized,2,Female,0.22410074,0.22410074,0.22410074
+adult_underweight,179,Ethiopia,2017,27,Age-standardized,1,Male,0.25098922,0.25098922,0.25098922
+adult_underweight,179,Ethiopia,2017,27,Age-standardized,2,Female,0.22410074,0.22410074,0.22410074
+adult_underweight,179,Ethiopia,2018,27,Age-standardized,1,Male,0.24868519349909102,0.24868519349909102,0.24868519349909102
+adult_underweight,179,Ethiopia,2018,27,Age-standardized,2,Female,0.222011421,0.222011421,0.222011421
+adult_underweight,179,Ethiopia,2019,27,Age-standardized,1,Male,0.24666750682712701,0.24666750682712701,0.24666750682712701
+adult_underweight,179,Ethiopia,2019,27,Age-standardized,2,Female,0.22018266,0.22018266,0.22018266
+adult_underweight,179,Ethiopia,2020,27,Age-standardized,1,Male,0.24488995921070397,0.24488995921070397,0.24488995921070397
+adult_underweight,179,Ethiopia,2020,27,Age-standardized,2,Female,0.218708639,0.218708639,0.218708639
+adult_underweight,179,Ethiopia,2021,27,Age-standardized,1,Male,0.24323114162309603,0.24323114162309603,0.24323114162309603
+adult_underweight,179,Ethiopia,2021,27,Age-standardized,2,Female,0.21733300640321102,0.21733300640321102,0.21733300640321102
+adult_underweight,206,Gambia,1994,27,Age-standardized,1,Male,0.09426011,0.09426011,0.09426011
+adult_underweight,206,Gambia,1994,27,Age-standardized,2,Female,0.11484308,0.11484308,0.11484308
+adult_underweight,206,Gambia,1995,27,Age-standardized,1,Male,0.09198037,0.09198037,0.09198037
+adult_underweight,206,Gambia,1995,27,Age-standardized,2,Female,0.11308114,0.11308114,0.11308114
+adult_underweight,206,Gambia,1996,27,Age-standardized,1,Male,0.09003374,0.09003374,0.09003374
+adult_underweight,206,Gambia,1996,27,Age-standardized,2,Female,0.11133959,0.11133959,0.11133959
+adult_underweight,206,Gambia,1997,27,Age-standardized,1,Male,0.08852289,0.08852289,0.08852289
+adult_underweight,206,Gambia,1997,27,Age-standardized,2,Female,0.10973225,0.10973225,0.10973225
+adult_underweight,206,Gambia,1998,27,Age-standardized,1,Male,0.0873941,0.0873941,0.0873941
+adult_underweight,206,Gambia,1998,27,Age-standardized,2,Female,0.10912268,0.10912268,0.10912268
+adult_underweight,206,Gambia,1999,27,Age-standardized,1,Male,0.08660532,0.08660532,0.08660532
+adult_underweight,206,Gambia,1999,27,Age-standardized,2,Female,0.10891172,0.10891172,0.10891172
+adult_underweight,206,Gambia,2000,27,Age-standardized,1,Male,0.08581332,0.08581332,0.08581332
+adult_underweight,206,Gambia,2000,27,Age-standardized,2,Female,0.10829497,0.10829497,0.10829497
+adult_underweight,206,Gambia,2001,27,Age-standardized,1,Male,0.0853982,0.0853982,0.0853982
+adult_underweight,206,Gambia,2001,27,Age-standardized,2,Female,0.10811673,0.10811673,0.10811673
+adult_underweight,206,Gambia,2002,27,Age-standardized,1,Male,0.08473786,0.08473786,0.08473786
+adult_underweight,206,Gambia,2002,27,Age-standardized,2,Female,0.10757292,0.10757292,0.10757292
+adult_underweight,206,Gambia,2003,27,Age-standardized,1,Male,0.08373768,0.08373768,0.08373768
+adult_underweight,206,Gambia,2003,27,Age-standardized,2,Female,0.10685914,0.10685914,0.10685914
+adult_underweight,206,Gambia,2004,27,Age-standardized,1,Male,0.08244041,0.08244041,0.08244041
+adult_underweight,206,Gambia,2004,27,Age-standardized,2,Female,0.10570299999999999,0.10570299999999999,0.10570299999999999
+adult_underweight,206,Gambia,2005,27,Age-standardized,1,Male,0.08109772,0.08109772,0.08109772
+adult_underweight,206,Gambia,2005,27,Age-standardized,2,Female,0.10429981,0.10429981,0.10429981
+adult_underweight,206,Gambia,2006,27,Age-standardized,1,Male,0.07961218,0.07961218,0.07961218
+adult_underweight,206,Gambia,2006,27,Age-standardized,2,Female,0.10280727,0.10280727,0.10280727
+adult_underweight,206,Gambia,2007,27,Age-standardized,1,Male,0.07804932,0.07804932,0.07804932
+adult_underweight,206,Gambia,2007,27,Age-standardized,2,Female,0.10106983,0.10106983,0.10106983
+adult_underweight,206,Gambia,2008,27,Age-standardized,1,Male,0.07643667,0.07643667,0.07643667
+adult_underweight,206,Gambia,2008,27,Age-standardized,2,Female,0.09953194,0.09953194,0.09953194
+adult_underweight,206,Gambia,2009,27,Age-standardized,1,Male,0.07486583,0.07486583,0.07486583
+adult_underweight,206,Gambia,2009,27,Age-standardized,2,Female,0.09820882,0.09820882,0.09820882
+adult_underweight,206,Gambia,2010,27,Age-standardized,1,Male,0.07344003,0.07344003,0.07344003
+adult_underweight,206,Gambia,2010,27,Age-standardized,2,Female,0.09723082,0.09723082,0.09723082
+adult_underweight,206,Gambia,2011,27,Age-standardized,1,Male,0.07236601,0.07236601,0.07236601
+adult_underweight,206,Gambia,2011,27,Age-standardized,2,Female,0.09791416,0.09791416,0.09791416
+adult_underweight,206,Gambia,2012,27,Age-standardized,1,Male,0.07211174,0.07211174,0.07211174
+adult_underweight,206,Gambia,2012,27,Age-standardized,2,Female,0.09917956,0.09917956,0.09917956
+adult_underweight,206,Gambia,2013,27,Age-standardized,1,Male,0.07221827,0.07221827,0.07221827
+adult_underweight,206,Gambia,2013,27,Age-standardized,2,Female,0.10091845,0.10091845,0.10091845
+adult_underweight,206,Gambia,2014,27,Age-standardized,1,Male,0.07261844,0.07261844,0.07261844
+adult_underweight,206,Gambia,2014,27,Age-standardized,2,Female,0.10179861,0.10179861,0.10179861
+adult_underweight,206,Gambia,2015,27,Age-standardized,1,Male,0.07288093,0.07288093,0.07288093
+adult_underweight,206,Gambia,2015,27,Age-standardized,2,Female,0.10312529,0.10312529,0.10312529
+adult_underweight,206,Gambia,2016,27,Age-standardized,1,Male,0.07277842,0.07277842,0.07277842
+adult_underweight,206,Gambia,2016,27,Age-standardized,2,Female,0.10442799999999999,0.10442799999999999,0.10442799999999999
+adult_underweight,206,Gambia,2017,27,Age-standardized,1,Male,0.07277842,0.07277842,0.07277842
+adult_underweight,206,Gambia,2017,27,Age-standardized,2,Female,0.10442799999999999,0.10442799999999999,0.10442799999999999
+adult_underweight,206,Gambia,2018,27,Age-standardized,1,Male,0.072208268,0.072208268,0.072208268
+adult_underweight,206,Gambia,2018,27,Age-standardized,2,Female,0.10365283835582699,0.10365283835582699,0.10365283835582699
+adult_underweight,206,Gambia,2019,27,Age-standardized,1,Male,0.071732211,0.071732211,0.071732211
+adult_underweight,206,Gambia,2019,27,Age-standardized,2,Female,0.10300521,0.10300521,0.10300521
+adult_underweight,206,Gambia,2020,27,Age-standardized,1,Male,0.071219942,0.071219942,0.071219942
+adult_underweight,206,Gambia,2020,27,Age-standardized,2,Female,0.102366952,0.102366952,0.102366952
+adult_underweight,206,Gambia,2021,27,Age-standardized,1,Male,0.070713209,0.070713209,0.070713209
+adult_underweight,206,Gambia,2021,27,Age-standardized,2,Female,0.10173489191945899,0.10173489191945899,0.10173489191945899
+adult_underweight,207,Ghana,1994,27,Age-standardized,1,Male,0.14174423,0.14174423,0.14174423
+adult_underweight,207,Ghana,1994,27,Age-standardized,2,Female,0.17996972,0.17996972,0.17996972
+adult_underweight,207,Ghana,1995,27,Age-standardized,1,Male,0.13746979999999998,0.13746979999999998,0.13746979999999998
+adult_underweight,207,Ghana,1995,27,Age-standardized,2,Female,0.17347813,0.17347813,0.17347813
+adult_underweight,207,Ghana,1996,27,Age-standardized,1,Male,0.1328468,0.1328468,0.1328468
+adult_underweight,207,Ghana,1996,27,Age-standardized,2,Female,0.16640844,0.16640844,0.16640844
+adult_underweight,207,Ghana,1997,27,Age-standardized,1,Male,0.12812416,0.12812416,0.12812416
+adult_underweight,207,Ghana,1997,27,Age-standardized,2,Female,0.15876247,0.15876247,0.15876247
+adult_underweight,207,Ghana,1998,27,Age-standardized,1,Male,0.12318657,0.12318657,0.12318657
+adult_underweight,207,Ghana,1998,27,Age-standardized,2,Female,0.14979927,0.14979927,0.14979927
+adult_underweight,207,Ghana,1999,27,Age-standardized,1,Male,0.11844113,0.11844113,0.11844113
+adult_underweight,207,Ghana,1999,27,Age-standardized,2,Female,0.13484514,0.13484514,0.13484514
+adult_underweight,207,Ghana,2000,27,Age-standardized,1,Male,0.11391651,0.11391651,0.11391651
+adult_underweight,207,Ghana,2000,27,Age-standardized,2,Female,0.12094577,0.12094577,0.12094577
+adult_underweight,207,Ghana,2001,27,Age-standardized,1,Male,0.11071151,0.11071151,0.11071151
+adult_underweight,207,Ghana,2001,27,Age-standardized,2,Female,0.10993996,0.10993996,0.10993996
+adult_underweight,207,Ghana,2002,27,Age-standardized,1,Male,0.10746780000000002,0.10746780000000002,0.10746780000000002
+adult_underweight,207,Ghana,2002,27,Age-standardized,2,Female,0.10081622,0.10081622,0.10081622
+adult_underweight,207,Ghana,2003,27,Age-standardized,1,Male,0.10428658,0.10428658,0.10428658
+adult_underweight,207,Ghana,2003,27,Age-standardized,2,Female,0.09358962,0.09358962,0.09358962
+adult_underweight,207,Ghana,2004,27,Age-standardized,1,Male,0.09837992,0.09837992,0.09837992
+adult_underweight,207,Ghana,2004,27,Age-standardized,2,Female,0.08737466,0.08737466,0.08737466
+adult_underweight,207,Ghana,2005,27,Age-standardized,1,Male,0.09312587,0.09312587,0.09312587
+adult_underweight,207,Ghana,2005,27,Age-standardized,2,Female,0.08274283,0.08274283,0.08274283
+adult_underweight,207,Ghana,2006,27,Age-standardized,1,Male,0.08981208,0.08981208,0.08981208
+adult_underweight,207,Ghana,2006,27,Age-standardized,2,Female,0.07965869,0.07965869,0.07965869
+adult_underweight,207,Ghana,2007,27,Age-standardized,1,Male,0.08905843,0.08905843,0.08905843
+adult_underweight,207,Ghana,2007,27,Age-standardized,2,Female,0.07763164,0.07763164,0.07763164
+adult_underweight,207,Ghana,2008,27,Age-standardized,1,Male,0.08846745,0.08846745,0.08846745
+adult_underweight,207,Ghana,2008,27,Age-standardized,2,Female,0.07624092,0.07624092,0.07624092
+adult_underweight,207,Ghana,2009,27,Age-standardized,1,Male,0.08816557,0.08816557,0.08816557
+adult_underweight,207,Ghana,2009,27,Age-standardized,2,Female,0.07584677,0.07584677,0.07584677
+adult_underweight,207,Ghana,2010,27,Age-standardized,1,Male,0.08745429,0.08745429,0.08745429
+adult_underweight,207,Ghana,2010,27,Age-standardized,2,Female,0.0756101,0.0756101,0.0756101
+adult_underweight,207,Ghana,2011,27,Age-standardized,1,Male,0.08649184,0.08649184,0.08649184
+adult_underweight,207,Ghana,2011,27,Age-standardized,2,Female,0.07525615,0.07525615,0.07525615
+adult_underweight,207,Ghana,2012,27,Age-standardized,1,Male,0.08577072,0.08577072,0.08577072
+adult_underweight,207,Ghana,2012,27,Age-standardized,2,Female,0.07492257,0.07492257,0.07492257
+adult_underweight,207,Ghana,2013,27,Age-standardized,1,Male,0.08534818,0.08534818,0.08534818
+adult_underweight,207,Ghana,2013,27,Age-standardized,2,Female,0.07478105,0.07478105,0.07478105
+adult_underweight,207,Ghana,2014,27,Age-standardized,1,Male,0.08531406,0.08531406,0.08531406
+adult_underweight,207,Ghana,2014,27,Age-standardized,2,Female,0.07482576,0.07482576,0.07482576
+adult_underweight,207,Ghana,2015,27,Age-standardized,1,Male,0.08336494,0.08336494,0.08336494
+adult_underweight,207,Ghana,2015,27,Age-standardized,2,Female,0.07607102,0.07607102,0.07607102
+adult_underweight,207,Ghana,2016,27,Age-standardized,1,Male,0.08276315,0.08276315,0.08276315
+adult_underweight,207,Ghana,2016,27,Age-standardized,2,Female,0.07620973,0.07620973,0.07620973
+adult_underweight,207,Ghana,2017,27,Age-standardized,1,Male,0.08276315,0.08276315,0.08276315
+adult_underweight,207,Ghana,2017,27,Age-standardized,2,Female,0.07620973,0.07620973,0.07620973
+adult_underweight,207,Ghana,2018,27,Age-standardized,1,Male,0.081897519,0.081897519,0.081897519
+adult_underweight,207,Ghana,2018,27,Age-standardized,2,Female,0.075422443,0.075422443,0.075422443
+adult_underweight,207,Ghana,2019,27,Age-standardized,1,Male,0.081199304,0.081199304,0.081199304
+adult_underweight,207,Ghana,2019,27,Age-standardized,2,Female,0.074787399,0.074787399,0.074787399
+adult_underweight,207,Ghana,2020,27,Age-standardized,1,Male,0.080512826,0.080512826,0.080512826
+adult_underweight,207,Ghana,2020,27,Age-standardized,2,Female,0.074215831,0.074215831,0.074215831
+adult_underweight,207,Ghana,2021,27,Age-standardized,1,Male,0.079873998,0.079873998,0.079873998
+adult_underweight,207,Ghana,2021,27,Age-standardized,2,Female,0.073683582,0.073683582,0.073683582
+adult_underweight,163,India,1994,27,Age-standardized,1,Male,0.27417131,0.27417131,0.27417131
+adult_underweight,163,India,1994,27,Age-standardized,2,Female,0.26946287,0.26946287,0.26946287
+adult_underweight,163,India,1995,27,Age-standardized,1,Male,0.27311449,0.27311449,0.27311449
+adult_underweight,163,India,1995,27,Age-standardized,2,Female,0.26869575,0.26869575,0.26869575
+adult_underweight,163,India,1996,27,Age-standardized,1,Male,0.27220357,0.27220357,0.27220357
+adult_underweight,163,India,1996,27,Age-standardized,2,Female,0.26804171,0.26804171,0.26804171
+adult_underweight,163,India,1997,27,Age-standardized,1,Male,0.27141947,0.27141947,0.27141947
+adult_underweight,163,India,1997,27,Age-standardized,2,Female,0.26666469,0.26666469,0.26666469
+adult_underweight,163,India,1998,27,Age-standardized,1,Male,0.27064731,0.27064731,0.27064731
+adult_underweight,163,India,1998,27,Age-standardized,2,Female,0.26572249,0.26572249,0.26572249
+adult_underweight,163,India,1999,27,Age-standardized,1,Male,0.26982423,0.26982423,0.26982423
+adult_underweight,163,India,1999,27,Age-standardized,2,Female,0.2650107,0.2650107,0.2650107
+adult_underweight,163,India,2000,27,Age-standardized,1,Male,0.26945009,0.26945009,0.26945009
+adult_underweight,163,India,2000,27,Age-standardized,2,Female,0.26452727,0.26452727,0.26452727
+adult_underweight,163,India,2001,27,Age-standardized,1,Male,0.26903474,0.26903474,0.26903474
+adult_underweight,163,India,2001,27,Age-standardized,2,Female,0.26420857,0.26420857,0.26420857
+adult_underweight,163,India,2002,27,Age-standardized,1,Male,0.26923405,0.26923405,0.26923405
+adult_underweight,163,India,2002,27,Age-standardized,2,Female,0.26451479,0.26451479,0.26451479
+adult_underweight,163,India,2003,27,Age-standardized,1,Male,0.26948691,0.26948691,0.26948691
+adult_underweight,163,India,2003,27,Age-standardized,2,Female,0.26483658,0.26483658,0.26483658
+adult_underweight,163,India,2004,27,Age-standardized,1,Male,0.26963533,0.26963533,0.26963533
+adult_underweight,163,India,2004,27,Age-standardized,2,Female,0.26509055,0.26509055,0.26509055
+adult_underweight,163,India,2005,27,Age-standardized,1,Male,0.26979345,0.26979345,0.26979345
+adult_underweight,163,India,2005,27,Age-standardized,2,Female,0.26559924,0.26559924,0.26559924
+adult_underweight,163,India,2006,27,Age-standardized,1,Male,0.26879712,0.26879712,0.26879712
+adult_underweight,163,India,2006,27,Age-standardized,2,Female,0.26565359,0.26565359,0.26565359
+adult_underweight,163,India,2007,27,Age-standardized,1,Male,0.26716134,0.26716134,0.26716134
+adult_underweight,163,India,2007,27,Age-standardized,2,Female,0.26529631,0.26529631,0.26529631
+adult_underweight,163,India,2008,27,Age-standardized,1,Male,0.26501003,0.26501003,0.26501003
+adult_underweight,163,India,2008,27,Age-standardized,2,Female,0.26350719,0.26350719,0.26350719
+adult_underweight,163,India,2009,27,Age-standardized,1,Male,0.26241862,0.26241862,0.26241862
+adult_underweight,163,India,2009,27,Age-standardized,2,Female,0.26136558,0.26136558,0.26136558
+adult_underweight,163,India,2010,27,Age-standardized,1,Male,0.25942987,0.25942987,0.25942987
+adult_underweight,163,India,2010,27,Age-standardized,2,Female,0.25887492,0.25887492,0.25887492
+adult_underweight,163,India,2011,27,Age-standardized,1,Male,0.25623071,0.25623071,0.25623071
+adult_underweight,163,India,2011,27,Age-standardized,2,Female,0.25623777,0.25623777,0.25623777
+adult_underweight,163,India,2012,27,Age-standardized,1,Male,0.25273673,0.25273673,0.25273673
+adult_underweight,163,India,2012,27,Age-standardized,2,Female,0.25345552,0.25345552,0.25345552
+adult_underweight,163,India,2013,27,Age-standardized,1,Male,0.24942762,0.24942762,0.24942762
+adult_underweight,163,India,2013,27,Age-standardized,2,Female,0.25087896,0.25087896,0.25087896
+adult_underweight,163,India,2014,27,Age-standardized,1,Male,0.24708946,0.24708946,0.24708946
+adult_underweight,163,India,2014,27,Age-standardized,2,Female,0.24913001,0.24913001,0.24913001
+adult_underweight,163,India,2015,27,Age-standardized,1,Male,0.24501489999999998,0.24501489999999998,0.24501489999999998
+adult_underweight,163,India,2015,27,Age-standardized,2,Female,0.24775450000000002,0.24775450000000002,0.24775450000000002
+adult_underweight,163,India,2016,27,Age-standardized,1,Male,0.24241451,0.24241451,0.24241451
+adult_underweight,163,India,2016,27,Age-standardized,2,Female,0.24579098,0.24579098,0.24579098
+adult_underweight,163,India,2017,27,Age-standardized,1,Male,0.24241451,0.24241451,0.24241451
+adult_underweight,163,India,2017,27,Age-standardized,2,Female,0.24579098,0.24579098,0.24579098
+adult_underweight,163,India,2018,27,Age-standardized,1,Male,0.24044327,0.24044327,0.24044327
+adult_underweight,163,India,2018,27,Age-standardized,2,Female,0.243839465,0.243839465,0.243839465
+adult_underweight,163,India,2019,27,Age-standardized,1,Male,0.238619099,0.238619099,0.238619099
+adult_underweight,163,India,2019,27,Age-standardized,2,Female,0.24203323335115998,0.24203323335115998,0.24203323335115998
+adult_underweight,163,India,2020,27,Age-standardized,1,Male,0.236882904,0.236882904,0.236882904
+adult_underweight,163,India,2020,27,Age-standardized,2,Female,0.24045948110286702,0.24045948110286702,0.24045948110286702
+adult_underweight,163,India,2021,27,Age-standardized,1,Male,0.23523437954511398,0.23523437954511398,0.23523437954511398
+adult_underweight,163,India,2021,27,Age-standardized,2,Female,0.23896435193578103,0.23896435193578103,0.23896435193578103
+adult_underweight,11,Indonesia,1994,27,Age-standardized,1,Male,0.26865611,0.26865611,0.26865611
+adult_underweight,11,Indonesia,1994,27,Age-standardized,2,Female,0.22618183,0.22618183,0.22618183
+adult_underweight,11,Indonesia,1995,27,Age-standardized,1,Male,0.26699904,0.26699904,0.26699904
+adult_underweight,11,Indonesia,1995,27,Age-standardized,2,Female,0.22533978,0.22533978,0.22533978
+adult_underweight,11,Indonesia,1996,27,Age-standardized,1,Male,0.26517454,0.26517454,0.26517454
+adult_underweight,11,Indonesia,1996,27,Age-standardized,2,Female,0.22414886,0.22414886,0.22414886
+adult_underweight,11,Indonesia,1997,27,Age-standardized,1,Male,0.26298041,0.26298041,0.26298041
+adult_underweight,11,Indonesia,1997,27,Age-standardized,2,Female,0.22276215,0.22276215,0.22276215
+adult_underweight,11,Indonesia,1998,27,Age-standardized,1,Male,0.25763983,0.25763983,0.25763983
+adult_underweight,11,Indonesia,1998,27,Age-standardized,2,Female,0.22252641,0.22252641,0.22252641
+adult_underweight,11,Indonesia,1999,27,Age-standardized,1,Male,0.25201978,0.25201978,0.25201978
+adult_underweight,11,Indonesia,1999,27,Age-standardized,2,Female,0.22126482,0.22126482,0.22126482
+adult_underweight,11,Indonesia,2000,27,Age-standardized,1,Male,0.24602220000000002,0.24602220000000002,0.24602220000000002
+adult_underweight,11,Indonesia,2000,27,Age-standardized,2,Female,0.21872543,0.21872543,0.21872543
+adult_underweight,11,Indonesia,2001,27,Age-standardized,1,Male,0.23966569,0.23966569,0.23966569
+adult_underweight,11,Indonesia,2001,27,Age-standardized,2,Female,0.21838323,0.21838323,0.21838323
+adult_underweight,11,Indonesia,2002,27,Age-standardized,1,Male,0.2323813,0.2323813,0.2323813
+adult_underweight,11,Indonesia,2002,27,Age-standardized,2,Female,0.20548931,0.20548931,0.20548931
+adult_underweight,11,Indonesia,2003,27,Age-standardized,1,Male,0.22501374,0.22501374,0.22501374
+adult_underweight,11,Indonesia,2003,27,Age-standardized,2,Female,0.19075948,0.19075948,0.19075948
+adult_underweight,11,Indonesia,2004,27,Age-standardized,1,Male,0.22051153,0.22051153,0.22051153
+adult_underweight,11,Indonesia,2004,27,Age-standardized,2,Female,0.17767903,0.17767903,0.17767903
+adult_underweight,11,Indonesia,2005,27,Age-standardized,1,Male,0.21800774,0.21800774,0.21800774
+adult_underweight,11,Indonesia,2005,27,Age-standardized,2,Female,0.16623369,0.16623369,0.16623369
+adult_underweight,11,Indonesia,2006,27,Age-standardized,1,Male,0.21606614,0.21606614,0.21606614
+adult_underweight,11,Indonesia,2006,27,Age-standardized,2,Female,0.15552935,0.15552935,0.15552935
+adult_underweight,11,Indonesia,2007,27,Age-standardized,1,Male,0.21465969,0.21465969,0.21465969
+adult_underweight,11,Indonesia,2007,27,Age-standardized,2,Female,0.14746783,0.14746783,0.14746783
+adult_underweight,11,Indonesia,2008,27,Age-standardized,1,Male,0.21300548,0.21300548,0.21300548
+adult_underweight,11,Indonesia,2008,27,Age-standardized,2,Female,0.14477247,0.14477247,0.14477247
+adult_underweight,11,Indonesia,2009,27,Age-standardized,1,Male,0.21109795,0.21109795,0.21109795
+adult_underweight,11,Indonesia,2009,27,Age-standardized,2,Female,0.14337494,0.14337494,0.14337494
+adult_underweight,11,Indonesia,2010,27,Age-standardized,1,Male,0.20808986,0.20808986,0.20808986
+adult_underweight,11,Indonesia,2010,27,Age-standardized,2,Female,0.1430296,0.1430296,0.1430296
+adult_underweight,11,Indonesia,2011,27,Age-standardized,1,Male,0.20389468,0.20389468,0.20389468
+adult_underweight,11,Indonesia,2011,27,Age-standardized,2,Female,0.13855973,0.13855973,0.13855973
+adult_underweight,11,Indonesia,2012,27,Age-standardized,1,Male,0.19930598,0.19930598,0.19930598
+adult_underweight,11,Indonesia,2012,27,Age-standardized,2,Female,0.13438016,0.13438016,0.13438016
+adult_underweight,11,Indonesia,2013,27,Age-standardized,1,Male,0.19423867,0.19423867,0.19423867
+adult_underweight,11,Indonesia,2013,27,Age-standardized,2,Female,0.13349894,0.13349894,0.13349894
+adult_underweight,11,Indonesia,2014,27,Age-standardized,1,Male,0.18922296,0.18922296,0.18922296
+adult_underweight,11,Indonesia,2014,27,Age-standardized,2,Female,0.13308192,0.13308192,0.13308192
+adult_underweight,11,Indonesia,2015,27,Age-standardized,1,Male,0.1842994,0.1842994,0.1842994
+adult_underweight,11,Indonesia,2015,27,Age-standardized,2,Female,0.13291054,0.13291054,0.13291054
+adult_underweight,11,Indonesia,2016,27,Age-standardized,1,Male,0.1800398,0.1800398,0.1800398
+adult_underweight,11,Indonesia,2016,27,Age-standardized,2,Female,0.13101364,0.13101364,0.13101364
+adult_underweight,11,Indonesia,2017,27,Age-standardized,1,Male,0.1800398,0.1800398,0.1800398
+adult_underweight,11,Indonesia,2017,27,Age-standardized,2,Female,0.13101364,0.13101364,0.13101364
+adult_underweight,11,Indonesia,2018,27,Age-standardized,1,Male,0.17872820338619397,0.17872820338619397,0.17872820338619397
+adult_underweight,11,Indonesia,2018,27,Age-standardized,2,Female,0.13002204755766197,0.13002204755766197,0.13002204755766197
+adult_underweight,11,Indonesia,2019,27,Age-standardized,1,Male,0.17757350564770602,0.17757350564770602,0.17757350564770602
+adult_underweight,11,Indonesia,2019,27,Age-standardized,2,Female,0.12914968310942698,0.12914968310942698,0.12914968310942698
+adult_underweight,11,Indonesia,2020,27,Age-standardized,1,Male,0.176685257,0.176685257,0.176685257
+adult_underweight,11,Indonesia,2020,27,Age-standardized,2,Female,0.12853583,0.12853583,0.12853583
+adult_underweight,11,Indonesia,2021,27,Age-standardized,1,Male,0.17583936331348002,0.17583936331348002,0.17583936331348002
+adult_underweight,11,Indonesia,2021,27,Age-standardized,2,Female,0.127951318,0.127951318,0.127951318
+adult_underweight,180,Kenya,1994,27,Age-standardized,1,Male,0.15861931,0.15861931,0.15861931
+adult_underweight,180,Kenya,1994,27,Age-standardized,2,Female,0.1286103,0.1286103,0.1286103
+adult_underweight,180,Kenya,1995,27,Age-standardized,1,Male,0.15927528,0.15927528,0.15927528
+adult_underweight,180,Kenya,1995,27,Age-standardized,2,Female,0.12832431,0.12832431,0.12832431
+adult_underweight,180,Kenya,1996,27,Age-standardized,1,Male,0.15973068,0.15973068,0.15973068
+adult_underweight,180,Kenya,1996,27,Age-standardized,2,Female,0.12779242,0.12779242,0.12779242
+adult_underweight,180,Kenya,1997,27,Age-standardized,1,Male,0.16166124,0.16166124,0.16166124
+adult_underweight,180,Kenya,1997,27,Age-standardized,2,Female,0.12724232,0.12724232,0.12724232
+adult_underweight,180,Kenya,1998,27,Age-standardized,1,Male,0.16102055,0.16102055,0.16102055
+adult_underweight,180,Kenya,1998,27,Age-standardized,2,Female,0.12640751,0.12640751,0.12640751
+adult_underweight,180,Kenya,1999,27,Age-standardized,1,Male,0.15900138,0.15900138,0.15900138
+adult_underweight,180,Kenya,1999,27,Age-standardized,2,Female,0.12553582,0.12553582,0.12553582
+adult_underweight,180,Kenya,2000,27,Age-standardized,1,Male,0.157316,0.157316,0.157316
+adult_underweight,180,Kenya,2000,27,Age-standardized,2,Female,0.12463184,0.12463184,0.12463184
+adult_underweight,180,Kenya,2001,27,Age-standardized,1,Male,0.15640387,0.15640387,0.15640387
+adult_underweight,180,Kenya,2001,27,Age-standardized,2,Female,0.12380532,0.12380532,0.12380532
+adult_underweight,180,Kenya,2002,27,Age-standardized,1,Male,0.15579942,0.15579942,0.15579942
+adult_underweight,180,Kenya,2002,27,Age-standardized,2,Female,0.12306868,0.12306868,0.12306868
+adult_underweight,180,Kenya,2003,27,Age-standardized,1,Male,0.15527593,0.15527593,0.15527593
+adult_underweight,180,Kenya,2003,27,Age-standardized,2,Female,0.12251233,0.12251233,0.12251233
+adult_underweight,180,Kenya,2004,27,Age-standardized,1,Male,0.15527439999999998,0.15527439999999998,0.15527439999999998
+adult_underweight,180,Kenya,2004,27,Age-standardized,2,Female,0.12231473,0.12231473,0.12231473
+adult_underweight,180,Kenya,2005,27,Age-standardized,1,Male,0.15213959999999999,0.15213959999999999,0.15213959999999999
+adult_underweight,180,Kenya,2005,27,Age-standardized,2,Female,0.12226258,0.12226258,0.12226258
+adult_underweight,180,Kenya,2006,27,Age-standardized,1,Male,0.14929208,0.14929208,0.14929208
+adult_underweight,180,Kenya,2006,27,Age-standardized,2,Female,0.12221441,0.12221441,0.12221441
+adult_underweight,180,Kenya,2007,27,Age-standardized,1,Male,0.14775034,0.14775034,0.14775034
+adult_underweight,180,Kenya,2007,27,Age-standardized,2,Female,0.12212794,0.12212794,0.12212794
+adult_underweight,180,Kenya,2008,27,Age-standardized,1,Male,0.14653995,0.14653995,0.14653995
+adult_underweight,180,Kenya,2008,27,Age-standardized,2,Female,0.12194841,0.12194841,0.12194841
+adult_underweight,180,Kenya,2009,27,Age-standardized,1,Male,0.14548181,0.14548181,0.14548181
+adult_underweight,180,Kenya,2009,27,Age-standardized,2,Female,0.12071330000000001,0.12071330000000001,0.12071330000000001
+adult_underweight,180,Kenya,2010,27,Age-standardized,1,Male,0.14428475,0.14428475,0.14428475
+adult_underweight,180,Kenya,2010,27,Age-standardized,2,Female,0.1190969,0.1190969,0.1190969
+adult_underweight,180,Kenya,2011,27,Age-standardized,1,Male,0.14311078,0.14311078,0.14311078
+adult_underweight,180,Kenya,2011,27,Age-standardized,2,Female,0.11734492,0.11734492,0.11734492
+adult_underweight,180,Kenya,2012,27,Age-standardized,1,Male,0.1423384,0.1423384,0.1423384
+adult_underweight,180,Kenya,2012,27,Age-standardized,2,Female,0.11561966,0.11561966,0.11561966
+adult_underweight,180,Kenya,2013,27,Age-standardized,1,Male,0.14181222,0.14181222,0.14181222
+adult_underweight,180,Kenya,2013,27,Age-standardized,2,Female,0.11426492,0.11426492,0.11426492
+adult_underweight,180,Kenya,2014,27,Age-standardized,1,Male,0.14117324,0.14117324,0.14117324
+adult_underweight,180,Kenya,2014,27,Age-standardized,2,Female,0.11319217,0.11319217,0.11319217
+adult_underweight,180,Kenya,2015,27,Age-standardized,1,Male,0.14062892,0.14062892,0.14062892
+adult_underweight,180,Kenya,2015,27,Age-standardized,2,Female,0.11327262,0.11327262,0.11327262
+adult_underweight,180,Kenya,2016,27,Age-standardized,1,Male,0.13992479,0.13992479,0.13992479
+adult_underweight,180,Kenya,2016,27,Age-standardized,2,Female,0.11262781,0.11262781,0.11262781
+adult_underweight,180,Kenya,2017,27,Age-standardized,1,Male,0.13992479,0.13992479,0.13992479
+adult_underweight,180,Kenya,2017,27,Age-standardized,2,Female,0.11262781,0.11262781,0.11262781
+adult_underweight,180,Kenya,2018,27,Age-standardized,1,Male,0.138816179,0.138816179,0.138816179
+adult_underweight,180,Kenya,2018,27,Age-standardized,2,Female,0.111725103,0.111725103,0.111725103
+adult_underweight,180,Kenya,2019,27,Age-standardized,1,Male,0.137927847,0.137927847,0.137927847
+adult_underweight,180,Kenya,2019,27,Age-standardized,2,Female,0.11100199964743199,0.11100199964743199,0.11100199964743199
+adult_underweight,180,Kenya,2020,27,Age-standardized,1,Male,0.136928525,0.136928525,0.136928525
+adult_underweight,180,Kenya,2020,27,Age-standardized,2,Female,0.11025763680285901,0.11025763680285901,0.11025763680285901
+adult_underweight,180,Kenya,2021,27,Age-standardized,1,Male,0.13598236242036899,0.13598236242036899,0.13598236242036899
+adult_underweight,180,Kenya,2021,27,Age-standardized,2,Female,0.109552717,0.109552717,0.109552717
+adult_underweight,12,Lao People's Democratic Republic,1994,27,Age-standardized,1,Male,0.20274201,0.20274201,0.20274201
+adult_underweight,12,Lao People's Democratic Republic,1994,27,Age-standardized,2,Female,0.17610307,0.17610307,0.17610307
+adult_underweight,12,Lao People's Democratic Republic,1995,27,Age-standardized,1,Male,0.20304699,0.20304699,0.20304699
+adult_underweight,12,Lao People's Democratic Republic,1995,27,Age-standardized,2,Female,0.17547033,0.17547033,0.17547033
+adult_underweight,12,Lao People's Democratic Republic,1996,27,Age-standardized,1,Male,0.20311876,0.20311876,0.20311876
+adult_underweight,12,Lao People's Democratic Republic,1996,27,Age-standardized,2,Female,0.17447095,0.17447095,0.17447095
+adult_underweight,12,Lao People's Democratic Republic,1997,27,Age-standardized,1,Male,0.20285676,0.20285676,0.20285676
+adult_underweight,12,Lao People's Democratic Republic,1997,27,Age-standardized,2,Female,0.17316139,0.17316139,0.17316139
+adult_underweight,12,Lao People's Democratic Republic,1998,27,Age-standardized,1,Male,0.20090945,0.20090945,0.20090945
+adult_underweight,12,Lao People's Democratic Republic,1998,27,Age-standardized,2,Female,0.17118,0.17118,0.17118
+adult_underweight,12,Lao People's Democratic Republic,1999,27,Age-standardized,1,Male,0.19793219,0.19793219,0.19793219
+adult_underweight,12,Lao People's Democratic Republic,1999,27,Age-standardized,2,Female,0.16891619,0.16891619,0.16891619
+adult_underweight,12,Lao People's Democratic Republic,2000,27,Age-standardized,1,Male,0.19460193,0.19460193,0.19460193
+adult_underweight,12,Lao People's Democratic Republic,2000,27,Age-standardized,2,Female,0.16637976,0.16637976,0.16637976
+adult_underweight,12,Lao People's Democratic Republic,2001,27,Age-standardized,1,Male,0.18305873,0.18305873,0.18305873
+adult_underweight,12,Lao People's Democratic Republic,2001,27,Age-standardized,2,Female,0.16308457,0.16308457,0.16308457
+adult_underweight,12,Lao People's Democratic Republic,2002,27,Age-standardized,1,Male,0.17410509,0.17410509,0.17410509
+adult_underweight,12,Lao People's Democratic Republic,2002,27,Age-standardized,2,Female,0.15920772,0.15920772,0.15920772
+adult_underweight,12,Lao People's Democratic Republic,2003,27,Age-standardized,1,Male,0.16787288,0.16787288,0.16787288
+adult_underweight,12,Lao People's Democratic Republic,2003,27,Age-standardized,2,Female,0.15489901,0.15489901,0.15489901
+adult_underweight,12,Lao People's Democratic Republic,2004,27,Age-standardized,1,Male,0.16555757,0.16555757,0.16555757
+adult_underweight,12,Lao People's Democratic Republic,2004,27,Age-standardized,2,Female,0.1500559,0.1500559,0.1500559
+adult_underweight,12,Lao People's Democratic Republic,2005,27,Age-standardized,1,Male,0.16337597,0.16337597,0.16337597
+adult_underweight,12,Lao People's Democratic Republic,2005,27,Age-standardized,2,Female,0.1459182,0.1459182,0.1459182
+adult_underweight,12,Lao People's Democratic Republic,2006,27,Age-standardized,1,Male,0.16097803,0.16097803,0.16097803
+adult_underweight,12,Lao People's Democratic Republic,2006,27,Age-standardized,2,Female,0.1418181,0.1418181,0.1418181
+adult_underweight,12,Lao People's Democratic Republic,2007,27,Age-standardized,1,Male,0.1585535,0.1585535,0.1585535
+adult_underweight,12,Lao People's Democratic Republic,2007,27,Age-standardized,2,Female,0.13779894,0.13779894,0.13779894
+adult_underweight,12,Lao People's Democratic Republic,2008,27,Age-standardized,1,Male,0.15610114,0.15610114,0.15610114
+adult_underweight,12,Lao People's Democratic Republic,2008,27,Age-standardized,2,Female,0.13406043,0.13406043,0.13406043
+adult_underweight,12,Lao People's Democratic Republic,2009,27,Age-standardized,1,Male,0.15509443,0.15509443,0.15509443
+adult_underweight,12,Lao People's Democratic Republic,2009,27,Age-standardized,2,Female,0.13232950000000002,0.13232950000000002,0.13232950000000002
+adult_underweight,12,Lao People's Democratic Republic,2010,27,Age-standardized,1,Male,0.15401094,0.15401094,0.15401094
+adult_underweight,12,Lao People's Democratic Republic,2010,27,Age-standardized,2,Female,0.13118373,0.13118373,0.13118373
+adult_underweight,12,Lao People's Democratic Republic,2011,27,Age-standardized,1,Male,0.15283128,0.15283128,0.15283128
+adult_underweight,12,Lao People's Democratic Republic,2011,27,Age-standardized,2,Female,0.13010719,0.13010719,0.13010719
+adult_underweight,12,Lao People's Democratic Republic,2012,27,Age-standardized,1,Male,0.15190983,0.15190983,0.15190983
+adult_underweight,12,Lao People's Democratic Republic,2012,27,Age-standardized,2,Female,0.12950587,0.12950587,0.12950587
+adult_underweight,12,Lao People's Democratic Republic,2013,27,Age-standardized,1,Male,0.15091455,0.15091455,0.15091455
+adult_underweight,12,Lao People's Democratic Republic,2013,27,Age-standardized,2,Female,0.12899613,0.12899613,0.12899613
+adult_underweight,12,Lao People's Democratic Republic,2014,27,Age-standardized,1,Male,0.15013927,0.15013927,0.15013927
+adult_underweight,12,Lao People's Democratic Republic,2014,27,Age-standardized,2,Female,0.12872779,0.12872779,0.12872779
+adult_underweight,12,Lao People's Democratic Republic,2015,27,Age-standardized,1,Male,0.14906785,0.14906785,0.14906785
+adult_underweight,12,Lao People's Democratic Republic,2015,27,Age-standardized,2,Female,0.12824194,0.12824194,0.12824194
+adult_underweight,12,Lao People's Democratic Republic,2016,27,Age-standardized,1,Male,0.1481126,0.1481126,0.1481126
+adult_underweight,12,Lao People's Democratic Republic,2016,27,Age-standardized,2,Female,0.1276761,0.1276761,0.1276761
+adult_underweight,12,Lao People's Democratic Republic,2017,27,Age-standardized,1,Male,0.1481126,0.1481126,0.1481126
+adult_underweight,12,Lao People's Democratic Republic,2017,27,Age-standardized,2,Female,0.1276761,0.1276761,0.1276761
+adult_underweight,12,Lao People's Democratic Republic,2018,27,Age-standardized,1,Male,0.146804525,0.146804525,0.146804525
+adult_underweight,12,Lao People's Democratic Republic,2018,27,Age-standardized,2,Female,0.126543928,0.126543928,0.126543928
+adult_underweight,12,Lao People's Democratic Republic,2019,27,Age-standardized,1,Male,0.145700813,0.145700813,0.145700813
+adult_underweight,12,Lao People's Democratic Republic,2019,27,Age-standardized,2,Female,0.125588876,0.125588876,0.125588876
+adult_underweight,12,Lao People's Democratic Republic,2020,27,Age-standardized,1,Male,0.14472330261891597,0.14472330261891597,0.14472330261891597
+adult_underweight,12,Lao People's Democratic Republic,2020,27,Age-standardized,2,Female,0.12481481692021601,0.12481481692021601,0.12481481692021601
+adult_underweight,12,Lao People's Democratic Republic,2021,27,Age-standardized,1,Male,0.143806205,0.143806205,0.143806205
+adult_underweight,12,Lao People's Democratic Republic,2021,27,Age-standardized,2,Female,0.12408838997413302,0.12408838997413302,0.12408838997413302
+adult_underweight,194,Lesotho,1994,27,Age-standardized,1,Male,0.15238797,0.15238797,0.15238797
+adult_underweight,194,Lesotho,1994,27,Age-standardized,2,Female,0.06026911,0.06026911,0.06026911
+adult_underweight,194,Lesotho,1995,27,Age-standardized,1,Male,0.15222956,0.15222956,0.15222956
+adult_underweight,194,Lesotho,1995,27,Age-standardized,2,Female,0.05907208,0.05907208,0.05907208
+adult_underweight,194,Lesotho,1996,27,Age-standardized,1,Male,0.15192946,0.15192946,0.15192946
+adult_underweight,194,Lesotho,1996,27,Age-standardized,2,Female,0.05777308,0.05777308,0.05777308
+adult_underweight,194,Lesotho,1997,27,Age-standardized,1,Male,0.15150315,0.15150315,0.15150315
+adult_underweight,194,Lesotho,1997,27,Age-standardized,2,Female,0.05665336,0.05665336,0.05665336
+adult_underweight,194,Lesotho,1998,27,Age-standardized,1,Male,0.15136899,0.15136899,0.15136899
+adult_underweight,194,Lesotho,1998,27,Age-standardized,2,Female,0.05613264,0.05613264,0.05613264
+adult_underweight,194,Lesotho,1999,27,Age-standardized,1,Male,0.15148986,0.15148986,0.15148986
+adult_underweight,194,Lesotho,1999,27,Age-standardized,2,Female,0.05573307,0.05573307,0.05573307
+adult_underweight,194,Lesotho,2000,27,Age-standardized,1,Male,0.15126581,0.15126581,0.15126581
+adult_underweight,194,Lesotho,2000,27,Age-standardized,2,Female,0.05495284,0.05495284,0.05495284
+adult_underweight,194,Lesotho,2001,27,Age-standardized,1,Male,0.15097222,0.15097222,0.15097222
+adult_underweight,194,Lesotho,2001,27,Age-standardized,2,Female,0.05398922,0.05398922,0.05398922
+adult_underweight,194,Lesotho,2002,27,Age-standardized,1,Male,0.15058286,0.15058286,0.15058286
+adult_underweight,194,Lesotho,2002,27,Age-standardized,2,Female,0.05288205,0.05288205,0.05288205
+adult_underweight,194,Lesotho,2003,27,Age-standardized,1,Male,0.14975963,0.14975963,0.14975963
+adult_underweight,194,Lesotho,2003,27,Age-standardized,2,Female,0.05158595,0.05158595,0.05158595
+adult_underweight,194,Lesotho,2004,27,Age-standardized,1,Male,0.14894522,0.14894522,0.14894522
+adult_underweight,194,Lesotho,2004,27,Age-standardized,2,Female,0.05044639,0.05044639,0.05044639
+adult_underweight,194,Lesotho,2005,27,Age-standardized,1,Male,0.14793042,0.14793042,0.14793042
+adult_underweight,194,Lesotho,2005,27,Age-standardized,2,Female,0.04993732,0.04993732,0.04993732
+adult_underweight,194,Lesotho,2006,27,Age-standardized,1,Male,0.14708397,0.14708397,0.14708397
+adult_underweight,194,Lesotho,2006,27,Age-standardized,2,Female,0.04935698,0.04935698,0.04935698
+adult_underweight,194,Lesotho,2007,27,Age-standardized,1,Male,0.14636762,0.14636762,0.14636762
+adult_underweight,194,Lesotho,2007,27,Age-standardized,2,Female,0.04905771,0.04905771,0.04905771
+adult_underweight,194,Lesotho,2008,27,Age-standardized,1,Male,0.14524262,0.14524262,0.14524262
+adult_underweight,194,Lesotho,2008,27,Age-standardized,2,Female,0.0487509,0.0487509,0.0487509
+adult_underweight,194,Lesotho,2009,27,Age-standardized,1,Male,0.14347248,0.14347248,0.14347248
+adult_underweight,194,Lesotho,2009,27,Age-standardized,2,Female,0.04859679,0.04859679,0.04859679
+adult_underweight,194,Lesotho,2010,27,Age-standardized,1,Male,0.14156129,0.14156129,0.14156129
+adult_underweight,194,Lesotho,2010,27,Age-standardized,2,Female,0.04876785,0.04876785,0.04876785
+adult_underweight,194,Lesotho,2011,27,Age-standardized,1,Male,0.139175,0.139175,0.139175
+adult_underweight,194,Lesotho,2011,27,Age-standardized,2,Female,0.04927894,0.04927894,0.04927894
+adult_underweight,194,Lesotho,2012,27,Age-standardized,1,Male,0.13720554,0.13720554,0.13720554
+adult_underweight,194,Lesotho,2012,27,Age-standardized,2,Female,0.05019107,0.05019107,0.05019107
+adult_underweight,194,Lesotho,2013,27,Age-standardized,1,Male,0.13543496,0.13543496,0.13543496
+adult_underweight,194,Lesotho,2013,27,Age-standardized,2,Female,0.050847,0.050847,0.050847
+adult_underweight,194,Lesotho,2014,27,Age-standardized,1,Male,0.13444625,0.13444625,0.13444625
+adult_underweight,194,Lesotho,2014,27,Age-standardized,2,Female,0.05155474,0.05155474,0.05155474
+adult_underweight,194,Lesotho,2015,27,Age-standardized,1,Male,0.13443499,0.13443499,0.13443499
+adult_underweight,194,Lesotho,2015,27,Age-standardized,2,Female,0.05263382,0.05263382,0.05263382
+adult_underweight,194,Lesotho,2016,27,Age-standardized,1,Male,0.13326029,0.13326029,0.13326029
+adult_underweight,194,Lesotho,2016,27,Age-standardized,2,Female,0.05351837,0.05351837,0.05351837
+adult_underweight,194,Lesotho,2017,27,Age-standardized,1,Male,0.13326029,0.13326029,0.13326029
+adult_underweight,194,Lesotho,2017,27,Age-standardized,2,Female,0.05351837,0.05351837,0.05351837
+adult_underweight,194,Lesotho,2018,27,Age-standardized,1,Male,0.13238168710777803,0.13238168710777803,0.13238168710777803
+adult_underweight,194,Lesotho,2018,27,Age-standardized,2,Female,0.053140702,0.053140702,0.053140702
+adult_underweight,194,Lesotho,2019,27,Age-standardized,1,Male,0.131663115,0.131663115,0.131663115
+adult_underweight,194,Lesotho,2019,27,Age-standardized,2,Female,0.052832127,0.052832127,0.052832127
+adult_underweight,194,Lesotho,2020,27,Age-standardized,1,Male,0.131110129,0.131110129,0.131110129
+adult_underweight,194,Lesotho,2020,27,Age-standardized,2,Female,0.052614951,0.052614951,0.052614951
+adult_underweight,194,Lesotho,2021,27,Age-standardized,1,Male,0.13059075902504402,0.13059075902504402,0.13059075902504402
+adult_underweight,194,Lesotho,2021,27,Age-standardized,2,Female,0.052411039,0.052411039,0.052411039
+adult_underweight,182,Malawi,1994,27,Age-standardized,1,Male,0.17920059,0.17920059,0.17920059
+adult_underweight,182,Malawi,1994,27,Age-standardized,2,Female,0.17631681,0.17631681,0.17631681
+adult_underweight,182,Malawi,1995,27,Age-standardized,1,Male,0.17752213,0.17752213,0.17752213
+adult_underweight,182,Malawi,1995,27,Age-standardized,2,Female,0.17584527,0.17584527,0.17584527
+adult_underweight,182,Malawi,1996,27,Age-standardized,1,Male,0.17445247,0.17445247,0.17445247
+adult_underweight,182,Malawi,1996,27,Age-standardized,2,Female,0.17462764,0.17462764,0.17462764
+adult_underweight,182,Malawi,1997,27,Age-standardized,1,Male,0.16920220000000002,0.16920220000000002,0.16920220000000002
+adult_underweight,182,Malawi,1997,27,Age-standardized,2,Female,0.17027019,0.17027019,0.17027019
+adult_underweight,182,Malawi,1998,27,Age-standardized,1,Male,0.16199912,0.16199912,0.16199912
+adult_underweight,182,Malawi,1998,27,Age-standardized,2,Female,0.16332051,0.16332051,0.16332051
+adult_underweight,182,Malawi,1999,27,Age-standardized,1,Male,0.1539264,0.1539264,0.1539264
+adult_underweight,182,Malawi,1999,27,Age-standardized,2,Female,0.15530927,0.15530927,0.15530927
+adult_underweight,182,Malawi,2000,27,Age-standardized,1,Male,0.14539411,0.14539411,0.14539411
+adult_underweight,182,Malawi,2000,27,Age-standardized,2,Female,0.14742572,0.14742572,0.14742572
+adult_underweight,182,Malawi,2001,27,Age-standardized,1,Male,0.13765969,0.13765969,0.13765969
+adult_underweight,182,Malawi,2001,27,Age-standardized,2,Female,0.13600329,0.13600329,0.13600329
+adult_underweight,182,Malawi,2002,27,Age-standardized,1,Male,0.13102564,0.13102564,0.13102564
+adult_underweight,182,Malawi,2002,27,Age-standardized,2,Female,0.12583082,0.12583082,0.12583082
+adult_underweight,182,Malawi,2003,27,Age-standardized,1,Male,0.12601537,0.12601537,0.12601537
+adult_underweight,182,Malawi,2003,27,Age-standardized,2,Female,0.11746862,0.11746862,0.11746862
+adult_underweight,182,Malawi,2004,27,Age-standardized,1,Male,0.12507083,0.12507083,0.12507083
+adult_underweight,182,Malawi,2004,27,Age-standardized,2,Female,0.11503729,0.11503729,0.11503729
+adult_underweight,182,Malawi,2005,27,Age-standardized,1,Male,0.12533473,0.12533473,0.12533473
+adult_underweight,182,Malawi,2005,27,Age-standardized,2,Female,0.1118482,0.1118482,0.1118482
+adult_underweight,182,Malawi,2006,27,Age-standardized,1,Male,0.12586671,0.12586671,0.12586671
+adult_underweight,182,Malawi,2006,27,Age-standardized,2,Female,0.10911275,0.10911275,0.10911275
+adult_underweight,182,Malawi,2007,27,Age-standardized,1,Male,0.12622717,0.12622717,0.12622717
+adult_underweight,182,Malawi,2007,27,Age-standardized,2,Female,0.10658304,0.10658304,0.10658304
+adult_underweight,182,Malawi,2008,27,Age-standardized,1,Male,0.12660601,0.12660601,0.12660601
+adult_underweight,182,Malawi,2008,27,Age-standardized,2,Female,0.1044913,0.1044913,0.1044913
+adult_underweight,182,Malawi,2009,27,Age-standardized,1,Male,0.12768903,0.12768903,0.12768903
+adult_underweight,182,Malawi,2009,27,Age-standardized,2,Female,0.10347507,0.10347507,0.10347507
+adult_underweight,182,Malawi,2010,27,Age-standardized,1,Male,0.12665399,0.12665399,0.12665399
+adult_underweight,182,Malawi,2010,27,Age-standardized,2,Female,0.10387853,0.10387853,0.10387853
+adult_underweight,182,Malawi,2011,27,Age-standardized,1,Male,0.12581161,0.12581161,0.12581161
+adult_underweight,182,Malawi,2011,27,Age-standardized,2,Female,0.10341734,0.10341734,0.10341734
+adult_underweight,182,Malawi,2012,27,Age-standardized,1,Male,0.12485222,0.12485222,0.12485222
+adult_underweight,182,Malawi,2012,27,Age-standardized,2,Female,0.10343813,0.10343813,0.10343813
+adult_underweight,182,Malawi,2013,27,Age-standardized,1,Male,0.12369888,0.12369888,0.12369888
+adult_underweight,182,Malawi,2013,27,Age-standardized,2,Female,0.10384867,0.10384867,0.10384867
+adult_underweight,182,Malawi,2014,27,Age-standardized,1,Male,0.12258526,0.12258526,0.12258526
+adult_underweight,182,Malawi,2014,27,Age-standardized,2,Female,0.10406366,0.10406366,0.10406366
+adult_underweight,182,Malawi,2015,27,Age-standardized,1,Male,0.12168316,0.12168316,0.12168316
+adult_underweight,182,Malawi,2015,27,Age-standardized,2,Female,0.10429086,0.10429086,0.10429086
+adult_underweight,182,Malawi,2016,27,Age-standardized,1,Male,0.12073028,0.12073028,0.12073028
+adult_underweight,182,Malawi,2016,27,Age-standardized,2,Female,0.10446002,0.10446002,0.10446002
+adult_underweight,182,Malawi,2017,27,Age-standardized,1,Male,0.12073028,0.12073028,0.12073028
+adult_underweight,182,Malawi,2017,27,Age-standardized,2,Female,0.10446002,0.10446002,0.10446002
+adult_underweight,182,Malawi,2018,27,Age-standardized,1,Male,0.11988895787786599,0.11988895787786599,0.11988895787786599
+adult_underweight,182,Malawi,2018,27,Age-standardized,2,Female,0.10373298432378199,0.10373298432378199,0.10373298432378199
+adult_underweight,182,Malawi,2019,27,Age-standardized,1,Male,0.11924513431984199,0.11924513431984199,0.11924513431984199
+adult_underweight,182,Malawi,2019,27,Age-standardized,2,Female,0.103176685,0.103176685,0.103176685
+adult_underweight,182,Malawi,2020,27,Age-standardized,1,Male,0.118439596,0.118439596,0.118439596
+adult_underweight,182,Malawi,2020,27,Age-standardized,2,Female,0.10253966039770199,0.10253966039770199,0.10253966039770199
+adult_underweight,182,Malawi,2021,27,Age-standardized,1,Male,0.11766290251968901,0.11766290251968901,0.11766290251968901
+adult_underweight,182,Malawi,2021,27,Age-standardized,2,Female,0.10192521398098299,0.10192521398098299,0.10192521398098299
+adult_underweight,38,Mongolia,1994,27,Age-standardized,1,Male,0.04645097,0.04645097,0.04645097
+adult_underweight,38,Mongolia,1994,27,Age-standardized,2,Female,0.05003082,0.05003082,0.05003082
+adult_underweight,38,Mongolia,1995,27,Age-standardized,1,Male,0.04768751,0.04768751,0.04768751
+adult_underweight,38,Mongolia,1995,27,Age-standardized,2,Female,0.04967839,0.04967839,0.04967839
+adult_underweight,38,Mongolia,1996,27,Age-standardized,1,Male,0.04883232,0.04883232,0.04883232
+adult_underweight,38,Mongolia,1996,27,Age-standardized,2,Female,0.04902218,0.04902218,0.04902218
+adult_underweight,38,Mongolia,1997,27,Age-standardized,1,Male,0.04999594,0.04999594,0.04999594
+adult_underweight,38,Mongolia,1997,27,Age-standardized,2,Female,0.04835808,0.04835808,0.04835808
+adult_underweight,38,Mongolia,1998,27,Age-standardized,1,Male,0.05073158,0.05073158,0.05073158
+adult_underweight,38,Mongolia,1998,27,Age-standardized,2,Female,0.04800698,0.04800698,0.04800698
+adult_underweight,38,Mongolia,1999,27,Age-standardized,1,Male,0.05109798,0.05109798,0.05109798
+adult_underweight,38,Mongolia,1999,27,Age-standardized,2,Female,0.04775556,0.04775556,0.04775556
+adult_underweight,38,Mongolia,2000,27,Age-standardized,1,Male,0.05134008,0.05134008,0.05134008
+adult_underweight,38,Mongolia,2000,27,Age-standardized,2,Female,0.04716138,0.04716138,0.04716138
+adult_underweight,38,Mongolia,2001,27,Age-standardized,1,Male,0.05130813,0.05130813,0.05130813
+adult_underweight,38,Mongolia,2001,27,Age-standardized,2,Female,0.04669025,0.04669025,0.04669025
+adult_underweight,38,Mongolia,2002,27,Age-standardized,1,Male,0.051203,0.051203,0.051203
+adult_underweight,38,Mongolia,2002,27,Age-standardized,2,Female,0.04609933,0.04609933,0.04609933
+adult_underweight,38,Mongolia,2003,27,Age-standardized,1,Male,0.05055789,0.05055789,0.05055789
+adult_underweight,38,Mongolia,2003,27,Age-standardized,2,Female,0.04565967,0.04565967,0.04565967
+adult_underweight,38,Mongolia,2004,27,Age-standardized,1,Male,0.05020303,0.05020303,0.05020303
+adult_underweight,38,Mongolia,2004,27,Age-standardized,2,Female,0.0451895,0.0451895,0.0451895
+adult_underweight,38,Mongolia,2005,27,Age-standardized,1,Male,0.04959953,0.04959953,0.04959953
+adult_underweight,38,Mongolia,2005,27,Age-standardized,2,Female,0.0445789,0.0445789,0.0445789
+adult_underweight,38,Mongolia,2006,27,Age-standardized,1,Male,0.04625377,0.04625377,0.04625377
+adult_underweight,38,Mongolia,2006,27,Age-standardized,2,Female,0.04418278,0.04418278,0.04418278
+adult_underweight,38,Mongolia,2007,27,Age-standardized,1,Male,0.04377356,0.04377356,0.04377356
+adult_underweight,38,Mongolia,2007,27,Age-standardized,2,Female,0.04415106,0.04415106,0.04415106
+adult_underweight,38,Mongolia,2008,27,Age-standardized,1,Male,0.04160896,0.04160896,0.04160896
+adult_underweight,38,Mongolia,2008,27,Age-standardized,2,Female,0.04462109,0.04462109,0.04462109
+adult_underweight,38,Mongolia,2009,27,Age-standardized,1,Male,0.03959993,0.03959993,0.03959993
+adult_underweight,38,Mongolia,2009,27,Age-standardized,2,Female,0.04550915,0.04550915,0.04550915
+adult_underweight,38,Mongolia,2010,27,Age-standardized,1,Male,0.03915483,0.03915483,0.03915483
+adult_underweight,38,Mongolia,2010,27,Age-standardized,2,Female,0.04575555,0.04575555,0.04575555
+adult_underweight,38,Mongolia,2011,27,Age-standardized,1,Male,0.03871035,0.03871035,0.03871035
+adult_underweight,38,Mongolia,2011,27,Age-standardized,2,Female,0.04621246,0.04621246,0.04621246
+adult_underweight,38,Mongolia,2012,27,Age-standardized,1,Male,0.03835043,0.03835043,0.03835043
+adult_underweight,38,Mongolia,2012,27,Age-standardized,2,Female,0.04684747,0.04684747,0.04684747
+adult_underweight,38,Mongolia,2013,27,Age-standardized,1,Male,0.03807242,0.03807242,0.03807242
+adult_underweight,38,Mongolia,2013,27,Age-standardized,2,Female,0.0477226,0.0477226,0.0477226
+adult_underweight,38,Mongolia,2014,27,Age-standardized,1,Male,0.03787156,0.03787156,0.03787156
+adult_underweight,38,Mongolia,2014,27,Age-standardized,2,Female,0.04870211,0.04870211,0.04870211
+adult_underweight,38,Mongolia,2015,27,Age-standardized,1,Male,0.03681231,0.03681231,0.03681231
+adult_underweight,38,Mongolia,2015,27,Age-standardized,2,Female,0.04943602,0.04943602,0.04943602
+adult_underweight,38,Mongolia,2016,27,Age-standardized,1,Male,0.03637688,0.03637688,0.03637688
+adult_underweight,38,Mongolia,2016,27,Age-standardized,2,Female,0.05024257,0.05024257,0.05024257
+adult_underweight,38,Mongolia,2017,27,Age-standardized,1,Male,0.03637688,0.03637688,0.03637688
+adult_underweight,38,Mongolia,2017,27,Age-standardized,2,Female,0.05024257,0.05024257,0.05024257
+adult_underweight,38,Mongolia,2018,27,Age-standardized,1,Male,0.03615134,0.03615134,0.03615134
+adult_underweight,38,Mongolia,2018,27,Age-standardized,2,Female,0.049941433,0.049941433,0.049941433
+adult_underweight,38,Mongolia,2019,27,Age-standardized,1,Male,0.035954194,0.035954194,0.035954194
+adult_underweight,38,Mongolia,2019,27,Age-standardized,2,Female,0.049678134,0.049678134,0.049678134
+adult_underweight,38,Mongolia,2020,27,Age-standardized,1,Male,0.035869647,0.035869647,0.035869647
+adult_underweight,38,Mongolia,2020,27,Age-standardized,2,Female,0.049574776,0.049574776,0.049574776
+adult_underweight,38,Mongolia,2021,27,Age-standardized,1,Male,0.035795827,0.035795827,0.035795827
+adult_underweight,38,Mongolia,2021,27,Age-standardized,2,Female,0.049484507,0.049484507,0.049484507
+adult_underweight,15,Myanmar,1994,27,Age-standardized,1,Male,0.18451614,0.18451614,0.18451614
+adult_underweight,15,Myanmar,1994,27,Age-standardized,2,Female,0.15145039999999999,0.15145039999999999,0.15145039999999999
+adult_underweight,15,Myanmar,1995,27,Age-standardized,1,Male,0.18428699,0.18428699,0.18428699
+adult_underweight,15,Myanmar,1995,27,Age-standardized,2,Female,0.14977585,0.14977585,0.14977585
+adult_underweight,15,Myanmar,1996,27,Age-standardized,1,Male,0.184179,0.184179,0.184179
+adult_underweight,15,Myanmar,1996,27,Age-standardized,2,Female,0.1477042,0.1477042,0.1477042
+adult_underweight,15,Myanmar,1997,27,Age-standardized,1,Male,0.18374236,0.18374236,0.18374236
+adult_underweight,15,Myanmar,1997,27,Age-standardized,2,Female,0.14534729,0.14534729,0.14534729
+adult_underweight,15,Myanmar,1998,27,Age-standardized,1,Male,0.18446662,0.18446662,0.18446662
+adult_underweight,15,Myanmar,1998,27,Age-standardized,2,Female,0.14212595,0.14212595,0.14212595
+adult_underweight,15,Myanmar,1999,27,Age-standardized,1,Male,0.18584998,0.18584998,0.18584998
+adult_underweight,15,Myanmar,1999,27,Age-standardized,2,Female,0.13861461,0.13861461,0.13861461
+adult_underweight,15,Myanmar,2000,27,Age-standardized,1,Male,0.18597467,0.18597467,0.18597467
+adult_underweight,15,Myanmar,2000,27,Age-standardized,2,Female,0.13501234,0.13501234,0.13501234
+adult_underweight,15,Myanmar,2001,27,Age-standardized,1,Male,0.18511039,0.18511039,0.18511039
+adult_underweight,15,Myanmar,2001,27,Age-standardized,2,Female,0.13150893,0.13150893,0.13150893
+adult_underweight,15,Myanmar,2002,27,Age-standardized,1,Male,0.18281178,0.18281178,0.18281178
+adult_underweight,15,Myanmar,2002,27,Age-standardized,2,Female,0.12672506,0.12672506,0.12672506
+adult_underweight,15,Myanmar,2003,27,Age-standardized,1,Male,0.17999305,0.17999305,0.17999305
+adult_underweight,15,Myanmar,2003,27,Age-standardized,2,Female,0.12211241,0.12211241,0.12211241
+adult_underweight,15,Myanmar,2004,27,Age-standardized,1,Male,0.18018685,0.18018685,0.18018685
+adult_underweight,15,Myanmar,2004,27,Age-standardized,2,Female,0.11849572,0.11849572,0.11849572
+adult_underweight,15,Myanmar,2005,27,Age-standardized,1,Male,0.18009148,0.18009148,0.18009148
+adult_underweight,15,Myanmar,2005,27,Age-standardized,2,Female,0.11636969999999999,0.11636969999999999,0.11636969999999999
+adult_underweight,15,Myanmar,2006,27,Age-standardized,1,Male,0.17932576,0.17932576,0.17932576
+adult_underweight,15,Myanmar,2006,27,Age-standardized,2,Female,0.1140931,0.1140931,0.1140931
+adult_underweight,15,Myanmar,2007,27,Age-standardized,1,Male,0.17792239999999998,0.17792239999999998,0.17792239999999998
+adult_underweight,15,Myanmar,2007,27,Age-standardized,2,Female,0.11190863,0.11190863,0.11190863
+adult_underweight,15,Myanmar,2008,27,Age-standardized,1,Male,0.17599866,0.17599866,0.17599866
+adult_underweight,15,Myanmar,2008,27,Age-standardized,2,Female,0.10967472,0.10967472,0.10967472
+adult_underweight,15,Myanmar,2009,27,Age-standardized,1,Male,0.17361175,0.17361175,0.17361175
+adult_underweight,15,Myanmar,2009,27,Age-standardized,2,Female,0.10799194,0.10799194,0.10799194
+adult_underweight,15,Myanmar,2010,27,Age-standardized,1,Male,0.16901035,0.16901035,0.16901035
+adult_underweight,15,Myanmar,2010,27,Age-standardized,2,Female,0.10680330000000002,0.10680330000000002,0.10680330000000002
+adult_underweight,15,Myanmar,2011,27,Age-standardized,1,Male,0.1635893,0.1635893,0.1635893
+adult_underweight,15,Myanmar,2011,27,Age-standardized,2,Female,0.10562795,0.10562795,0.10562795
+adult_underweight,15,Myanmar,2012,27,Age-standardized,1,Male,0.15847063,0.15847063,0.15847063
+adult_underweight,15,Myanmar,2012,27,Age-standardized,2,Female,0.10454799,0.10454799,0.10454799
+adult_underweight,15,Myanmar,2013,27,Age-standardized,1,Male,0.15333682,0.15333682,0.15333682
+adult_underweight,15,Myanmar,2013,27,Age-standardized,2,Female,0.10346137,0.10346137,0.10346137
+adult_underweight,15,Myanmar,2014,27,Age-standardized,1,Male,0.14887817,0.14887817,0.14887817
+adult_underweight,15,Myanmar,2014,27,Age-standardized,2,Female,0.10270109,0.10270109,0.10270109
+adult_underweight,15,Myanmar,2015,27,Age-standardized,1,Male,0.14489879,0.14489879,0.14489879
+adult_underweight,15,Myanmar,2015,27,Age-standardized,2,Female,0.10202504,0.10202504,0.10202504
+adult_underweight,15,Myanmar,2016,27,Age-standardized,1,Male,0.14063705,0.14063705,0.14063705
+adult_underweight,15,Myanmar,2016,27,Age-standardized,2,Female,0.10113863,0.10113863,0.10113863
+adult_underweight,15,Myanmar,2017,27,Age-standardized,1,Male,0.14063705,0.14063705,0.14063705
+adult_underweight,15,Myanmar,2017,27,Age-standardized,2,Female,0.10113863,0.10113863,0.10113863
+adult_underweight,15,Myanmar,2018,27,Age-standardized,1,Male,0.139449883,0.139449883,0.139449883
+adult_underweight,15,Myanmar,2018,27,Age-standardized,2,Female,0.10026317,0.10026317,0.10026317
+adult_underweight,15,Myanmar,2019,27,Age-standardized,1,Male,0.13836505920633302,0.13836505920633302,0.13836505920633302
+adult_underweight,15,Myanmar,2019,27,Age-standardized,2,Female,0.099463659,0.099463659,0.099463659
+adult_underweight,15,Myanmar,2020,27,Age-standardized,1,Male,0.137464661,0.137464661,0.137464661
+adult_underweight,15,Myanmar,2020,27,Age-standardized,2,Female,0.098856568,0.098856568,0.098856568
+adult_underweight,15,Myanmar,2021,27,Age-standardized,1,Male,0.13660850784113301,0.13660850784113301,0.13660850784113301
+adult_underweight,15,Myanmar,2021,27,Age-standardized,2,Female,0.098279289,0.098279289,0.098279289
+adult_underweight,195,Namibia,1994,27,Age-standardized,1,Male,0.22997589,0.22997589,0.22997589
+adult_underweight,195,Namibia,1994,27,Age-standardized,2,Female,0.1999797,0.1999797,0.1999797
+adult_underweight,195,Namibia,1995,27,Age-standardized,1,Male,0.22960386,0.22960386,0.22960386
+adult_underweight,195,Namibia,1995,27,Age-standardized,2,Female,0.19874519,0.19874519,0.19874519
+adult_underweight,195,Namibia,1996,27,Age-standardized,1,Male,0.22857510000000003,0.22857510000000003,0.22857510000000003
+adult_underweight,195,Namibia,1996,27,Age-standardized,2,Female,0.19705112,0.19705112,0.19705112
+adult_underweight,195,Namibia,1997,27,Age-standardized,1,Male,0.22680047,0.22680047,0.22680047
+adult_underweight,195,Namibia,1997,27,Age-standardized,2,Female,0.19427438,0.19427438,0.19427438
+adult_underweight,195,Namibia,1998,27,Age-standardized,1,Male,0.22453446,0.22453446,0.22453446
+adult_underweight,195,Namibia,1998,27,Age-standardized,2,Female,0.19115609,0.19115609,0.19115609
+adult_underweight,195,Namibia,1999,27,Age-standardized,1,Male,0.22182621,0.22182621,0.22182621
+adult_underweight,195,Namibia,1999,27,Age-standardized,2,Female,0.18785055,0.18785055,0.18785055
+adult_underweight,195,Namibia,2000,27,Age-standardized,1,Male,0.21879653,0.21879653,0.21879653
+adult_underweight,195,Namibia,2000,27,Age-standardized,2,Female,0.18490743,0.18490743,0.18490743
+adult_underweight,195,Namibia,2001,27,Age-standardized,1,Male,0.21594777,0.21594777,0.21594777
+adult_underweight,195,Namibia,2001,27,Age-standardized,2,Female,0.18207775,0.18207775,0.18207775
+adult_underweight,195,Namibia,2002,27,Age-standardized,1,Male,0.21351944,0.21351944,0.21351944
+adult_underweight,195,Namibia,2002,27,Age-standardized,2,Female,0.1792663,0.1792663,0.1792663
+adult_underweight,195,Namibia,2003,27,Age-standardized,1,Male,0.21157896,0.21157896,0.21157896
+adult_underweight,195,Namibia,2003,27,Age-standardized,2,Female,0.17609164,0.17609164,0.17609164
+adult_underweight,195,Namibia,2004,27,Age-standardized,1,Male,0.2103617,0.2103617,0.2103617
+adult_underweight,195,Namibia,2004,27,Age-standardized,2,Female,0.17186624,0.17186624,0.17186624
+adult_underweight,195,Namibia,2005,27,Age-standardized,1,Male,0.20929274,0.20929274,0.20929274
+adult_underweight,195,Namibia,2005,27,Age-standardized,2,Female,0.16784602,0.16784602,0.16784602
+adult_underweight,195,Namibia,2006,27,Age-standardized,1,Male,0.20846187,0.20846187,0.20846187
+adult_underweight,195,Namibia,2006,27,Age-standardized,2,Female,0.16416627,0.16416627,0.16416627
+adult_underweight,195,Namibia,2007,27,Age-standardized,1,Male,0.20804653,0.20804653,0.20804653
+adult_underweight,195,Namibia,2007,27,Age-standardized,2,Female,0.16160057,0.16160057,0.16160057
+adult_underweight,195,Namibia,2008,27,Age-standardized,1,Male,0.20766471,0.20766471,0.20766471
+adult_underweight,195,Namibia,2008,27,Age-standardized,2,Female,0.15886636,0.15886636,0.15886636
+adult_underweight,195,Namibia,2009,27,Age-standardized,1,Male,0.20793711,0.20793711,0.20793711
+adult_underweight,195,Namibia,2009,27,Age-standardized,2,Female,0.15625718,0.15625718,0.15625718
+adult_underweight,195,Namibia,2010,27,Age-standardized,1,Male,0.20835138,0.20835138,0.20835138
+adult_underweight,195,Namibia,2010,27,Age-standardized,2,Female,0.15372902,0.15372902,0.15372902
+adult_underweight,195,Namibia,2011,27,Age-standardized,1,Male,0.20840545,0.20840545,0.20840545
+adult_underweight,195,Namibia,2011,27,Age-standardized,2,Female,0.15129492,0.15129492,0.15129492
+adult_underweight,195,Namibia,2012,27,Age-standardized,1,Male,0.20731207,0.20731207,0.20731207
+adult_underweight,195,Namibia,2012,27,Age-standardized,2,Female,0.14907562,0.14907562,0.14907562
+adult_underweight,195,Namibia,2013,27,Age-standardized,1,Male,0.20491867,0.20491867,0.20491867
+adult_underweight,195,Namibia,2013,27,Age-standardized,2,Female,0.14725256,0.14725256,0.14725256
+adult_underweight,195,Namibia,2014,27,Age-standardized,1,Male,0.20506508,0.20506508,0.20506508
+adult_underweight,195,Namibia,2014,27,Age-standardized,2,Female,0.14725927,0.14725927,0.14725927
+adult_underweight,195,Namibia,2015,27,Age-standardized,1,Male,0.20533683,0.20533683,0.20533683
+adult_underweight,195,Namibia,2015,27,Age-standardized,2,Female,0.14778724,0.14778724,0.14778724
+adult_underweight,195,Namibia,2016,27,Age-standardized,1,Male,0.20478667,0.20478667,0.20478667
+adult_underweight,195,Namibia,2016,27,Age-standardized,2,Female,0.14668281,0.14668281,0.14668281
+adult_underweight,195,Namibia,2017,27,Age-standardized,1,Male,0.20478667,0.20478667,0.20478667
+adult_underweight,195,Namibia,2017,27,Age-standardized,2,Female,0.14668281,0.14668281,0.14668281
+adult_underweight,195,Namibia,2018,27,Age-standardized,1,Male,0.20362116699614602,0.20362116699614602,0.20362116699614602
+adult_underweight,195,Namibia,2018,27,Age-standardized,2,Female,0.14580462753680198,0.14580462753680198,0.14580462753680198
+adult_underweight,195,Namibia,2019,27,Age-standardized,1,Male,0.20268247325610297,0.20268247325610297,0.20268247325610297
+adult_underweight,195,Namibia,2019,27,Age-standardized,2,Female,0.145097809,0.145097809,0.145097809
+adult_underweight,195,Namibia,2020,27,Age-standardized,1,Male,0.201960556,0.201960556,0.201960556
+adult_underweight,195,Namibia,2020,27,Age-standardized,2,Female,0.144600563,0.144600563,0.144600563
+adult_underweight,195,Namibia,2021,27,Age-standardized,1,Male,0.20130688038386602,0.20130688038386602,0.20130688038386602
+adult_underweight,195,Namibia,2021,27,Age-standardized,2,Female,0.144150401,0.144150401,0.144150401
+adult_underweight,164,Nepal,1994,27,Age-standardized,1,Male,0.25242315,0.25242315,0.25242315
+adult_underweight,164,Nepal,1994,27,Age-standardized,2,Female,0.34796082,0.34796082,0.34796082
+adult_underweight,164,Nepal,1995,27,Age-standardized,1,Male,0.24831528,0.24831528,0.24831528
+adult_underweight,164,Nepal,1995,27,Age-standardized,2,Female,0.34845729,0.34845729,0.34845729
+adult_underweight,164,Nepal,1996,27,Age-standardized,1,Male,0.24435299,0.24435299,0.24435299
+adult_underweight,164,Nepal,1996,27,Age-standardized,2,Female,0.34978827,0.34978827,0.34978827
+adult_underweight,164,Nepal,1997,27,Age-standardized,1,Male,0.24002124,0.24002124,0.24002124
+adult_underweight,164,Nepal,1997,27,Age-standardized,2,Female,0.34203956,0.34203956,0.34203956
+adult_underweight,164,Nepal,1998,27,Age-standardized,1,Male,0.23487048,0.23487048,0.23487048
+adult_underweight,164,Nepal,1998,27,Age-standardized,2,Female,0.32957248,0.32957248,0.32957248
+adult_underweight,164,Nepal,1999,27,Age-standardized,1,Male,0.22791165,0.22791165,0.22791165
+adult_underweight,164,Nepal,1999,27,Age-standardized,2,Female,0.31370499,0.31370499,0.31370499
+adult_underweight,164,Nepal,2000,27,Age-standardized,1,Male,0.22131115,0.22131115,0.22131115
+adult_underweight,164,Nepal,2000,27,Age-standardized,2,Female,0.29963995,0.29963995,0.29963995
+adult_underweight,164,Nepal,2001,27,Age-standardized,1,Male,0.21547663,0.21547663,0.21547663
+adult_underweight,164,Nepal,2001,27,Age-standardized,2,Female,0.28793148,0.28793148,0.28793148
+adult_underweight,164,Nepal,2002,27,Age-standardized,1,Male,0.21160328,0.21160328,0.21160328
+adult_underweight,164,Nepal,2002,27,Age-standardized,2,Female,0.27778363,0.27778363,0.27778363
+adult_underweight,164,Nepal,2003,27,Age-standardized,1,Male,0.20791947,0.20791947,0.20791947
+adult_underweight,164,Nepal,2003,27,Age-standardized,2,Female,0.26853204,0.26853204,0.26853204
+adult_underweight,164,Nepal,2004,27,Age-standardized,1,Male,0.20462227,0.20462227,0.20462227
+adult_underweight,164,Nepal,2004,27,Age-standardized,2,Female,0.26083088,0.26083088,0.26083088
+adult_underweight,164,Nepal,2005,27,Age-standardized,1,Male,0.20163436,0.20163436,0.20163436
+adult_underweight,164,Nepal,2005,27,Age-standardized,2,Female,0.253191,0.253191,0.253191
+adult_underweight,164,Nepal,2006,27,Age-standardized,1,Male,0.20124372,0.20124372,0.20124372
+adult_underweight,164,Nepal,2006,27,Age-standardized,2,Female,0.24586254,0.24586254,0.24586254
+adult_underweight,164,Nepal,2007,27,Age-standardized,1,Male,0.19952158,0.19952158,0.19952158
+adult_underweight,164,Nepal,2007,27,Age-standardized,2,Female,0.23949624,0.23949624,0.23949624
+adult_underweight,164,Nepal,2008,27,Age-standardized,1,Male,0.18842745,0.18842745,0.18842745
+adult_underweight,164,Nepal,2008,27,Age-standardized,2,Female,0.22453971,0.22453971,0.22453971
+adult_underweight,164,Nepal,2009,27,Age-standardized,1,Male,0.17538148,0.17538148,0.17538148
+adult_underweight,164,Nepal,2009,27,Age-standardized,2,Female,0.20787288,0.20787288,0.20787288
+adult_underweight,164,Nepal,2010,27,Age-standardized,1,Male,0.15990631,0.15990631,0.15990631
+adult_underweight,164,Nepal,2010,27,Age-standardized,2,Female,0.18992649,0.18992649,0.18992649
+adult_underweight,164,Nepal,2011,27,Age-standardized,1,Male,0.1428244,0.1428244,0.1428244
+adult_underweight,164,Nepal,2011,27,Age-standardized,2,Female,0.17146243,0.17146243,0.17146243
+adult_underweight,164,Nepal,2012,27,Age-standardized,1,Male,0.12347684,0.12347684,0.12347684
+adult_underweight,164,Nepal,2012,27,Age-standardized,2,Female,0.1526441,0.1526441,0.1526441
+adult_underweight,164,Nepal,2013,27,Age-standardized,1,Male,0.10978843,0.10978843,0.10978843
+adult_underweight,164,Nepal,2013,27,Age-standardized,2,Female,0.14040408,0.14040408,0.14040408
+adult_underweight,164,Nepal,2014,27,Age-standardized,1,Male,0.09926692,0.09926692,0.09926692
+adult_underweight,164,Nepal,2014,27,Age-standardized,2,Female,0.13089262,0.13089262,0.13089262
+adult_underweight,164,Nepal,2015,27,Age-standardized,1,Male,0.0952597,0.0952597,0.0952597
+adult_underweight,164,Nepal,2015,27,Age-standardized,2,Female,0.12779428,0.12779428,0.12779428
+adult_underweight,164,Nepal,2016,27,Age-standardized,1,Male,0.0880497,0.0880497,0.0880497
+adult_underweight,164,Nepal,2016,27,Age-standardized,2,Female,0.11906045,0.11906045,0.11906045
+adult_underweight,164,Nepal,2017,27,Age-standardized,1,Male,0.0880497,0.0880497,0.0880497
+adult_underweight,164,Nepal,2017,27,Age-standardized,2,Female,0.11906045,0.11906045,0.11906045
+adult_underweight,164,Nepal,2018,27,Age-standardized,1,Male,0.087268476,0.087268476,0.087268476
+adult_underweight,164,Nepal,2018,27,Age-standardized,2,Female,0.118059347,0.118059347,0.118059347
+adult_underweight,164,Nepal,2019,27,Age-standardized,1,Male,0.086620039,0.086620039,0.086620039
+adult_underweight,164,Nepal,2019,27,Age-standardized,2,Female,0.11722783559212198,0.11722783559212198,0.11722783559212198
+adult_underweight,164,Nepal,2020,27,Age-standardized,1,Male,0.08590446,0.08590446,0.08590446
+adult_underweight,164,Nepal,2020,27,Age-standardized,2,Female,0.11638733529860901,0.11638733529860901,0.11638733529860901
+adult_underweight,164,Nepal,2021,27,Age-standardized,1,Male,0.085230769,0.085230769,0.085230769
+adult_underweight,164,Nepal,2021,27,Age-standardized,2,Female,0.115595059,0.115595059,0.115595059
+adult_underweight,214,Nigeria,1994,27,Age-standardized,1,Male,0.04198935,0.04198935,0.04198935
+adult_underweight,214,Nigeria,1994,27,Age-standardized,2,Female,0.08064051,0.08064051,0.08064051
+adult_underweight,214,Nigeria,1995,27,Age-standardized,1,Male,0.04486502,0.04486502,0.04486502
+adult_underweight,214,Nigeria,1995,27,Age-standardized,2,Female,0.08467743,0.08467743,0.08467743
+adult_underweight,214,Nigeria,1996,27,Age-standardized,1,Male,0.04768237,0.04768237,0.04768237
+adult_underweight,214,Nigeria,1996,27,Age-standardized,2,Female,0.08890569,0.08890569,0.08890569
+adult_underweight,214,Nigeria,1997,27,Age-standardized,1,Male,0.05085413,0.05085413,0.05085413
+adult_underweight,214,Nigeria,1997,27,Age-standardized,2,Female,0.09339789,0.09339789,0.09339789
+adult_underweight,214,Nigeria,1998,27,Age-standardized,1,Male,0.05355431,0.05355431,0.05355431
+adult_underweight,214,Nigeria,1998,27,Age-standardized,2,Female,0.09697156,0.09697156,0.09697156
+adult_underweight,214,Nigeria,1999,27,Age-standardized,1,Male,0.05538337,0.05538337,0.05538337
+adult_underweight,214,Nigeria,1999,27,Age-standardized,2,Female,0.0991145,0.0991145,0.0991145
+adult_underweight,214,Nigeria,2000,27,Age-standardized,1,Male,0.05698305,0.05698305,0.05698305
+adult_underweight,214,Nigeria,2000,27,Age-standardized,2,Female,0.10055311,0.10055311,0.10055311
+adult_underweight,214,Nigeria,2001,27,Age-standardized,1,Male,0.05886316,0.05886316,0.05886316
+adult_underweight,214,Nigeria,2001,27,Age-standardized,2,Female,0.1012628,0.1012628,0.1012628
+adult_underweight,214,Nigeria,2002,27,Age-standardized,1,Male,0.06039095,0.06039095,0.06039095
+adult_underweight,214,Nigeria,2002,27,Age-standardized,2,Female,0.10172187,0.10172187,0.10172187
+adult_underweight,214,Nigeria,2003,27,Age-standardized,1,Male,0.06148604,0.06148604,0.06148604
+adult_underweight,214,Nigeria,2003,27,Age-standardized,2,Female,0.10229256,0.10229256,0.10229256
+adult_underweight,214,Nigeria,2004,27,Age-standardized,1,Male,0.06164175,0.06164175,0.06164175
+adult_underweight,214,Nigeria,2004,27,Age-standardized,2,Female,0.10148177,0.10148177,0.10148177
+adult_underweight,214,Nigeria,2005,27,Age-standardized,1,Male,0.06106804,0.06106804,0.06106804
+adult_underweight,214,Nigeria,2005,27,Age-standardized,2,Female,0.10057589,0.10057589,0.10057589
+adult_underweight,214,Nigeria,2006,27,Age-standardized,1,Male,0.060016099999999996,0.060016099999999996,0.060016099999999996
+adult_underweight,214,Nigeria,2006,27,Age-standardized,2,Female,0.09984601,0.09984601,0.09984601
+adult_underweight,214,Nigeria,2007,27,Age-standardized,1,Male,0.05860756,0.05860756,0.05860756
+adult_underweight,214,Nigeria,2007,27,Age-standardized,2,Female,0.09889507,0.09889507,0.09889507
+adult_underweight,214,Nigeria,2008,27,Age-standardized,1,Male,0.05725929,0.05725929,0.05725929
+adult_underweight,214,Nigeria,2008,27,Age-standardized,2,Female,0.09822603,0.09822603,0.09822603
+adult_underweight,214,Nigeria,2009,27,Age-standardized,1,Male,0.05581397,0.05581397,0.05581397
+adult_underweight,214,Nigeria,2009,27,Age-standardized,2,Female,0.09795701,0.09795701,0.09795701
+adult_underweight,214,Nigeria,2010,27,Age-standardized,1,Male,0.05396017,0.05396017,0.05396017
+adult_underweight,214,Nigeria,2010,27,Age-standardized,2,Female,0.09748504,0.09748504,0.09748504
+adult_underweight,214,Nigeria,2011,27,Age-standardized,1,Male,0.05245998,0.05245998,0.05245998
+adult_underweight,214,Nigeria,2011,27,Age-standardized,2,Female,0.09704716,0.09704716,0.09704716
+adult_underweight,214,Nigeria,2012,27,Age-standardized,1,Male,0.05281943,0.05281943,0.05281943
+adult_underweight,214,Nigeria,2012,27,Age-standardized,2,Female,0.0972298,0.0972298,0.0972298
+adult_underweight,214,Nigeria,2013,27,Age-standardized,1,Male,0.05315374,0.05315374,0.05315374
+adult_underweight,214,Nigeria,2013,27,Age-standardized,2,Female,0.09880614,0.09880614,0.09880614
+adult_underweight,214,Nigeria,2014,27,Age-standardized,1,Male,0.053199199999999995,0.053199199999999995,0.053199199999999995
+adult_underweight,214,Nigeria,2014,27,Age-standardized,2,Female,0.10081942,0.10081942,0.10081942
+adult_underweight,214,Nigeria,2015,27,Age-standardized,1,Male,0.05351785,0.05351785,0.05351785
+adult_underweight,214,Nigeria,2015,27,Age-standardized,2,Female,0.10283589,0.10283589,0.10283589
+adult_underweight,214,Nigeria,2016,27,Age-standardized,1,Male,0.05343164,0.05343164,0.05343164
+adult_underweight,214,Nigeria,2016,27,Age-standardized,2,Female,0.10399179,0.10399179,0.10399179
+adult_underweight,214,Nigeria,2017,27,Age-standardized,1,Male,0.05343164,0.05343164,0.05343164
+adult_underweight,214,Nigeria,2017,27,Age-standardized,2,Female,0.10399179,0.10399179,0.10399179
+adult_underweight,214,Nigeria,2018,27,Age-standardized,1,Male,0.052894221,0.052894221,0.052894221
+adult_underweight,214,Nigeria,2018,27,Age-standardized,2,Female,0.103020233,0.103020233,0.103020233
+adult_underweight,214,Nigeria,2019,27,Age-standardized,1,Male,0.052543723,0.052543723,0.052543723
+adult_underweight,214,Nigeria,2019,27,Age-standardized,2,Female,0.10238594529933698,0.10238594529933698,0.10238594529933698
+adult_underweight,214,Nigeria,2020,27,Age-standardized,1,Male,0.052202335,0.052202335,0.052202335
+adult_underweight,214,Nigeria,2020,27,Age-standardized,2,Female,0.101820013,0.101820013,0.101820013
+adult_underweight,214,Nigeria,2021,27,Age-standardized,1,Male,0.051874924,0.051874924,0.051874924
+adult_underweight,214,Nigeria,2021,27,Age-standardized,2,Female,0.101276588,0.101276588,0.101276588
+adult_underweight,7,Democratic People's Republic of Korea,1994,27,Age-standardized,1,Male,0.07698379,0.07698379,0.07698379
+adult_underweight,7,Democratic People's Republic of Korea,1994,27,Age-standardized,2,Female,0.0913835,0.0913835,0.0913835
+adult_underweight,7,Democratic People's Republic of Korea,1995,27,Age-standardized,1,Male,0.07688018,0.07688018,0.07688018
+adult_underweight,7,Democratic People's Republic of Korea,1995,27,Age-standardized,2,Female,0.09213864,0.09213864,0.09213864
+adult_underweight,7,Democratic People's Republic of Korea,1996,27,Age-standardized,1,Male,0.07690343,0.07690343,0.07690343
+adult_underweight,7,Democratic People's Republic of Korea,1996,27,Age-standardized,2,Female,0.09273862,0.09273862,0.09273862
+adult_underweight,7,Democratic People's Republic of Korea,1997,27,Age-standardized,1,Male,0.0770123,0.0770123,0.0770123
+adult_underweight,7,Democratic People's Republic of Korea,1997,27,Age-standardized,2,Female,0.09361959,0.09361959,0.09361959
+adult_underweight,7,Democratic People's Republic of Korea,1998,27,Age-standardized,1,Male,0.0788021,0.0788021,0.0788021
+adult_underweight,7,Democratic People's Republic of Korea,1998,27,Age-standardized,2,Female,0.09494723,0.09494723,0.09494723
+adult_underweight,7,Democratic People's Republic of Korea,1999,27,Age-standardized,1,Male,0.0809186,0.0809186,0.0809186
+adult_underweight,7,Democratic People's Republic of Korea,1999,27,Age-standardized,2,Female,0.09645758,0.09645758,0.09645758
+adult_underweight,7,Democratic People's Republic of Korea,2000,27,Age-standardized,1,Male,0.08263408,0.08263408,0.08263408
+adult_underweight,7,Democratic People's Republic of Korea,2000,27,Age-standardized,2,Female,0.09792794,0.09792794,0.09792794
+adult_underweight,7,Democratic People's Republic of Korea,2001,27,Age-standardized,1,Male,0.08452443,0.08452443,0.08452443
+adult_underweight,7,Democratic People's Republic of Korea,2001,27,Age-standardized,2,Female,0.10077213,0.10077213,0.10077213
+adult_underweight,7,Democratic People's Republic of Korea,2002,27,Age-standardized,1,Male,0.08636877,0.08636877,0.08636877
+adult_underweight,7,Democratic People's Republic of Korea,2002,27,Age-standardized,2,Female,0.10303428,0.10303428,0.10303428
+adult_underweight,7,Democratic People's Republic of Korea,2003,27,Age-standardized,1,Male,0.08844667,0.08844667,0.08844667
+adult_underweight,7,Democratic People's Republic of Korea,2003,27,Age-standardized,2,Female,0.10530006,0.10530006,0.10530006
+adult_underweight,7,Democratic People's Republic of Korea,2004,27,Age-standardized,1,Male,0.09054877,0.09054877,0.09054877
+adult_underweight,7,Democratic People's Republic of Korea,2004,27,Age-standardized,2,Female,0.10757223,0.10757223,0.10757223
+adult_underweight,7,Democratic People's Republic of Korea,2005,27,Age-standardized,1,Male,0.09175251,0.09175251,0.09175251
+adult_underweight,7,Democratic People's Republic of Korea,2005,27,Age-standardized,2,Female,0.10910723,0.10910723,0.10910723
+adult_underweight,7,Democratic People's Republic of Korea,2006,27,Age-standardized,1,Male,0.09276832,0.09276832,0.09276832
+adult_underweight,7,Democratic People's Republic of Korea,2006,27,Age-standardized,2,Female,0.11030138,0.11030138,0.11030138
+adult_underweight,7,Democratic People's Republic of Korea,2007,27,Age-standardized,1,Male,0.09373956,0.09373956,0.09373956
+adult_underweight,7,Democratic People's Republic of Korea,2007,27,Age-standardized,2,Female,0.11131539,0.11131539,0.11131539
+adult_underweight,7,Democratic People's Republic of Korea,2008,27,Age-standardized,1,Male,0.09441434,0.09441434,0.09441434
+adult_underweight,7,Democratic People's Republic of Korea,2008,27,Age-standardized,2,Female,0.1118557,0.1118557,0.1118557
+adult_underweight,7,Democratic People's Republic of Korea,2009,27,Age-standardized,1,Male,0.09503777,0.09503777,0.09503777
+adult_underweight,7,Democratic People's Republic of Korea,2009,27,Age-standardized,2,Female,0.11206611,0.11206611,0.11206611
+adult_underweight,7,Democratic People's Republic of Korea,2010,27,Age-standardized,1,Male,0.09513787,0.09513787,0.09513787
+adult_underweight,7,Democratic People's Republic of Korea,2010,27,Age-standardized,2,Female,0.11180323,0.11180323,0.11180323
+adult_underweight,7,Democratic People's Republic of Korea,2011,27,Age-standardized,1,Male,0.09495602,0.09495602,0.09495602
+adult_underweight,7,Democratic People's Republic of Korea,2011,27,Age-standardized,2,Female,0.11119414,0.11119414,0.11119414
+adult_underweight,7,Democratic People's Republic of Korea,2012,27,Age-standardized,1,Male,0.09491593,0.09491593,0.09491593
+adult_underweight,7,Democratic People's Republic of Korea,2012,27,Age-standardized,2,Female,0.11051701,0.11051701,0.11051701
+adult_underweight,7,Democratic People's Republic of Korea,2013,27,Age-standardized,1,Male,0.09481324,0.09481324,0.09481324
+adult_underweight,7,Democratic People's Republic of Korea,2013,27,Age-standardized,2,Female,0.11003897,0.11003897,0.11003897
+adult_underweight,7,Democratic People's Republic of Korea,2014,27,Age-standardized,1,Male,0.09434451,0.09434451,0.09434451
+adult_underweight,7,Democratic People's Republic of Korea,2014,27,Age-standardized,2,Female,0.10926494,0.10926494,0.10926494
+adult_underweight,7,Democratic People's Republic of Korea,2015,27,Age-standardized,1,Male,0.09386946,0.09386946,0.09386946
+adult_underweight,7,Democratic People's Republic of Korea,2015,27,Age-standardized,2,Female,0.10860424,0.10860424,0.10860424
+adult_underweight,7,Democratic People's Republic of Korea,2016,27,Age-standardized,1,Male,0.09362408,0.09362408,0.09362408
+adult_underweight,7,Democratic People's Republic of Korea,2016,27,Age-standardized,2,Female,0.10799613,0.10799613,0.10799613
+adult_underweight,7,Democratic People's Republic of Korea,2017,27,Age-standardized,1,Male,0.09362408,0.09362408,0.09362408
+adult_underweight,7,Democratic People's Republic of Korea,2017,27,Age-standardized,2,Female,0.10799613,0.10799613,0.10799613
+adult_underweight,7,Democratic People's Republic of Korea,2018,27,Age-standardized,1,Male,0.093068987,0.093068987,0.093068987
+adult_underweight,7,Democratic People's Republic of Korea,2018,27,Age-standardized,2,Female,0.10737806586981401,0.10737806586981401,0.10737806586981401
+adult_underweight,7,Democratic People's Republic of Korea,2019,27,Age-standardized,1,Male,0.092607294,0.092607294,0.092607294
+adult_underweight,7,Democratic People's Republic of Korea,2019,27,Age-standardized,2,Female,0.106863862,0.106863862,0.106863862
+adult_underweight,7,Democratic People's Republic of Korea,2020,27,Age-standardized,1,Male,0.092308372,0.092308372,0.092308372
+adult_underweight,7,Democratic People's Republic of Korea,2020,27,Age-standardized,2,Female,0.106559111,0.106559111,0.106559111
+adult_underweight,7,Democratic People's Republic of Korea,2021,27,Age-standardized,1,Male,0.092017019,0.092017019,0.092017019
+adult_underweight,7,Democratic People's Republic of Korea,2021,27,Age-standardized,2,Female,0.106261961,0.106261961,0.106261961
+adult_underweight,165,Pakistan,1994,27,Age-standardized,1,Male,0.06554257,0.06554257,0.06554257
+adult_underweight,165,Pakistan,1994,27,Age-standardized,2,Female,0.08528119,0.08528119,0.08528119
+adult_underweight,165,Pakistan,1995,27,Age-standardized,1,Male,0.06516541,0.06516541,0.06516541
+adult_underweight,165,Pakistan,1995,27,Age-standardized,2,Female,0.08604329,0.08604329,0.08604329
+adult_underweight,165,Pakistan,1996,27,Age-standardized,1,Male,0.06464617,0.06464617,0.06464617
+adult_underweight,165,Pakistan,1996,27,Age-standardized,2,Female,0.08704418,0.08704418,0.08704418
+adult_underweight,165,Pakistan,1997,27,Age-standardized,1,Male,0.06405925,0.06405925,0.06405925
+adult_underweight,165,Pakistan,1997,27,Age-standardized,2,Female,0.0874544,0.0874544,0.0874544
+adult_underweight,165,Pakistan,1998,27,Age-standardized,1,Male,0.06342955,0.06342955,0.06342955
+adult_underweight,165,Pakistan,1998,27,Age-standardized,2,Female,0.08810317,0.08810317,0.08810317
+adult_underweight,165,Pakistan,1999,27,Age-standardized,1,Male,0.06253904,0.06253904,0.06253904
+adult_underweight,165,Pakistan,1999,27,Age-standardized,2,Female,0.08843411,0.08843411,0.08843411
+adult_underweight,165,Pakistan,2000,27,Age-standardized,1,Male,0.06188331,0.06188331,0.06188331
+adult_underweight,165,Pakistan,2000,27,Age-standardized,2,Female,0.08897594,0.08897594,0.08897594
+adult_underweight,165,Pakistan,2001,27,Age-standardized,1,Male,0.061150499999999997,0.061150499999999997,0.061150499999999997
+adult_underweight,165,Pakistan,2001,27,Age-standardized,2,Female,0.08916157,0.08916157,0.08916157
+adult_underweight,165,Pakistan,2002,27,Age-standardized,1,Male,0.06129251,0.06129251,0.06129251
+adult_underweight,165,Pakistan,2002,27,Age-standardized,2,Female,0.09048551,0.09048551,0.09048551
+adult_underweight,165,Pakistan,2003,27,Age-standardized,1,Male,0.06200195,0.06200195,0.06200195
+adult_underweight,165,Pakistan,2003,27,Age-standardized,2,Female,0.08966896,0.08966896,0.08966896
+adult_underweight,165,Pakistan,2004,27,Age-standardized,1,Male,0.06169716,0.06169716,0.06169716
+adult_underweight,165,Pakistan,2004,27,Age-standardized,2,Female,0.08999757,0.08999757,0.08999757
+adult_underweight,165,Pakistan,2005,27,Age-standardized,1,Male,0.06126768,0.06126768,0.06126768
+adult_underweight,165,Pakistan,2005,27,Age-standardized,2,Female,0.08986799,0.08986799,0.08986799
+adult_underweight,165,Pakistan,2006,27,Age-standardized,1,Male,0.06100707,0.06100707,0.06100707
+adult_underweight,165,Pakistan,2006,27,Age-standardized,2,Female,0.09095249,0.09095249,0.09095249
+adult_underweight,165,Pakistan,2007,27,Age-standardized,1,Male,0.06060625,0.06060625,0.06060625
+adult_underweight,165,Pakistan,2007,27,Age-standardized,2,Female,0.09217342,0.09217342,0.09217342
+adult_underweight,165,Pakistan,2008,27,Age-standardized,1,Male,0.05966092,0.05966092,0.05966092
+adult_underweight,165,Pakistan,2008,27,Age-standardized,2,Female,0.09219165,0.09219165,0.09219165
+adult_underweight,165,Pakistan,2009,27,Age-standardized,1,Male,0.05879726,0.05879726,0.05879726
+adult_underweight,165,Pakistan,2009,27,Age-standardized,2,Female,0.09223168,0.09223168,0.09223168
+adult_underweight,165,Pakistan,2010,27,Age-standardized,1,Male,0.05800789,0.05800789,0.05800789
+adult_underweight,165,Pakistan,2010,27,Age-standardized,2,Female,0.09270117,0.09270117,0.09270117
+adult_underweight,165,Pakistan,2011,27,Age-standardized,1,Male,0.05756293,0.05756293,0.05756293
+adult_underweight,165,Pakistan,2011,27,Age-standardized,2,Female,0.09034806,0.09034806,0.09034806
+adult_underweight,165,Pakistan,2012,27,Age-standardized,1,Male,0.05736724,0.05736724,0.05736724
+adult_underweight,165,Pakistan,2012,27,Age-standardized,2,Female,0.08916141,0.08916141,0.08916141
+adult_underweight,165,Pakistan,2013,27,Age-standardized,1,Male,0.05760756,0.05760756,0.05760756
+adult_underweight,165,Pakistan,2013,27,Age-standardized,2,Female,0.0884994,0.0884994,0.0884994
+adult_underweight,165,Pakistan,2014,27,Age-standardized,1,Male,0.05762203,0.05762203,0.05762203
+adult_underweight,165,Pakistan,2014,27,Age-standardized,2,Female,0.08772612,0.08772612,0.08772612
+adult_underweight,165,Pakistan,2015,27,Age-standardized,1,Male,0.05762558,0.05762558,0.05762558
+adult_underweight,165,Pakistan,2015,27,Age-standardized,2,Female,0.08767056,0.08767056,0.08767056
+adult_underweight,165,Pakistan,2016,27,Age-standardized,1,Male,0.05757602,0.05757602,0.05757602
+adult_underweight,165,Pakistan,2016,27,Age-standardized,2,Female,0.08677704,0.08677704,0.08677704
+adult_underweight,165,Pakistan,2017,27,Age-standardized,1,Male,0.05757602,0.05757602,0.05757602
+adult_underweight,165,Pakistan,2017,27,Age-standardized,2,Female,0.08677704,0.08677704,0.08677704
+adult_underweight,165,Pakistan,2018,27,Age-standardized,1,Male,0.057090125,0.057090125,0.057090125
+adult_underweight,165,Pakistan,2018,27,Age-standardized,2,Female,0.086080883,0.086080883,0.086080883
+adult_underweight,165,Pakistan,2019,27,Age-standardized,1,Male,0.056643446,0.056643446,0.056643446
+adult_underweight,165,Pakistan,2019,27,Age-standardized,2,Female,0.085440503,0.085440503,0.085440503
+adult_underweight,165,Pakistan,2020,27,Age-standardized,1,Male,0.056178075,0.056178075,0.056178075
+adult_underweight,165,Pakistan,2020,27,Age-standardized,2,Female,0.084829398,0.084829398,0.084829398
+adult_underweight,165,Pakistan,2021,27,Age-standardized,1,Male,0.055726813,0.055726813,0.055726813
+adult_underweight,165,Pakistan,2021,27,Age-standardized,2,Female,0.084236091,0.084236091,0.084236091
+adult_underweight,16,Philippines,1994,27,Age-standardized,1,Male,0.15608212,0.15608212,0.15608212
+adult_underweight,16,Philippines,1994,27,Age-standardized,2,Female,0.17184397,0.17184397,0.17184397
+adult_underweight,16,Philippines,1995,27,Age-standardized,1,Male,0.15581714,0.15581714,0.15581714
+adult_underweight,16,Philippines,1995,27,Age-standardized,2,Female,0.17055791,0.17055791,0.17055791
+adult_underweight,16,Philippines,1996,27,Age-standardized,1,Male,0.15578891,0.15578891,0.15578891
+adult_underweight,16,Philippines,1996,27,Age-standardized,2,Female,0.17021635,0.17021635,0.17021635
+adult_underweight,16,Philippines,1997,27,Age-standardized,1,Male,0.15616625,0.15616625,0.15616625
+adult_underweight,16,Philippines,1997,27,Age-standardized,2,Female,0.1705169,0.1705169,0.1705169
+adult_underweight,16,Philippines,1998,27,Age-standardized,1,Male,0.15730188,0.15730188,0.15730188
+adult_underweight,16,Philippines,1998,27,Age-standardized,2,Female,0.17113485,0.17113485,0.17113485
+adult_underweight,16,Philippines,1999,27,Age-standardized,1,Male,0.15940433,0.15940433,0.15940433
+adult_underweight,16,Philippines,1999,27,Age-standardized,2,Female,0.17139313,0.17139313,0.17139313
+adult_underweight,16,Philippines,2000,27,Age-standardized,1,Male,0.16151052,0.16151052,0.16151052
+adult_underweight,16,Philippines,2000,27,Age-standardized,2,Female,0.17119118,0.17119118,0.17119118
+adult_underweight,16,Philippines,2001,27,Age-standardized,1,Male,0.16339563,0.16339563,0.16339563
+adult_underweight,16,Philippines,2001,27,Age-standardized,2,Female,0.17089783,0.17089783,0.17089783
+adult_underweight,16,Philippines,2002,27,Age-standardized,1,Male,0.1654599,0.1654599,0.1654599
+adult_underweight,16,Philippines,2002,27,Age-standardized,2,Female,0.17062773,0.17062773,0.17062773
+adult_underweight,16,Philippines,2003,27,Age-standardized,1,Male,0.16772177,0.16772177,0.16772177
+adult_underweight,16,Philippines,2003,27,Age-standardized,2,Female,0.17062291,0.17062291,0.17062291
+adult_underweight,16,Philippines,2004,27,Age-standardized,1,Male,0.17089609,0.17089609,0.17089609
+adult_underweight,16,Philippines,2004,27,Age-standardized,2,Female,0.17072503,0.17072503,0.17072503
+adult_underweight,16,Philippines,2005,27,Age-standardized,1,Male,0.17296911,0.17296911,0.17296911
+adult_underweight,16,Philippines,2005,27,Age-standardized,2,Female,0.17099834,0.17099834,0.17099834
+adult_underweight,16,Philippines,2006,27,Age-standardized,1,Male,0.17436536,0.17436536,0.17436536
+adult_underweight,16,Philippines,2006,27,Age-standardized,2,Female,0.17148805,0.17148805,0.17148805
+adult_underweight,16,Philippines,2007,27,Age-standardized,1,Male,0.17524741,0.17524741,0.17524741
+adult_underweight,16,Philippines,2007,27,Age-standardized,2,Female,0.17238635,0.17238635,0.17238635
+adult_underweight,16,Philippines,2008,27,Age-standardized,1,Male,0.17607177,0.17607177,0.17607177
+adult_underweight,16,Philippines,2008,27,Age-standardized,2,Female,0.17381229,0.17381229,0.17381229
+adult_underweight,16,Philippines,2009,27,Age-standardized,1,Male,0.17606159,0.17606159,0.17606159
+adult_underweight,16,Philippines,2009,27,Age-standardized,2,Female,0.17683695,0.17683695,0.17683695
+adult_underweight,16,Philippines,2010,27,Age-standardized,1,Male,0.17600061,0.17600061,0.17600061
+adult_underweight,16,Philippines,2010,27,Age-standardized,2,Female,0.18036446,0.18036446,0.18036446
+adult_underweight,16,Philippines,2011,27,Age-standardized,1,Male,0.17580685,0.17580685,0.17580685
+adult_underweight,16,Philippines,2011,27,Age-standardized,2,Female,0.18334273,0.18334273,0.18334273
+adult_underweight,16,Philippines,2012,27,Age-standardized,1,Male,0.17549101,0.17549101,0.17549101
+adult_underweight,16,Philippines,2012,27,Age-standardized,2,Female,0.18378374,0.18378374,0.18378374
+adult_underweight,16,Philippines,2013,27,Age-standardized,1,Male,0.17499552,0.17499552,0.17499552
+adult_underweight,16,Philippines,2013,27,Age-standardized,2,Female,0.18346084,0.18346084,0.18346084
+adult_underweight,16,Philippines,2014,27,Age-standardized,1,Male,0.17446039,0.17446039,0.17446039
+adult_underweight,16,Philippines,2014,27,Age-standardized,2,Female,0.18335373,0.18335373,0.18335373
+adult_underweight,16,Philippines,2015,27,Age-standardized,1,Male,0.17385256,0.17385256,0.17385256
+adult_underweight,16,Philippines,2015,27,Age-standardized,2,Female,0.18284358,0.18284358,0.18284358
+adult_underweight,16,Philippines,2016,27,Age-standardized,1,Male,0.173447,0.173447,0.173447
+adult_underweight,16,Philippines,2016,27,Age-standardized,2,Female,0.18335783,0.18335783,0.18335783
+adult_underweight,16,Philippines,2017,27,Age-standardized,1,Male,0.173447,0.173447,0.173447
+adult_underweight,16,Philippines,2017,27,Age-standardized,2,Female,0.18335783,0.18335783,0.18335783
+adult_underweight,16,Philippines,2018,27,Age-standardized,1,Male,0.17213871253929297,0.17213871253929297,0.17213871253929297
+adult_underweight,16,Philippines,2018,27,Age-standardized,2,Female,0.18201757679910702,0.18201757679910702,0.18201757679910702
+adult_underweight,16,Philippines,2019,27,Age-standardized,1,Male,0.171074935,0.171074935,0.171074935
+adult_underweight,16,Philippines,2019,27,Age-standardized,2,Female,0.18092751722004802,0.18092751722004802,0.18092751722004802
+adult_underweight,16,Philippines,2020,27,Age-standardized,1,Male,0.17018163095023497,0.17018163095023497,0.17018163095023497
+adult_underweight,16,Philippines,2020,27,Age-standardized,2,Female,0.18008953140412098,0.18008953140412098,0.18008953140412098
+adult_underweight,16,Philippines,2021,27,Age-standardized,1,Male,0.169333334,0.169333334,0.169333334
+adult_underweight,16,Philippines,2021,27,Age-standardized,2,Female,0.17929334646698497,0.17929334646698497,0.17929334646698497
+adult_underweight,185,Rwanda,1994,27,Age-standardized,1,Male,0.15503702,0.15503702,0.15503702
+adult_underweight,185,Rwanda,1994,27,Age-standardized,2,Female,0.10824421,0.10824421,0.10824421
+adult_underweight,185,Rwanda,1995,27,Age-standardized,1,Male,0.15490143,0.15490143,0.15490143
+adult_underweight,185,Rwanda,1995,27,Age-standardized,2,Female,0.10811586,0.10811586,0.10811586
+adult_underweight,185,Rwanda,1996,27,Age-standardized,1,Male,0.1547058,0.1547058,0.1547058
+adult_underweight,185,Rwanda,1996,27,Age-standardized,2,Female,0.10754891,0.10754891,0.10754891
+adult_underweight,185,Rwanda,1997,27,Age-standardized,1,Male,0.15490319,0.15490319,0.15490319
+adult_underweight,185,Rwanda,1997,27,Age-standardized,2,Female,0.10671649,0.10671649,0.10671649
+adult_underweight,185,Rwanda,1998,27,Age-standardized,1,Male,0.15279184,0.15279184,0.15279184
+adult_underweight,185,Rwanda,1998,27,Age-standardized,2,Female,0.10426541,0.10426541,0.10426541
+adult_underweight,185,Rwanda,1999,27,Age-standardized,1,Male,0.14989188,0.14989188,0.14989188
+adult_underweight,185,Rwanda,1999,27,Age-standardized,2,Female,0.10133584,0.10133584,0.10133584
+adult_underweight,185,Rwanda,2000,27,Age-standardized,1,Male,0.14789606,0.14789606,0.14789606
+adult_underweight,185,Rwanda,2000,27,Age-standardized,2,Female,0.09931861,0.09931861,0.09931861
+adult_underweight,185,Rwanda,2001,27,Age-standardized,1,Male,0.14650556,0.14650556,0.14650556
+adult_underweight,185,Rwanda,2001,27,Age-standardized,2,Female,0.09819353,0.09819353,0.09819353
+adult_underweight,185,Rwanda,2002,27,Age-standardized,1,Male,0.145299,0.145299,0.145299
+adult_underweight,185,Rwanda,2002,27,Age-standardized,2,Female,0.09754506,0.09754506,0.09754506
+adult_underweight,185,Rwanda,2003,27,Age-standardized,1,Male,0.14427604,0.14427604,0.14427604
+adult_underweight,185,Rwanda,2003,27,Age-standardized,2,Female,0.0975313,0.0975313,0.0975313
+adult_underweight,185,Rwanda,2004,27,Age-standardized,1,Male,0.14335485,0.14335485,0.14335485
+adult_underweight,185,Rwanda,2004,27,Age-standardized,2,Female,0.09749804,0.09749804,0.09749804
+adult_underweight,185,Rwanda,2005,27,Age-standardized,1,Male,0.14165419,0.14165419,0.14165419
+adult_underweight,185,Rwanda,2005,27,Age-standardized,2,Female,0.0970141,0.0970141,0.0970141
+adult_underweight,185,Rwanda,2006,27,Age-standardized,1,Male,0.13972989,0.13972989,0.13972989
+adult_underweight,185,Rwanda,2006,27,Age-standardized,2,Female,0.09409158,0.09409158,0.09409158
+adult_underweight,185,Rwanda,2007,27,Age-standardized,1,Male,0.13770846,0.13770846,0.13770846
+adult_underweight,185,Rwanda,2007,27,Age-standardized,2,Female,0.09044612,0.09044612,0.09044612
+adult_underweight,185,Rwanda,2008,27,Age-standardized,1,Male,0.13513082,0.13513082,0.13513082
+adult_underweight,185,Rwanda,2008,27,Age-standardized,2,Female,0.08599012,0.08599012,0.08599012
+adult_underweight,185,Rwanda,2009,27,Age-standardized,1,Male,0.13172216,0.13172216,0.13172216
+adult_underweight,185,Rwanda,2009,27,Age-standardized,2,Female,0.08078827,0.08078827,0.08078827
+adult_underweight,185,Rwanda,2010,27,Age-standardized,1,Male,0.12752763,0.12752763,0.12752763
+adult_underweight,185,Rwanda,2010,27,Age-standardized,2,Female,0.07504283,0.07504283,0.07504283
+adult_underweight,185,Rwanda,2011,27,Age-standardized,1,Male,0.1185396,0.1185396,0.1185396
+adult_underweight,185,Rwanda,2011,27,Age-standardized,2,Female,0.06795745,0.06795745,0.06795745
+adult_underweight,185,Rwanda,2012,27,Age-standardized,1,Male,0.11014619,0.11014619,0.11014619
+adult_underweight,185,Rwanda,2012,27,Age-standardized,2,Female,0.06176178,0.06176178,0.06176178
+adult_underweight,185,Rwanda,2013,27,Age-standardized,1,Male,0.10722036,0.10722036,0.10722036
+adult_underweight,185,Rwanda,2013,27,Age-standardized,2,Female,0.0593856,0.0593856,0.0593856
+adult_underweight,185,Rwanda,2014,27,Age-standardized,1,Male,0.10573902,0.10573902,0.10573902
+adult_underweight,185,Rwanda,2014,27,Age-standardized,2,Female,0.05867257,0.05867257,0.05867257
+adult_underweight,185,Rwanda,2015,27,Age-standardized,1,Male,0.10570727,0.10570727,0.10570727
+adult_underweight,185,Rwanda,2015,27,Age-standardized,2,Female,0.0591616,0.0591616,0.0591616
+adult_underweight,185,Rwanda,2016,27,Age-standardized,1,Male,0.10217312,0.10217312,0.10217312
+adult_underweight,185,Rwanda,2016,27,Age-standardized,2,Female,0.05669617,0.05669617,0.05669617
+adult_underweight,185,Rwanda,2017,27,Age-standardized,1,Male,0.10217312,0.10217312,0.10217312
+adult_underweight,185,Rwanda,2017,27,Age-standardized,2,Female,0.05669617,0.05669617,0.05669617
+adult_underweight,185,Rwanda,2018,27,Age-standardized,1,Male,0.10128518272803999,0.10128518272803999,0.10128518272803999
+adult_underweight,185,Rwanda,2018,27,Age-standardized,2,Female,0.056188678,0.056188678,0.056188678
+adult_underweight,185,Rwanda,2019,27,Age-standardized,1,Male,0.10046476934588698,0.10046476934588698,0.10046476934588698
+adult_underweight,185,Rwanda,2019,27,Age-standardized,2,Female,0.055720099,0.055720099,0.055720099
+adult_underweight,185,Rwanda,2020,27,Age-standardized,1,Male,0.099689015,0.099689015,0.099689015
+adult_underweight,185,Rwanda,2020,27,Age-standardized,2,Female,0.055314774,0.055314774,0.055314774
+adult_underweight,185,Rwanda,2021,27,Age-standardized,1,Male,0.098948412,0.098948412,0.098948412
+adult_underweight,185,Rwanda,2021,27,Age-standardized,2,Female,0.054927807,0.054927807,0.054927807
+adult_underweight,196,South Africa,1994,27,Age-standardized,1,Male,0.07831686,0.07831686,0.07831686
+adult_underweight,196,South Africa,1994,27,Age-standardized,2,Female,0.06378042,0.06378042,0.06378042
+adult_underweight,196,South Africa,1995,27,Age-standardized,1,Male,0.07539821,0.07539821,0.07539821
+adult_underweight,196,South Africa,1995,27,Age-standardized,2,Female,0.06310539,0.06310539,0.06310539
+adult_underweight,196,South Africa,1996,27,Age-standardized,1,Male,0.07289139,0.07289139,0.07289139
+adult_underweight,196,South Africa,1996,27,Age-standardized,2,Female,0.06163572,0.06163572,0.06163572
+adult_underweight,196,South Africa,1997,27,Age-standardized,1,Male,0.07125846,0.07125846,0.07125846
+adult_underweight,196,South Africa,1997,27,Age-standardized,2,Female,0.05875264,0.05875264,0.05875264
+adult_underweight,196,South Africa,1998,27,Age-standardized,1,Male,0.06992294,0.06992294,0.06992294
+adult_underweight,196,South Africa,1998,27,Age-standardized,2,Female,0.05565864,0.05565864,0.05565864
+adult_underweight,196,South Africa,1999,27,Age-standardized,1,Male,0.06926897,0.06926897,0.06926897
+adult_underweight,196,South Africa,1999,27,Age-standardized,2,Female,0.05162356,0.05162356,0.05162356
+adult_underweight,196,South Africa,2000,27,Age-standardized,1,Male,0.06897582,0.06897582,0.06897582
+adult_underweight,196,South Africa,2000,27,Age-standardized,2,Female,0.04844542,0.04844542,0.04844542
+adult_underweight,196,South Africa,2001,27,Age-standardized,1,Male,0.06882446,0.06882446,0.06882446
+adult_underweight,196,South Africa,2001,27,Age-standardized,2,Female,0.04515894,0.04515894,0.04515894
+adult_underweight,196,South Africa,2002,27,Age-standardized,1,Male,0.06896936,0.06896936,0.06896936
+adult_underweight,196,South Africa,2002,27,Age-standardized,2,Female,0.04195734,0.04195734,0.04195734
+adult_underweight,196,South Africa,2003,27,Age-standardized,1,Male,0.06812716,0.06812716,0.06812716
+adult_underweight,196,South Africa,2003,27,Age-standardized,2,Female,0.03928914,0.03928914,0.03928914
+adult_underweight,196,South Africa,2004,27,Age-standardized,1,Male,0.06863885,0.06863885,0.06863885
+adult_underweight,196,South Africa,2004,27,Age-standardized,2,Female,0.03774619,0.03774619,0.03774619
+adult_underweight,196,South Africa,2005,27,Age-standardized,1,Male,0.06948276,0.06948276,0.06948276
+adult_underweight,196,South Africa,2005,27,Age-standardized,2,Female,0.03684507,0.03684507,0.03684507
+adult_underweight,196,South Africa,2006,27,Age-standardized,1,Male,0.07059326,0.07059326,0.07059326
+adult_underweight,196,South Africa,2006,27,Age-standardized,2,Female,0.03651655,0.03651655,0.03651655
+adult_underweight,196,South Africa,2007,27,Age-standardized,1,Male,0.07202455,0.07202455,0.07202455
+adult_underweight,196,South Africa,2007,27,Age-standardized,2,Female,0.03636794,0.03636794,0.03636794
+adult_underweight,196,South Africa,2008,27,Age-standardized,1,Male,0.07323743,0.07323743,0.07323743
+adult_underweight,196,South Africa,2008,27,Age-standardized,2,Female,0.03624627,0.03624627,0.03624627
+adult_underweight,196,South Africa,2009,27,Age-standardized,1,Male,0.07363969,0.07363969,0.07363969
+adult_underweight,196,South Africa,2009,27,Age-standardized,2,Female,0.03587753,0.03587753,0.03587753
+adult_underweight,196,South Africa,2010,27,Age-standardized,1,Male,0.07382472,0.07382472,0.07382472
+adult_underweight,196,South Africa,2010,27,Age-standardized,2,Female,0.03560102,0.03560102,0.03560102
+adult_underweight,196,South Africa,2011,27,Age-standardized,1,Male,0.07410917,0.07410917,0.07410917
+adult_underweight,196,South Africa,2011,27,Age-standardized,2,Female,0.03528914,0.03528914,0.03528914
+adult_underweight,196,South Africa,2012,27,Age-standardized,1,Male,0.07446489,0.07446489,0.07446489
+adult_underweight,196,South Africa,2012,27,Age-standardized,2,Female,0.03500474,0.03500474,0.03500474
+adult_underweight,196,South Africa,2013,27,Age-standardized,1,Male,0.07409456,0.07409456,0.07409456
+adult_underweight,196,South Africa,2013,27,Age-standardized,2,Female,0.03521969,0.03521969,0.03521969
+adult_underweight,196,South Africa,2014,27,Age-standardized,1,Male,0.07362882,0.07362882,0.07362882
+adult_underweight,196,South Africa,2014,27,Age-standardized,2,Female,0.03525875,0.03525875,0.03525875
+adult_underweight,196,South Africa,2015,27,Age-standardized,1,Male,0.07333122,0.07333122,0.07333122
+adult_underweight,196,South Africa,2015,27,Age-standardized,2,Female,0.035312699999999995,0.035312699999999995,0.035312699999999995
+adult_underweight,196,South Africa,2016,27,Age-standardized,1,Male,0.07337101,0.07337101,0.07337101
+adult_underweight,196,South Africa,2016,27,Age-standardized,2,Female,0.03529424,0.03529424,0.03529424
+adult_underweight,196,South Africa,2017,27,Age-standardized,1,Male,0.07337101,0.07337101,0.07337101
+adult_underweight,196,South Africa,2017,27,Age-standardized,2,Female,0.03529424,0.03529424,0.03529424
+adult_underweight,196,South Africa,2018,27,Age-standardized,1,Male,0.073048245,0.073048245,0.073048245
+adult_underweight,196,South Africa,2018,27,Age-standardized,2,Female,0.035135743,0.035135743,0.035135743
+adult_underweight,196,South Africa,2019,27,Age-standardized,1,Male,0.072789662,0.072789662,0.072789662
+adult_underweight,196,South Africa,2019,27,Age-standardized,2,Female,0.035008795,0.035008795,0.035008795
+adult_underweight,196,South Africa,2020,27,Age-standardized,1,Male,0.072604454,0.072604454,0.072604454
+adult_underweight,196,South Africa,2020,27,Age-standardized,2,Female,0.034925595,0.034925595,0.034925595
+adult_underweight,196,South Africa,2021,27,Age-standardized,1,Male,0.072434725,0.072434725,0.072434725
+adult_underweight,196,South Africa,2021,27,Age-standardized,2,Female,0.034849346,0.034849346,0.034849346
+adult_underweight,522,Sudan,1994,27,Age-standardized,1,Male,0.12039846,0.12039846,0.12039846
+adult_underweight,522,Sudan,1994,27,Age-standardized,2,Female,0.09830484,0.09830484,0.09830484
+adult_underweight,522,Sudan,1995,27,Age-standardized,1,Male,0.12037666,0.12037666,0.12037666
+adult_underweight,522,Sudan,1995,27,Age-standardized,2,Female,0.09771984,0.09771984,0.09771984
+adult_underweight,522,Sudan,1996,27,Age-standardized,1,Male,0.12034469,0.12034469,0.12034469
+adult_underweight,522,Sudan,1996,27,Age-standardized,2,Female,0.09705104,0.09705104,0.09705104
+adult_underweight,522,Sudan,1997,27,Age-standardized,1,Male,0.12032178,0.12032178,0.12032178
+adult_underweight,522,Sudan,1997,27,Age-standardized,2,Female,0.09641212,0.09641212,0.09641212
+adult_underweight,522,Sudan,1998,27,Age-standardized,1,Male,0.12033596,0.12033596,0.12033596
+adult_underweight,522,Sudan,1998,27,Age-standardized,2,Female,0.09573018,0.09573018,0.09573018
+adult_underweight,522,Sudan,1999,27,Age-standardized,1,Male,0.12033673,0.12033673,0.12033673
+adult_underweight,522,Sudan,1999,27,Age-standardized,2,Female,0.09481525,0.09481525,0.09481525
+adult_underweight,522,Sudan,2000,27,Age-standardized,1,Male,0.12023956,0.12023956,0.12023956
+adult_underweight,522,Sudan,2000,27,Age-standardized,2,Female,0.09376304,0.09376304,0.09376304
+adult_underweight,522,Sudan,2001,27,Age-standardized,1,Male,0.12007135,0.12007135,0.12007135
+adult_underweight,522,Sudan,2001,27,Age-standardized,2,Female,0.09238269,0.09238269,0.09238269
+adult_underweight,522,Sudan,2002,27,Age-standardized,1,Male,0.11972801,0.11972801,0.11972801
+adult_underweight,522,Sudan,2002,27,Age-standardized,2,Female,0.09106593,0.09106593,0.09106593
+adult_underweight,522,Sudan,2003,27,Age-standardized,1,Male,0.11924006,0.11924006,0.11924006
+adult_underweight,522,Sudan,2003,27,Age-standardized,2,Female,0.08994038,0.08994038,0.08994038
+adult_underweight,522,Sudan,2004,27,Age-standardized,1,Male,0.11865730000000001,0.11865730000000001,0.11865730000000001
+adult_underweight,522,Sudan,2004,27,Age-standardized,2,Female,0.0887143,0.0887143,0.0887143
+adult_underweight,522,Sudan,2005,27,Age-standardized,1,Male,0.11819071,0.11819071,0.11819071
+adult_underweight,522,Sudan,2005,27,Age-standardized,2,Female,0.08798092,0.08798092,0.08798092
+adult_underweight,522,Sudan,2006,27,Age-standardized,1,Male,0.11828233,0.11828233,0.11828233
+adult_underweight,522,Sudan,2006,27,Age-standardized,2,Female,0.0874534,0.0874534,0.0874534
+adult_underweight,522,Sudan,2007,27,Age-standardized,1,Male,0.11859287,0.11859287,0.11859287
+adult_underweight,522,Sudan,2007,27,Age-standardized,2,Female,0.08716385,0.08716385,0.08716385
+adult_underweight,522,Sudan,2008,27,Age-standardized,1,Male,0.11882829,0.11882829,0.11882829
+adult_underweight,522,Sudan,2008,27,Age-standardized,2,Female,0.0871329,0.0871329,0.0871329
+adult_underweight,522,Sudan,2009,27,Age-standardized,1,Male,0.11895050000000001,0.11895050000000001,0.11895050000000001
+adult_underweight,522,Sudan,2009,27,Age-standardized,2,Female,0.08716604,0.08716604,0.08716604
+adult_underweight,522,Sudan,2010,27,Age-standardized,1,Male,0.1188798,0.1188798,0.1188798
+adult_underweight,522,Sudan,2010,27,Age-standardized,2,Female,0.08711669,0.08711669,0.08711669
+adult_underweight,522,Sudan,2011,27,Age-standardized,1,Male,0.11876673,0.11876673,0.11876673
+adult_underweight,522,Sudan,2011,27,Age-standardized,2,Female,0.08715119,0.08715119,0.08715119
+adult_underweight,522,Sudan,2012,27,Age-standardized,1,Male,0.11863232,0.11863232,0.11863232
+adult_underweight,522,Sudan,2012,27,Age-standardized,2,Female,0.08699841,0.08699841,0.08699841
+adult_underweight,522,Sudan,2013,27,Age-standardized,1,Male,0.11849302,0.11849302,0.11849302
+adult_underweight,522,Sudan,2013,27,Age-standardized,2,Female,0.08682558,0.08682558,0.08682558
+adult_underweight,522,Sudan,2014,27,Age-standardized,1,Male,0.11834373,0.11834373,0.11834373
+adult_underweight,522,Sudan,2014,27,Age-standardized,2,Female,0.08653002,0.08653002,0.08653002
+adult_underweight,522,Sudan,2015,27,Age-standardized,1,Male,0.11827788,0.11827788,0.11827788
+adult_underweight,522,Sudan,2015,27,Age-standardized,2,Female,0.08630299,0.08630299,0.08630299
+adult_underweight,522,Sudan,2016,27,Age-standardized,1,Male,0.11816927,0.11816927,0.11816927
+adult_underweight,522,Sudan,2016,27,Age-standardized,2,Female,0.08615909,0.08615909,0.08615909
+adult_underweight,522,Sudan,2017,27,Age-standardized,1,Male,0.11816927,0.11816927,0.11816927
+adult_underweight,522,Sudan,2017,27,Age-standardized,2,Female,0.08615909,0.08615909,0.08615909
+adult_underweight,522,Sudan,2018,27,Age-standardized,1,Male,0.116868731,0.116868731,0.116868731
+adult_underweight,522,Sudan,2018,27,Age-standardized,2,Female,0.085195701,0.085195701,0.085195701
+adult_underweight,522,Sudan,2019,27,Age-standardized,1,Male,0.11586680126921801,0.11586680126921801,0.11586680126921801
+adult_underweight,522,Sudan,2019,27,Age-standardized,2,Female,0.084453902,0.084453902,0.084453902
+adult_underweight,522,Sudan,2020,27,Age-standardized,1,Male,0.114930665,0.114930665,0.114930665
+adult_underweight,522,Sudan,2020,27,Age-standardized,2,Female,0.083819737,0.083819737,0.083819737
+adult_underweight,522,Sudan,2021,27,Age-standardized,1,Male,0.11405621,0.11405621,0.11405621
+adult_underweight,522,Sudan,2021,27,Age-standardized,2,Female,0.083227234,0.083227234,0.083227234
+adult_underweight,189,United Republic of Tanzania,1994,27,Age-standardized,1,Male,0.16340018,0.16340018,0.16340018
+adult_underweight,189,United Republic of Tanzania,1994,27,Age-standardized,2,Female,0.18858702,0.18858702,0.18858702
+adult_underweight,189,United Republic of Tanzania,1995,27,Age-standardized,1,Male,0.16485266,0.16485266,0.16485266
+adult_underweight,189,United Republic of Tanzania,1995,27,Age-standardized,2,Female,0.18728825,0.18728825,0.18728825
+adult_underweight,189,United Republic of Tanzania,1996,27,Age-standardized,1,Male,0.16617378,0.16617378,0.16617378
+adult_underweight,189,United Republic of Tanzania,1996,27,Age-standardized,2,Female,0.18637388,0.18637388,0.18637388
+adult_underweight,189,United Republic of Tanzania,1997,27,Age-standardized,1,Male,0.16747387,0.16747387,0.16747387
+adult_underweight,189,United Republic of Tanzania,1997,27,Age-standardized,2,Female,0.18367445,0.18367445,0.18367445
+adult_underweight,189,United Republic of Tanzania,1998,27,Age-standardized,1,Male,0.1691749,0.1691749,0.1691749
+adult_underweight,189,United Republic of Tanzania,1998,27,Age-standardized,2,Female,0.17944825,0.17944825,0.17944825
+adult_underweight,189,United Republic of Tanzania,1999,27,Age-standardized,1,Male,0.17048079,0.17048079,0.17048079
+adult_underweight,189,United Republic of Tanzania,1999,27,Age-standardized,2,Female,0.17412094,0.17412094,0.17412094
+adult_underweight,189,United Republic of Tanzania,2000,27,Age-standardized,1,Male,0.17128703,0.17128703,0.17128703
+adult_underweight,189,United Republic of Tanzania,2000,27,Age-standardized,2,Female,0.16934773,0.16934773,0.16934773
+adult_underweight,189,United Republic of Tanzania,2001,27,Age-standardized,1,Male,0.17161785,0.17161785,0.17161785
+adult_underweight,189,United Republic of Tanzania,2001,27,Age-standardized,2,Female,0.16487313,0.16487313,0.16487313
+adult_underweight,189,United Republic of Tanzania,2002,27,Age-standardized,1,Male,0.17156516,0.17156516,0.17156516
+adult_underweight,189,United Republic of Tanzania,2002,27,Age-standardized,2,Female,0.16077008,0.16077008,0.16077008
+adult_underweight,189,United Republic of Tanzania,2003,27,Age-standardized,1,Male,0.17103369,0.17103369,0.17103369
+adult_underweight,189,United Republic of Tanzania,2003,27,Age-standardized,2,Female,0.15711495,0.15711495,0.15711495
+adult_underweight,189,United Republic of Tanzania,2004,27,Age-standardized,1,Male,0.17070246,0.17070246,0.17070246
+adult_underweight,189,United Republic of Tanzania,2004,27,Age-standardized,2,Female,0.15425029,0.15425029,0.15425029
+adult_underweight,189,United Republic of Tanzania,2005,27,Age-standardized,1,Male,0.16939474,0.16939474,0.16939474
+adult_underweight,189,United Republic of Tanzania,2005,27,Age-standardized,2,Female,0.15133405,0.15133405,0.15133405
+adult_underweight,189,United Republic of Tanzania,2006,27,Age-standardized,1,Male,0.16838822,0.16838822,0.16838822
+adult_underweight,189,United Republic of Tanzania,2006,27,Age-standardized,2,Female,0.14752308,0.14752308,0.14752308
+adult_underweight,189,United Republic of Tanzania,2007,27,Age-standardized,1,Male,0.16747153,0.16747153,0.16747153
+adult_underweight,189,United Republic of Tanzania,2007,27,Age-standardized,2,Female,0.14330893,0.14330893,0.14330893
+adult_underweight,189,United Republic of Tanzania,2008,27,Age-standardized,1,Male,0.16618649,0.16618649,0.16618649
+adult_underweight,189,United Republic of Tanzania,2008,27,Age-standardized,2,Female,0.13865392,0.13865392,0.13865392
+adult_underweight,189,United Republic of Tanzania,2009,27,Age-standardized,1,Male,0.16473316,0.16473316,0.16473316
+adult_underweight,189,United Republic of Tanzania,2009,27,Age-standardized,2,Female,0.13388354,0.13388354,0.13388354
+adult_underweight,189,United Republic of Tanzania,2010,27,Age-standardized,1,Male,0.16291907,0.16291907,0.16291907
+adult_underweight,189,United Republic of Tanzania,2010,27,Age-standardized,2,Female,0.12917616,0.12917616,0.12917616
+adult_underweight,189,United Republic of Tanzania,2011,27,Age-standardized,1,Male,0.16171277,0.16171277,0.16171277
+adult_underweight,189,United Republic of Tanzania,2011,27,Age-standardized,2,Female,0.12592475,0.12592475,0.12592475
+adult_underweight,189,United Republic of Tanzania,2012,27,Age-standardized,1,Male,0.16430235,0.16430235,0.16430235
+adult_underweight,189,United Republic of Tanzania,2012,27,Age-standardized,2,Female,0.12429387,0.12429387,0.12429387
+adult_underweight,189,United Republic of Tanzania,2013,27,Age-standardized,1,Male,0.16609047,0.16609047,0.16609047
+adult_underweight,189,United Republic of Tanzania,2013,27,Age-standardized,2,Female,0.12448130000000002,0.12448130000000002,0.12448130000000002
+adult_underweight,189,United Republic of Tanzania,2014,27,Age-standardized,1,Male,0.1682119,0.1682119,0.1682119
+adult_underweight,189,United Republic of Tanzania,2014,27,Age-standardized,2,Female,0.12535271,0.12535271,0.12535271
+adult_underweight,189,United Republic of Tanzania,2015,27,Age-standardized,1,Male,0.1696624,0.1696624,0.1696624
+adult_underweight,189,United Republic of Tanzania,2015,27,Age-standardized,2,Female,0.12657767,0.12657767,0.12657767
+adult_underweight,189,United Republic of Tanzania,2016,27,Age-standardized,1,Male,0.17110617,0.17110617,0.17110617
+adult_underweight,189,United Republic of Tanzania,2016,27,Age-standardized,2,Female,0.12626879,0.12626879,0.12626879
+adult_underweight,189,United Republic of Tanzania,2017,27,Age-standardized,1,Male,0.17110617,0.17110617,0.17110617
+adult_underweight,189,United Republic of Tanzania,2017,27,Age-standardized,2,Female,0.12626879,0.12626879,0.12626879
+adult_underweight,189,United Republic of Tanzania,2018,27,Age-standardized,1,Male,0.16948908799192403,0.16948908799192403,0.16948908799192403
+adult_underweight,189,United Republic of Tanzania,2018,27,Age-standardized,2,Female,0.125035738,0.125035738,0.125035738
+adult_underweight,189,United Republic of Tanzania,2019,27,Age-standardized,1,Male,0.168244074,0.168244074,0.168244074
+adult_underweight,189,United Republic of Tanzania,2019,27,Age-standardized,2,Female,0.124087112,0.124087112,0.124087112
+adult_underweight,189,United Republic of Tanzania,2020,27,Age-standardized,1,Male,0.167035736,0.167035736,0.167035736
+adult_underweight,189,United Republic of Tanzania,2020,27,Age-standardized,2,Female,0.12324491190817999,0.12324491190817999,0.12324491190817999
+adult_underweight,189,United Republic of Tanzania,2021,27,Age-standardized,1,Male,0.165899162,0.165899162,0.165899162
+adult_underweight,189,United Republic of Tanzania,2021,27,Age-standardized,2,Female,0.122452799,0.122452799,0.122452799
+adult_underweight,18,Thailand,1994,27,Age-standardized,1,Male,0.12297052,0.12297052,0.12297052
+adult_underweight,18,Thailand,1994,27,Age-standardized,2,Female,0.11598294,0.11598294,0.11598294
+adult_underweight,18,Thailand,1995,27,Age-standardized,1,Male,0.11947407,0.11947407,0.11947407
+adult_underweight,18,Thailand,1995,27,Age-standardized,2,Female,0.11156735,0.11156735,0.11156735
+adult_underweight,18,Thailand,1996,27,Age-standardized,1,Male,0.11836392,0.11836392,0.11836392
+adult_underweight,18,Thailand,1996,27,Age-standardized,2,Female,0.10619207,0.10619207,0.10619207
+adult_underweight,18,Thailand,1997,27,Age-standardized,1,Male,0.11780294,0.11780294,0.11780294
+adult_underweight,18,Thailand,1997,27,Age-standardized,2,Female,0.10061507,0.10061507,0.10061507
+adult_underweight,18,Thailand,1998,27,Age-standardized,1,Male,0.11783141,0.11783141,0.11783141
+adult_underweight,18,Thailand,1998,27,Age-standardized,2,Female,0.09512553,0.09512553,0.09512553
+adult_underweight,18,Thailand,1999,27,Age-standardized,1,Male,0.11834871,0.11834871,0.11834871
+adult_underweight,18,Thailand,1999,27,Age-standardized,2,Female,0.09035978,0.09035978,0.09035978
+adult_underweight,18,Thailand,2000,27,Age-standardized,1,Male,0.11841009,0.11841009,0.11841009
+adult_underweight,18,Thailand,2000,27,Age-standardized,2,Female,0.08574217,0.08574217,0.08574217
+adult_underweight,18,Thailand,2001,27,Age-standardized,1,Male,0.11754156,0.11754156,0.11754156
+adult_underweight,18,Thailand,2001,27,Age-standardized,2,Female,0.08304974,0.08304974,0.08304974
+adult_underweight,18,Thailand,2002,27,Age-standardized,1,Male,0.11616815,0.11616815,0.11616815
+adult_underweight,18,Thailand,2002,27,Age-standardized,2,Female,0.0801499,0.0801499,0.0801499
+adult_underweight,18,Thailand,2003,27,Age-standardized,1,Male,0.11462685,0.11462685,0.11462685
+adult_underweight,18,Thailand,2003,27,Age-standardized,2,Female,0.07766269,0.07766269,0.07766269
+adult_underweight,18,Thailand,2004,27,Age-standardized,1,Male,0.11357046,0.11357046,0.11357046
+adult_underweight,18,Thailand,2004,27,Age-standardized,2,Female,0.07636447,0.07636447,0.07636447
+adult_underweight,18,Thailand,2005,27,Age-standardized,1,Male,0.11262035,0.11262035,0.11262035
+adult_underweight,18,Thailand,2005,27,Age-standardized,2,Female,0.07624043,0.07624043,0.07624043
+adult_underweight,18,Thailand,2006,27,Age-standardized,1,Male,0.11135274,0.11135274,0.11135274
+adult_underweight,18,Thailand,2006,27,Age-standardized,2,Female,0.07613134,0.07613134,0.07613134
+adult_underweight,18,Thailand,2007,27,Age-standardized,1,Male,0.10965443,0.10965443,0.10965443
+adult_underweight,18,Thailand,2007,27,Age-standardized,2,Female,0.07596339,0.07596339,0.07596339
+adult_underweight,18,Thailand,2008,27,Age-standardized,1,Male,0.10557326,0.10557326,0.10557326
+adult_underweight,18,Thailand,2008,27,Age-standardized,2,Female,0.07478372,0.07478372,0.07478372
+adult_underweight,18,Thailand,2009,27,Age-standardized,1,Male,0.10141168,0.10141168,0.10141168
+adult_underweight,18,Thailand,2009,27,Age-standardized,2,Female,0.07506516,0.07506516,0.07506516
+adult_underweight,18,Thailand,2010,27,Age-standardized,1,Male,0.09781216,0.09781216,0.09781216
+adult_underweight,18,Thailand,2010,27,Age-standardized,2,Female,0.07498622,0.07498622,0.07498622
+adult_underweight,18,Thailand,2011,27,Age-standardized,1,Male,0.09448953,0.09448953,0.09448953
+adult_underweight,18,Thailand,2011,27,Age-standardized,2,Female,0.07506369,0.07506369,0.07506369
+adult_underweight,18,Thailand,2012,27,Age-standardized,1,Male,0.09150836,0.09150836,0.09150836
+adult_underweight,18,Thailand,2012,27,Age-standardized,2,Female,0.07542092,0.07542092,0.07542092
+adult_underweight,18,Thailand,2013,27,Age-standardized,1,Male,0.08901484,0.08901484,0.08901484
+adult_underweight,18,Thailand,2013,27,Age-standardized,2,Female,0.07587317,0.07587317,0.07587317
+adult_underweight,18,Thailand,2014,27,Age-standardized,1,Male,0.08727347,0.08727347,0.08727347
+adult_underweight,18,Thailand,2014,27,Age-standardized,2,Female,0.07663978,0.07663978,0.07663978
+adult_underweight,18,Thailand,2015,27,Age-standardized,1,Male,0.0858308,0.0858308,0.0858308
+adult_underweight,18,Thailand,2015,27,Age-standardized,2,Female,0.07750066,0.07750066,0.07750066
+adult_underweight,18,Thailand,2016,27,Age-standardized,1,Male,0.08367388,0.08367388,0.08367388
+adult_underweight,18,Thailand,2016,27,Age-standardized,2,Female,0.07828118,0.07828118,0.07828118
+adult_underweight,18,Thailand,2017,27,Age-standardized,1,Male,0.08367388,0.08367388,0.08367388
+adult_underweight,18,Thailand,2017,27,Age-standardized,2,Female,0.07828118,0.07828118,0.07828118
+adult_underweight,18,Thailand,2018,27,Age-standardized,1,Male,0.083072525,0.083072525,0.083072525
+adult_underweight,18,Thailand,2018,27,Age-standardized,2,Female,0.077726193,0.077726193,0.077726193
+adult_underweight,18,Thailand,2019,27,Age-standardized,1,Male,0.082525349,0.082525349,0.082525349
+adult_underweight,18,Thailand,2019,27,Age-standardized,2,Female,0.077221187,0.077221187,0.077221187
+adult_underweight,18,Thailand,2020,27,Age-standardized,1,Male,0.082217476,0.082217476,0.082217476
+adult_underweight,18,Thailand,2020,27,Age-standardized,2,Female,0.076961118,0.076961118,0.076961118
+adult_underweight,18,Thailand,2021,27,Age-standardized,1,Male,0.081922421,0.081922421,0.081922421
+adult_underweight,18,Thailand,2021,27,Age-standardized,2,Female,0.076711803,0.076711803,0.076711803
+adult_underweight,190,Uganda,1994,27,Age-standardized,1,Male,0.11552363,0.11552363,0.11552363
+adult_underweight,190,Uganda,1994,27,Age-standardized,2,Female,0.15130866,0.15130866,0.15130866
+adult_underweight,190,Uganda,1995,27,Age-standardized,1,Male,0.11494368,0.11494368,0.11494368
+adult_underweight,190,Uganda,1995,27,Age-standardized,2,Female,0.15095006,0.15095006,0.15095006
+adult_underweight,190,Uganda,1996,27,Age-standardized,1,Male,0.11414231,0.11414231,0.11414231
+adult_underweight,190,Uganda,1996,27,Age-standardized,2,Female,0.15417837,0.15417837,0.15417837
+adult_underweight,190,Uganda,1997,27,Age-standardized,1,Male,0.11446189,0.11446189,0.11446189
+adult_underweight,190,Uganda,1997,27,Age-standardized,2,Female,0.15781252,0.15781252,0.15781252
+adult_underweight,190,Uganda,1998,27,Age-standardized,1,Male,0.11717295,0.11717295,0.11717295
+adult_underweight,190,Uganda,1998,27,Age-standardized,2,Female,0.16370574,0.16370574,0.16370574
+adult_underweight,190,Uganda,1999,27,Age-standardized,1,Male,0.12082186,0.12082186,0.12082186
+adult_underweight,190,Uganda,1999,27,Age-standardized,2,Female,0.17030726,0.17030726,0.17030726
+adult_underweight,190,Uganda,2000,27,Age-standardized,1,Male,0.12299005,0.12299005,0.12299005
+adult_underweight,190,Uganda,2000,27,Age-standardized,2,Female,0.17571509,0.17571509,0.17571509
+adult_underweight,190,Uganda,2001,27,Age-standardized,1,Male,0.12430531,0.12430531,0.12430531
+adult_underweight,190,Uganda,2001,27,Age-standardized,2,Female,0.18067532,0.18067532,0.18067532
+adult_underweight,190,Uganda,2002,27,Age-standardized,1,Male,0.12526222,0.12526222,0.12526222
+adult_underweight,190,Uganda,2002,27,Age-standardized,2,Female,0.18506321,0.18506321,0.18506321
+adult_underweight,190,Uganda,2003,27,Age-standardized,1,Male,0.12599275,0.12599275,0.12599275
+adult_underweight,190,Uganda,2003,27,Age-standardized,2,Female,0.18910159,0.18910159,0.18910159
+adult_underweight,190,Uganda,2004,27,Age-standardized,1,Male,0.12754051,0.12754051,0.12754051
+adult_underweight,190,Uganda,2004,27,Age-standardized,2,Female,0.19313206,0.19313206,0.19313206
+adult_underweight,190,Uganda,2005,27,Age-standardized,1,Male,0.12706913,0.12706913,0.12706913
+adult_underweight,190,Uganda,2005,27,Age-standardized,2,Female,0.19673592,0.19673592,0.19673592
+adult_underweight,190,Uganda,2006,27,Age-standardized,1,Male,0.12626124,0.12626124,0.12626124
+adult_underweight,190,Uganda,2006,27,Age-standardized,2,Female,0.19997136,0.19997136,0.19997136
+adult_underweight,190,Uganda,2007,27,Age-standardized,1,Male,0.12808449,0.12808449,0.12808449
+adult_underweight,190,Uganda,2007,27,Age-standardized,2,Female,0.20387555,0.20387555,0.20387555
+adult_underweight,190,Uganda,2008,27,Age-standardized,1,Male,0.12963233,0.12963233,0.12963233
+adult_underweight,190,Uganda,2008,27,Age-standardized,2,Female,0.20750634,0.20750634,0.20750634
+adult_underweight,190,Uganda,2009,27,Age-standardized,1,Male,0.13058404,0.13058404,0.13058404
+adult_underweight,190,Uganda,2009,27,Age-standardized,2,Female,0.21106937,0.21106937,0.21106937
+adult_underweight,190,Uganda,2010,27,Age-standardized,1,Male,0.13175831,0.13175831,0.13175831
+adult_underweight,190,Uganda,2010,27,Age-standardized,2,Female,0.21372218,0.21372218,0.21372218
+adult_underweight,190,Uganda,2011,27,Age-standardized,1,Male,0.13220079999999998,0.13220079999999998,0.13220079999999998
+adult_underweight,190,Uganda,2011,27,Age-standardized,2,Female,0.21465633,0.21465633,0.21465633
+adult_underweight,190,Uganda,2012,27,Age-standardized,1,Male,0.13301042,0.13301042,0.13301042
+adult_underweight,190,Uganda,2012,27,Age-standardized,2,Female,0.21591135,0.21591135,0.21591135
+adult_underweight,190,Uganda,2013,27,Age-standardized,1,Male,0.13445317,0.13445317,0.13445317
+adult_underweight,190,Uganda,2013,27,Age-standardized,2,Female,0.21753151,0.21753151,0.21753151
+adult_underweight,190,Uganda,2014,27,Age-standardized,1,Male,0.13597001,0.13597001,0.13597001
+adult_underweight,190,Uganda,2014,27,Age-standardized,2,Female,0.21887509,0.21887509,0.21887509
+adult_underweight,190,Uganda,2015,27,Age-standardized,1,Male,0.13726197,0.13726197,0.13726197
+adult_underweight,190,Uganda,2015,27,Age-standardized,2,Female,0.21912438,0.21912438,0.21912438
+adult_underweight,190,Uganda,2016,27,Age-standardized,1,Male,0.13846827,0.13846827,0.13846827
+adult_underweight,190,Uganda,2016,27,Age-standardized,2,Female,0.22024042,0.22024042,0.22024042
+adult_underweight,190,Uganda,2017,27,Age-standardized,1,Male,0.13846827,0.13846827,0.13846827
+adult_underweight,190,Uganda,2017,27,Age-standardized,2,Female,0.22024042,0.22024042,0.22024042
+adult_underweight,190,Uganda,2018,27,Age-standardized,1,Male,0.13715630902471798,0.13715630902471798,0.13715630902471798
+adult_underweight,190,Uganda,2018,27,Age-standardized,2,Female,0.218386461,0.218386461,0.218386461
+adult_underweight,190,Uganda,2019,27,Age-standardized,1,Male,0.136174175,0.136174175,0.136174175
+adult_underweight,190,Uganda,2019,27,Age-standardized,2,Female,0.216996254,0.216996254,0.216996254
+adult_underweight,190,Uganda,2020,27,Age-standardized,1,Male,0.135043157,0.135043157,0.135043157
+adult_underweight,190,Uganda,2020,27,Age-standardized,2,Female,0.215528615,0.215528615,0.215528615
+adult_underweight,190,Uganda,2021,27,Age-standardized,1,Male,0.13396977153908599,0.13396977153908599,0.13396977153908599
+adult_underweight,190,Uganda,2021,27,Age-standardized,2,Female,0.214132874,0.214132874,0.214132874
+adult_underweight,20,Viet Nam,1994,27,Age-standardized,1,Male,0.29295661,0.29295661,0.29295661
+adult_underweight,20,Viet Nam,1994,27,Age-standardized,2,Female,0.32021802,0.32021802,0.32021802
+adult_underweight,20,Viet Nam,1995,27,Age-standardized,1,Male,0.29246123,0.29246123,0.29246123
+adult_underweight,20,Viet Nam,1995,27,Age-standardized,2,Female,0.31985815,0.31985815,0.31985815
+adult_underweight,20,Viet Nam,1996,27,Age-standardized,1,Male,0.29196718,0.29196718,0.29196718
+adult_underweight,20,Viet Nam,1996,27,Age-standardized,2,Female,0.3192578,0.3192578,0.3192578
+adult_underweight,20,Viet Nam,1997,27,Age-standardized,1,Male,0.29105953,0.29105953,0.29105953
+adult_underweight,20,Viet Nam,1997,27,Age-standardized,2,Female,0.31880868,0.31880868,0.31880868
+adult_underweight,20,Viet Nam,1998,27,Age-standardized,1,Male,0.29007059999999996,0.29007059999999996,0.29007059999999996
+adult_underweight,20,Viet Nam,1998,27,Age-standardized,2,Female,0.31757757,0.31757757,0.31757757
+adult_underweight,20,Viet Nam,1999,27,Age-standardized,1,Male,0.28896685,0.28896685,0.28896685
+adult_underweight,20,Viet Nam,1999,27,Age-standardized,2,Female,0.31585524,0.31585524,0.31585524
+adult_underweight,20,Viet Nam,2000,27,Age-standardized,1,Male,0.28778504,0.28778504,0.28778504
+adult_underweight,20,Viet Nam,2000,27,Age-standardized,2,Female,0.31370329999999996,0.31370329999999996,0.31370329999999996
+adult_underweight,20,Viet Nam,2001,27,Age-standardized,1,Male,0.28610327,0.28610327,0.28610327
+adult_underweight,20,Viet Nam,2001,27,Age-standardized,2,Female,0.31142512,0.31142512,0.31142512
+adult_underweight,20,Viet Nam,2002,27,Age-standardized,1,Male,0.28473965,0.28473965,0.28473965
+adult_underweight,20,Viet Nam,2002,27,Age-standardized,2,Female,0.31284302,0.31284302,0.31284302
+adult_underweight,20,Viet Nam,2003,27,Age-standardized,1,Male,0.28176811,0.28176811,0.28176811
+adult_underweight,20,Viet Nam,2003,27,Age-standardized,2,Female,0.30570749999999997,0.30570749999999997,0.30570749999999997
+adult_underweight,20,Viet Nam,2004,27,Age-standardized,1,Male,0.27880335,0.27880335,0.27880335
+adult_underweight,20,Viet Nam,2004,27,Age-standardized,2,Female,0.29890976,0.29890976,0.29890976
+adult_underweight,20,Viet Nam,2005,27,Age-standardized,1,Male,0.27614158,0.27614158,0.27614158
+adult_underweight,20,Viet Nam,2005,27,Age-standardized,2,Female,0.29286348,0.29286348,0.29286348
+adult_underweight,20,Viet Nam,2006,27,Age-standardized,1,Male,0.27359732,0.27359732,0.27359732
+adult_underweight,20,Viet Nam,2006,27,Age-standardized,2,Female,0.28866458,0.28866458,0.28866458
+adult_underweight,20,Viet Nam,2007,27,Age-standardized,1,Male,0.27114846,0.27114846,0.27114846
+adult_underweight,20,Viet Nam,2007,27,Age-standardized,2,Female,0.28423444,0.28423444,0.28423444
+adult_underweight,20,Viet Nam,2008,27,Age-standardized,1,Male,0.26857777,0.26857777,0.26857777
+adult_underweight,20,Viet Nam,2008,27,Age-standardized,2,Female,0.27993416,0.27993416,0.27993416
+adult_underweight,20,Viet Nam,2009,27,Age-standardized,1,Male,0.26592135,0.26592135,0.26592135
+adult_underweight,20,Viet Nam,2009,27,Age-standardized,2,Female,0.27532827,0.27532827,0.27532827
+adult_underweight,20,Viet Nam,2010,27,Age-standardized,1,Male,0.26230508,0.26230508,0.26230508
+adult_underweight,20,Viet Nam,2010,27,Age-standardized,2,Female,0.27145354,0.27145354,0.27145354
+adult_underweight,20,Viet Nam,2011,27,Age-standardized,1,Male,0.25946631,0.25946631,0.25946631
+adult_underweight,20,Viet Nam,2011,27,Age-standardized,2,Female,0.26847501,0.26847501,0.26847501
+adult_underweight,20,Viet Nam,2012,27,Age-standardized,1,Male,0.25646318,0.25646318,0.25646318
+adult_underweight,20,Viet Nam,2012,27,Age-standardized,2,Female,0.26545978,0.26545978,0.26545978
+adult_underweight,20,Viet Nam,2013,27,Age-standardized,1,Male,0.25352463,0.25352463,0.25352463
+adult_underweight,20,Viet Nam,2013,27,Age-standardized,2,Female,0.26261246,0.26261246,0.26261246
+adult_underweight,20,Viet Nam,2014,27,Age-standardized,1,Male,0.25082273,0.25082273,0.25082273
+adult_underweight,20,Viet Nam,2014,27,Age-standardized,2,Female,0.25998696,0.25998696,0.25998696
+adult_underweight,20,Viet Nam,2015,27,Age-standardized,1,Male,0.2482886,0.2482886,0.2482886
+adult_underweight,20,Viet Nam,2015,27,Age-standardized,2,Female,0.25784839,0.25784839,0.25784839
+adult_underweight,20,Viet Nam,2016,27,Age-standardized,1,Male,0.24560735,0.24560735,0.24560735
+adult_underweight,20,Viet Nam,2016,27,Age-standardized,2,Female,0.25527595,0.25527595,0.25527595
+adult_underweight,20,Viet Nam,2017,27,Age-standardized,1,Male,0.24560735,0.24560735,0.24560735
+adult_underweight,20,Viet Nam,2017,27,Age-standardized,2,Female,0.25527595,0.25527595,0.25527595
+adult_underweight,20,Viet Nam,2018,27,Age-standardized,1,Male,0.24384663137417897,0.24384663137417897,0.24384663137417897
+adult_underweight,20,Viet Nam,2018,27,Age-standardized,2,Female,0.253504038,0.253504038,0.253504038
+adult_underweight,20,Viet Nam,2019,27,Age-standardized,1,Male,0.242272364,0.242272364,0.242272364
+adult_underweight,20,Viet Nam,2019,27,Age-standardized,2,Female,0.251919349,0.251919349,0.251919349
+adult_underweight,20,Viet Nam,2020,27,Age-standardized,1,Male,0.240959162,0.240959162,0.240959162
+adult_underweight,20,Viet Nam,2020,27,Age-standardized,2,Female,0.250709227,0.250709227,0.250709227
+adult_underweight,20,Viet Nam,2021,27,Age-standardized,1,Male,0.23974156319668102,0.23974156319668102,0.23974156319668102
+adult_underweight,20,Viet Nam,2021,27,Age-standardized,2,Female,0.249586655,0.249586655,0.249586655
+adult_underweight,191,Zambia,1994,27,Age-standardized,1,Male,0.14865499999999998,0.14865499999999998,0.14865499999999998
+adult_underweight,191,Zambia,1994,27,Age-standardized,2,Female,0.10768398,0.10768398,0.10768398
+adult_underweight,191,Zambia,1995,27,Age-standardized,1,Male,0.14922071,0.14922071,0.14922071
+adult_underweight,191,Zambia,1995,27,Age-standardized,2,Female,0.11232094,0.11232094,0.11232094
+adult_underweight,191,Zambia,1996,27,Age-standardized,1,Male,0.14982857,0.14982857,0.14982857
+adult_underweight,191,Zambia,1996,27,Age-standardized,2,Female,0.11742798,0.11742798,0.11742798
+adult_underweight,191,Zambia,1997,27,Age-standardized,1,Male,0.15083667,0.15083667,0.15083667
+adult_underweight,191,Zambia,1997,27,Age-standardized,2,Female,0.12196556,0.12196556,0.12196556
+adult_underweight,191,Zambia,1998,27,Age-standardized,1,Male,0.15151964,0.15151964,0.15151964
+adult_underweight,191,Zambia,1998,27,Age-standardized,2,Female,0.12617277,0.12617277,0.12617277
+adult_underweight,191,Zambia,1999,27,Age-standardized,1,Male,0.15191799,0.15191799,0.15191799
+adult_underweight,191,Zambia,1999,27,Age-standardized,2,Female,0.12945158,0.12945158,0.12945158
+adult_underweight,191,Zambia,2000,27,Age-standardized,1,Male,0.1523684,0.1523684,0.1523684
+adult_underweight,191,Zambia,2000,27,Age-standardized,2,Female,0.1318584,0.1318584,0.1318584
+adult_underweight,191,Zambia,2001,27,Age-standardized,1,Male,0.1525309,0.1525309,0.1525309
+adult_underweight,191,Zambia,2001,27,Age-standardized,2,Female,0.13276627,0.13276627,0.13276627
+adult_underweight,191,Zambia,2002,27,Age-standardized,1,Male,0.15227268,0.15227268,0.15227268
+adult_underweight,191,Zambia,2002,27,Age-standardized,2,Female,0.12811306,0.12811306,0.12811306
+adult_underweight,191,Zambia,2003,27,Age-standardized,1,Male,0.15143585,0.15143585,0.15143585
+adult_underweight,191,Zambia,2003,27,Age-standardized,2,Female,0.12280496,0.12280496,0.12280496
+adult_underweight,191,Zambia,2004,27,Age-standardized,1,Male,0.15014192,0.15014192,0.15014192
+adult_underweight,191,Zambia,2004,27,Age-standardized,2,Female,0.11694669,0.11694669,0.11694669
+adult_underweight,191,Zambia,2005,27,Age-standardized,1,Male,0.14752896,0.14752896,0.14752896
+adult_underweight,191,Zambia,2005,27,Age-standardized,2,Female,0.11040227,0.11040227,0.11040227
+adult_underweight,191,Zambia,2006,27,Age-standardized,1,Male,0.14443438,0.14443438,0.14443438
+adult_underweight,191,Zambia,2006,27,Age-standardized,2,Female,0.10322951,0.10322951,0.10322951
+adult_underweight,191,Zambia,2007,27,Age-standardized,1,Male,0.14104336,0.14104336,0.14104336
+adult_underweight,191,Zambia,2007,27,Age-standardized,2,Female,0.09646056,0.09646056,0.09646056
+adult_underweight,191,Zambia,2008,27,Age-standardized,1,Male,0.13902303,0.13902303,0.13902303
+adult_underweight,191,Zambia,2008,27,Age-standardized,2,Female,0.09042351,0.09042351,0.09042351
+adult_underweight,191,Zambia,2009,27,Age-standardized,1,Male,0.13911095,0.13911095,0.13911095
+adult_underweight,191,Zambia,2009,27,Age-standardized,2,Female,0.0892068,0.0892068,0.0892068
+adult_underweight,191,Zambia,2010,27,Age-standardized,1,Male,0.14069324,0.14069324,0.14069324
+adult_underweight,191,Zambia,2010,27,Age-standardized,2,Female,0.08940221,0.08940221,0.08940221
+adult_underweight,191,Zambia,2011,27,Age-standardized,1,Male,0.14178813,0.14178813,0.14178813
+adult_underweight,191,Zambia,2011,27,Age-standardized,2,Female,0.09038559,0.09038559,0.09038559
+adult_underweight,191,Zambia,2012,27,Age-standardized,1,Male,0.14259503,0.14259503,0.14259503
+adult_underweight,191,Zambia,2012,27,Age-standardized,2,Female,0.09154689,0.09154689,0.09154689
+adult_underweight,191,Zambia,2013,27,Age-standardized,1,Male,0.14275823,0.14275823,0.14275823
+adult_underweight,191,Zambia,2013,27,Age-standardized,2,Female,0.09322388,0.09322388,0.09322388
+adult_underweight,191,Zambia,2014,27,Age-standardized,1,Male,0.14254192,0.14254192,0.14254192
+adult_underweight,191,Zambia,2014,27,Age-standardized,2,Female,0.09517059,0.09517059,0.09517059
+adult_underweight,191,Zambia,2015,27,Age-standardized,1,Male,0.14217215,0.14217215,0.14217215
+adult_underweight,191,Zambia,2015,27,Age-standardized,2,Female,0.09725779,0.09725779,0.09725779
+adult_underweight,191,Zambia,2016,27,Age-standardized,1,Male,0.14247961,0.14247961,0.14247961
+adult_underweight,191,Zambia,2016,27,Age-standardized,2,Female,0.09899343,0.09899343,0.09899343
+adult_underweight,191,Zambia,2017,27,Age-standardized,1,Male,0.14247961,0.14247961,0.14247961
+adult_underweight,191,Zambia,2017,27,Age-standardized,2,Female,0.09899343,0.09899343,0.09899343
+adult_underweight,191,Zambia,2018,27,Age-standardized,1,Male,0.141135557,0.141135557,0.141135557
+adult_underweight,191,Zambia,2018,27,Age-standardized,2,Female,0.098031576,0.098031576,0.098031576
+adult_underweight,191,Zambia,2019,27,Age-standardized,1,Male,0.140179867,0.140179867,0.140179867
+adult_underweight,191,Zambia,2019,27,Age-standardized,2,Female,0.097348107,0.097348107,0.097348107
+adult_underweight,191,Zambia,2020,27,Age-standardized,1,Male,0.139186088,0.139186088,0.139186088
+adult_underweight,191,Zambia,2020,27,Age-standardized,2,Female,0.096697925,0.096697925,0.096697925
+adult_underweight,191,Zambia,2021,27,Age-standardized,1,Male,0.138275682,0.138275682,0.138275682
+adult_underweight,191,Zambia,2021,27,Age-standardized,2,Female,0.096102302,0.096102302,0.096102302
+adult_underweight,198,Zimbabwe,1994,27,Age-standardized,1,Male,0.19171427,0.19171427,0.19171427
+adult_underweight,198,Zimbabwe,1994,27,Age-standardized,2,Female,0.1304496,0.1304496,0.1304496
+adult_underweight,198,Zimbabwe,1995,27,Age-standardized,1,Male,0.19225754,0.19225754,0.19225754
+adult_underweight,198,Zimbabwe,1995,27,Age-standardized,2,Female,0.1293178,0.1293178,0.1293178
+adult_underweight,198,Zimbabwe,1996,27,Age-standardized,1,Male,0.19246161,0.19246161,0.19246161
+adult_underweight,198,Zimbabwe,1996,27,Age-standardized,2,Female,0.12775309,0.12775309,0.12775309
+adult_underweight,198,Zimbabwe,1997,27,Age-standardized,1,Male,0.19257329,0.19257329,0.19257329
+adult_underweight,198,Zimbabwe,1997,27,Age-standardized,2,Female,0.12561244,0.12561244,0.12561244
+adult_underweight,198,Zimbabwe,1998,27,Age-standardized,1,Male,0.19287413,0.19287413,0.19287413
+adult_underweight,198,Zimbabwe,1998,27,Age-standardized,2,Female,0.12323897,0.12323897,0.12323897
+adult_underweight,198,Zimbabwe,1999,27,Age-standardized,1,Male,0.19299997,0.19299997,0.19299997
+adult_underweight,198,Zimbabwe,1999,27,Age-standardized,2,Female,0.12105645,0.12105645,0.12105645
+adult_underweight,198,Zimbabwe,2000,27,Age-standardized,1,Male,0.19291567,0.19291567,0.19291567
+adult_underweight,198,Zimbabwe,2000,27,Age-standardized,2,Female,0.11918216,0.11918216,0.11918216
+adult_underweight,198,Zimbabwe,2001,27,Age-standardized,1,Male,0.19280776,0.19280776,0.19280776
+adult_underweight,198,Zimbabwe,2001,27,Age-standardized,2,Female,0.11734999,0.11734999,0.11734999
+adult_underweight,198,Zimbabwe,2002,27,Age-standardized,1,Male,0.1928359,0.1928359,0.1928359
+adult_underweight,198,Zimbabwe,2002,27,Age-standardized,2,Female,0.11557534,0.11557534,0.11557534
+adult_underweight,198,Zimbabwe,2003,27,Age-standardized,1,Male,0.19299216,0.19299216,0.19299216
+adult_underweight,198,Zimbabwe,2003,27,Age-standardized,2,Female,0.11361407,0.11361407,0.11361407
+adult_underweight,198,Zimbabwe,2004,27,Age-standardized,1,Male,0.19649101,0.19649101,0.19649101
+adult_underweight,198,Zimbabwe,2004,27,Age-standardized,2,Female,0.1118575,0.1118575,0.1118575
+adult_underweight,198,Zimbabwe,2005,27,Age-standardized,1,Male,0.20008467,0.20008467,0.20008467
+adult_underweight,198,Zimbabwe,2005,27,Age-standardized,2,Female,0.11028068,0.11028068,0.11028068
+adult_underweight,198,Zimbabwe,2006,27,Age-standardized,1,Male,0.20178829999999998,0.20178829999999998,0.20178829999999998
+adult_underweight,198,Zimbabwe,2006,27,Age-standardized,2,Female,0.10909676,0.10909676,0.10909676
+adult_underweight,198,Zimbabwe,2007,27,Age-standardized,1,Male,0.20277373,0.20277373,0.20277373
+adult_underweight,198,Zimbabwe,2007,27,Age-standardized,2,Female,0.10797725,0.10797725,0.10797725
+adult_underweight,198,Zimbabwe,2008,27,Age-standardized,1,Male,0.20279612,0.20279612,0.20279612
+adult_underweight,198,Zimbabwe,2008,27,Age-standardized,2,Female,0.10665014,0.10665014,0.10665014
+adult_underweight,198,Zimbabwe,2009,27,Age-standardized,1,Male,0.20193628,0.20193628,0.20193628
+adult_underweight,198,Zimbabwe,2009,27,Age-standardized,2,Female,0.10516496,0.10516496,0.10516496
+adult_underweight,198,Zimbabwe,2010,27,Age-standardized,1,Male,0.20036679,0.20036679,0.20036679
+adult_underweight,198,Zimbabwe,2010,27,Age-standardized,2,Female,0.1035685,0.1035685,0.1035685
+adult_underweight,198,Zimbabwe,2011,27,Age-standardized,1,Male,0.19820228,0.19820228,0.19820228
+adult_underweight,198,Zimbabwe,2011,27,Age-standardized,2,Female,0.10201348,0.10201348,0.10201348
+adult_underweight,198,Zimbabwe,2012,27,Age-standardized,1,Male,0.19579923,0.19579923,0.19579923
+adult_underweight,198,Zimbabwe,2012,27,Age-standardized,2,Female,0.10038467,0.10038467,0.10038467
+adult_underweight,198,Zimbabwe,2013,27,Age-standardized,1,Male,0.19273753,0.19273753,0.19273753
+adult_underweight,198,Zimbabwe,2013,27,Age-standardized,2,Female,0.0989023,0.0989023,0.0989023
+adult_underweight,198,Zimbabwe,2014,27,Age-standardized,1,Male,0.18965064,0.18965064,0.18965064
+adult_underweight,198,Zimbabwe,2014,27,Age-standardized,2,Female,0.09728311,0.09728311,0.09728311
+adult_underweight,198,Zimbabwe,2015,27,Age-standardized,1,Male,0.18685795,0.18685795,0.18685795
+adult_underweight,198,Zimbabwe,2015,27,Age-standardized,2,Female,0.0960953,0.0960953,0.0960953
+adult_underweight,198,Zimbabwe,2016,27,Age-standardized,1,Male,0.18435361,0.18435361,0.18435361
+adult_underweight,198,Zimbabwe,2016,27,Age-standardized,2,Female,0.094696,0.094696,0.094696
+adult_underweight,198,Zimbabwe,2017,27,Age-standardized,1,Male,0.18435361,0.18435361,0.18435361
+adult_underweight,198,Zimbabwe,2017,27,Age-standardized,2,Female,0.094696,0.094696,0.094696
+adult_underweight,198,Zimbabwe,2018,27,Age-standardized,1,Male,0.183107428,0.183107428,0.183107428
+adult_underweight,198,Zimbabwe,2018,27,Age-standardized,2,Female,0.093999717,0.093999717,0.093999717
+adult_underweight,198,Zimbabwe,2019,27,Age-standardized,1,Male,0.18220645075969197,0.18220645075969197,0.18220645075969197
+adult_underweight,198,Zimbabwe,2019,27,Age-standardized,2,Female,0.093496898,0.093496898,0.093496898
+adult_underweight,198,Zimbabwe,2020,27,Age-standardized,1,Male,0.181826073,0.181826073,0.181826073
+adult_underweight,198,Zimbabwe,2020,27,Age-standardized,2,Female,0.093302757,0.093302757,0.093302757
+adult_underweight,198,Zimbabwe,2021,27,Age-standardized,1,Male,0.181505172,0.181505172,0.181505172
+adult_underweight,198,Zimbabwe,2021,27,Age-standardized,2,Female,0.093139008,0.093139008,0.093139008
