@@ -6,9 +6,13 @@
 ### See example below. 
 
 ##############################################################################|
+### SAMPLE SCRIPT FOR RUNNING FOR SEX SURVEYS ###########################|
+# source(here("code/cleanData.R"))
+# source(here("code/bacterialPositiveIndicator.R"))
+# cleanDF0 <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="none")
+
 ### SAMPLE SCRIPT FOR RUNNING FOR RURALITY SURVEYS ###########################|
-### source(here("code/cleanData.R"))
-### cleanDF0 <- cleanData()[["clean data"]] %>% filter(report.rurality == "Yes")
+# cleanDF0 <- cleanData()[["clean data"]] %>% filter(report.rurality == "Yes")
 ### 
 ### source(here("code/descriptiveAnalysisFigures.R"))
 ### descriptPlots(cleanDF0 = cleanDF0, fileSuffix = "RuralitySurveys")
@@ -24,6 +28,9 @@ library(ggplot2)
 library(gt)
 library(maps)
 library(ggpubr)
+library(readr)
+library(geosphere) ##used for centroids for labels
+    
 
 ### Setup palette 
 myPal <- c( "#44AA99", "#882255", "#332288", "#117733", "#6699CC", "#CC6677",
@@ -39,29 +46,33 @@ myPal <- c( "#44AA99", "#882255", "#332288", "#117733", "#6699CC", "#CC6677",
 ##### Read in the naming schema for figures ###################################
 ##############################################################################|
 
-figID <- read.csv(here("data/titlesForFigures.csv"))
-colnames(figID)[1] <- "covidence.id"
-cleanDF0 <- cleanDF0 %>% left_join(figID[,c("covidence.id", "figure.id")], by = "covidence.id") %>% 
+# figID <- read.csv(here("data/titlesForFigures.csv"))
+# colnames(figID)[1] <- "covidence.id"
+cleanDF0 <- cleanDF0 %>% 
             mutate(figure.id.yr = paste(figure.id, study.start.year))
 
 ##############################################################################|
 ##### Read in the World Bank Region data ######################################
 ##############################################################################|
-regionWHO <- read.csv("data/who-regions.csv")[,c(1,4)] %>% 
+regionWHO <- read.csv("data/who-regions.csv")[,c(1,4)] %>%
              rename(study.country = Entity)
 
-### Rename some countries to match the WHO CSV.
-### For labeling these will remain as extracted. 
-cleanDF <- cleanDF0 
-cleanDF[which(cleanDF$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
-cleanDF[which(cleanDF$study.country == "The Gambia"), "study.country"] <- "Gambia"
-cleanDF[which(cleanDF$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
-cleanDF[which(cleanDF$study.country == "Lao PDR"), "study.country"] <- "Laos"
-cleanDF[which(cleanDF$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
-### Join the WHO data 
-cleanDF <- cleanDF %>% left_join(regionWHO)
-
+##############################################################################|
+##### Read in the WHO ESTIMATED TB data ######################################
+##############################################################################|
+# ### Rename some countries to match the WHO CSV.
+# ### For labeling these will remain as extracted. 
+# cleanDF <- cleanDF0 
+# cleanDF[which(cleanDF$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
+# cleanDF[which(cleanDF$study.country == "The Gambia"), "study.country"] <- "Gambia"
+# cleanDF[which(cleanDF$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
+# cleanDF[which(cleanDF$study.country == "Lao PDR"), "study.country"] <- "Laos"
+# cleanDF[which(cleanDF$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
+# 
+# ### Join the WHO data 
+# cleanDF <- cleanDF %>% left_join(regionWHO)
+cleanDF <- cleanDF0
 ##############################################################################|
 ##### DESCRIPTIVE PLOTS #######################################################
 ##############################################################################|
@@ -74,41 +85,140 @@ pdf(file = filename, width = 11.5, height = 8.5)
 ### COUNTRY 
 ### Count the county instances
 nCountry <- cleanDF %>% 
-            count(study.country) %>% 
-            left_join(regionWHO) 
+            count(study.country) 
 
 ### Setup a world map 
 world_map <- map_data("world")
 world_map <- subset(world_map, region != "Antarctica")
 
+world <- map_data("world")
+world <- world[world$region != "Antarctica", ]
+
+nCountryMap <- left_join(nCountry %>% rename(region=study.country), 
+                         world)
+
+# ggplot() +
+#     geom_map(data = world, map = world, aes(x = long, y = lat, map_id = region), fill = "grey70") +
+#     geom_text_repel(
+#         data = nCountryMap, aes(long, lat, label = n), size = 3,
+#         box.padding = unit(0.1, "lines"), force = 0.5
+#     )
+
 ### Make a heat map of prevalence studies by country 
+nCountryCoverage <- cleanDF %>% 
+                 mutate(natRep = ifelse(study.geography == "Nationally representative", 
+                                         "National",
+                                         "Subnational")) %>%
+                 group_by(natRep) %>% 
+                 count(study.country)
+
+nCountrySubNat <- cleanDF %>% 
+    mutate(natRep = ifelse(study.geography == "Nationally representative", 
+                           "Yes", "No")) %>%
+    group_by(natRep) %>% 
+    count(study.country) %>% 
+    filter(natRep == "No")
+
+centroids <- world_map %>% 
+    group_by(region) %>% 
+    group_modify(~ data.frame(centroid(cbind(.x$long, .x$lat))))
+
+nCountriesGeo <- left_join(nCountry, centroids %>% rename(study.country = region))
+
 print(
 ggplot(nCountry) +
     geom_map(
         dat = world_map, map = world_map, aes(map_id = region),
         fill = "lightgrey", color = "black", size = 0.25) +
-    geom_map(map = world_map, aes(map_id = study.country, fill = n)) +
-    scale_fill_gradient(low = "#fff7bc", high = "#cc4c02",
+    geom_map(map = world_map, aes(map_id = study.country, fill = n), color="black", label=n) +
+    scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
                         name = "Number of prevalence surveys") +
+    with(nCountriesGeo, annotate(geom="label", x = lon, y=lat, label = n, size = 3)) +
     expand_limits(x = world_map$long, y = world_map$lat) + 
     theme_void() + theme(legend.position = "inside",
-                            legend.position.inside = c(.2,.2)) + 
-    ggtitle ("Number of prevalence surveys by country")
+                            legend.position.inside = c(.2,.2)) #+ 
+    # ggtitle ("Number of prevalence surveys by country")
 )
-### Bar plot of countries by total survey count
+
+# print(
+#     ggplot() +
+#         geom_map(
+#             dat = world_map, map = world_map, aes(map_id = region),
+#             fill = "grey90", color = "black", size = 0.25) +
+#         geom_map(dat=nCountryNat, map = world_map, aes(map_id = study.country, fill = as.factor(n)), 
+#                  color="black") +
+#         scale_fill_manual(values = c("lightblue","dodgerblue2", "dodgerblue4"),
+#                            name = "Number of nationally\nrepresentative\nprevalence surveys") +
+#         expand_limits(x = world_map$long, y = world_map$lat) + 
+#         theme_void() + theme(legend.position = "inside",
+#                              legend.position.inside = c(.2,.2)) #+ 
+#     # ggtitle ("Number of prevalence surveys by country")
+# )
+
+# print(
+#     ggplot() +
+#         geom_map(
+#             dat = world_map, map = world_map, aes(map_id = region),
+#             fill = "grey90", color = "black", size = 0.25) +
+#         geom_map(dat=nCountrySubNat, map = world_map, aes(map_id = study.country, fill = n), 
+#                  color="black") +
+#         scale_fill_gradient(low = "mistyrose", high = "palevioletred4", 
+#                             name = "Number of subnational\nprevalence surveys") +
+#         expand_limits(x = world_map$long, y = world_map$lat) + 
+#         theme_void() + theme(legend.position = "inside",
+#                              legend.position.inside = c(.2,.2)) #+ 
+#     # ggtitle ("Number of subnational\nprevalence surveys by country")
+# )
+
+# print(
+#     ggplot() +
+#         geom_map(
+#             dat = world_map, map = world_map, aes(map_id = region),
+#             fill = "grey70", color = "grey70", size = 0.25) +
+#         geom_map(dat=nCountrySubNat, map = world_map, aes(map_id = study.country, fill = n), 
+#                  color="grey70") +
+#         geom_map(dat=nCountryNat, map = world_map, aes(map_id = study.country, color = as.factor(n)), 
+#                  fill=NA, size=1) +
+#         scale_fill_gradient(low = "mistyrose", high = "palevioletred4", 
+#                             name = "Number of subnational\nprevalence surveys") +
+#         scale_color_manual(values = c("lightblue","dodgerblue2", "dodgerblue4"),
+#                            name = "Number of nationally\nrepresentative\nprevalence surveys") +
+#         expand_limits(x = world_map$long, y = world_map$lat) + 
+#         theme_void() + theme(legend.position = "inside",
+#                              legend.position.inside = c(.15,.35)) #+ 
+#     # ggtitle ("Number of subnational\nprevalence surveys by country")
+# )
+# ggplot(data = world) +
+#     geom_sf() +
+#     geom_sf(data = nCountry, fill = n) 
+
+
+### Bar plot of countries by total survey count colored by national and subnational surveys
 nCountry <- nCountry %>% arrange(n) %>% 
-            mutate(study.country = as.factor(study.country), levels = study.country)
+            mutate(study.country = as.factor(study.country), levels = study.country) 
+
+nCountryCoverage <- nCountryCoverage %>% arrange(n) %>% 
+    mutate(study.country = as.factor(study.country), levels = study.country) %>% 
+    group_by(study.country) %>% mutate(total.studies = sum(n)) %>% ungroup() 
+
+nCountryCoverage$order <- with(nCountryCoverage, reorder(study.country, total.studies))
+
 print(
-ggplot(nCountry) + geom_col(aes(x=study.country, y=n), color = "black") + 
-                   theme_minimal() + coord_flip() + 
-                   theme(legend.position = "inside",
-                         legend.position.inside = c(.85,.15), 
-                         legend.background = element_rect(color = "white"),
-                         panel.grid.minor = element_blank(),
-                         panel.grid.major = element_blank()) +
-    geom_text(aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
-    labs(y = "Survey country", "Number of prevalence surveys") + 
-    ggtitle("Number of prevalence surveys by country")
+    ggplot(nCountryCoverage) + geom_col(aes(x=order, y=n, fill=natRep), color = "black") + 
+        theme_minimal() + coord_flip() + 
+        theme(legend.position = "inside",
+              legend.position.inside = c(.7,.15), 
+              legend.background = element_rect(color = "white"),
+              panel.grid.minor = element_blank(),
+              panel.grid.major = element_blank()) +
+        scale_fill_manual(values = myPal[3:4],
+                             name = "Survey representativeness") +
+        scale_x_discrete(limits = rev(levels(order)))+
+        geom_text(data = nCountryCoverage %>% filter(natRep == "Subnational"), 
+                  aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
+        geom_text(data = nCountryCoverage %>% filter(natRep == "National"), 
+                  aes(x=study.country, y=total.studies, label = n), hjust = 1.5, color = "white") + 
+        labs(x = "Survey country", y="Number of prevalence surveys") 
 )
 ### Also make a bar plot colored by WHO Region
 print(
@@ -429,6 +539,8 @@ risk1 <- riskData %>%
                                 panel.grid.minor = element_blank(),
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") +
+        # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+        #           position = position_stack(vjust = 1.05)) +
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
         # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
         ggtitle("Was the study’s sample population a true or close representation of the target population?")
@@ -441,6 +553,8 @@ risk2 <- riskData %>%
                             panel.grid.minor = element_blank(),
                             panel.grid.major = element_blank()) + coord_flip() +
     labs(y="", x="") +
+    # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+    #           position = position_stack(vjust = 1.05)) +
     scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
     # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
     ggtitle("Was some form of random selection used to select the sample or was a census undertaken?")
@@ -453,6 +567,8 @@ risk3 <- riskData %>%
                             panel.grid.minor = element_blank(),
                             panel.grid.major = element_blank()) + coord_flip() +
     labs(y="", x="") +
+    # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+    #           position = position_stack(vjust = 1.05)) +
     scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
     # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
     ggtitle("Was the likelihood of non-response bias minimal?")
@@ -465,6 +581,8 @@ risk4 <- riskData %>%
                             panel.grid.minor = element_blank(),
                             panel.grid.major = element_blank()) + coord_flip() +
     labs(y="", x="") +
+    # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+    #           position = position_stack(vjust = 1.05)) +
     scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
     # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
     ggtitle("Were data collected directly from subjects (as opposed to a proxy)?")
@@ -477,6 +595,8 @@ risk5 <- riskData %>%
                                 panel.grid.minor = element_blank(),
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") +
+        # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+        #           position = position_stack(vjust = 1.05)) +
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
         # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
         ggtitle("Was an acceptable case definition used in the study?")
@@ -489,6 +609,8 @@ risk6 <- riskData %>%
                                 panel.grid.minor = element_blank(),
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") +
+        # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+        #           position = position_stack(vjust = 1.05)) +
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
         # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
         ggtitle("Was the study instrument that measured the parameter of interest shown to have reliability and validity?")
@@ -501,6 +623,8 @@ risk7 <- riskData %>%
                                 panel.grid.minor = element_blank(),
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") +
+        # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+        #           position = position_stack(vjust = 1.05)) +
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
         # geom_text(aes(y = 1, x=study.quality.representative, label = bias.risk), size = 3, position = position_stack(vjust = 0.5)) +
         ggtitle("Was the same mode of data collection used for all subjects?")
@@ -513,6 +637,8 @@ risk8 <- riskData %>%
                                 panel.grid.minor = element_blank(),
                                 panel.grid.major = element_blank()) + coord_flip() +
         labs(y="", x="") +
+        # geom_text(stat='count', aes(x=study.quality.representative, label=after_stat(count)), 
+        #           position = position_stack(vjust = 1.05)) +
         scale_fill_manual(values = myPal[c(9,4,11,12)], name = "Overall bias assessment") +
         # geom_text(aes(label = after_stat(count)), position = "stack", stat = "count", hjust = 1.2, colour = "white") +
         ggtitle("Were the numerator and denominator for the parameter of interest appropriate?")
