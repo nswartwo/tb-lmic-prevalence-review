@@ -1,0 +1,1134 @@
+---
+title: "Tuberculosis Prevalence among persons living with HIV in Low- and Middle-income Countries: A Systematic Review and Meta-analysis" 
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+classoption: landscape
+geometry: margin=.5cm
+header-includes:
+  - \pagenumbering{gobble}
+---
+
+ABOUT THIS SCRIPT
+
+This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multivariate multilevel model on the studies that report sex stratified prevalence results. This model aims to estimate sex stratified prevalence adjusted for geographic factors. 
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##### LOAD IN NECESSARY PACKAGES ##############################################
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(reshape2)
+library(here)
+library(magrittr)
+library(DT)
+library(metafor)
+library(meta)
+library(brms)
+library(scales)
+# library(posterior)
+library(tidybayes)
+library(wesanderson)
+library(ggplot2)
+
+expit <- function (x) {exp(x)/(1 + exp(x))}
+
+myPal <- c("black", "mediumturquoise")
+
+source(here("code/bacterialPositiveIndicator.R"))
+source(here("code/smearPositiveIndicator.R"))
+source(here("code/varianceComponentModel.R"))
+
+##############################################################################|
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+
+
+cleanHivDF0 <- bactPostIndicator("hiv") %>% filter(hiv.analysis.indicator !="none")
+### Calculate mean publication lag 
+meanLag <- round(mean(cleanHivDF0$publication.year - cleanHivDF0$study.end.year, na.rm=TRUE))
+```
+
+# Descriptive statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+
+print(paste(dim(cleanHivDF0)[1], "unique surveys with HIV-stratified bacteriological positive TB"))
+
+print(paste(length(unique(cleanHivDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanHivDF0$n.participants.hiv.negative)), "studies report participant numbers totaling", 
+            sum(cleanHivDF0$n.participants.hiv.negative, cleanHivDF0$n.participants.hiv.positive, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanHivDF0$n.participants.hiv.positive, na.rm=TRUE)/sum(cleanHivDF0$n.participants.hiv.positive, cleanHivDF0$n.participants.hiv.negative, na.rm = TRUE)*100, 2), "% of participants were HIV positive" ))
+```
+
+# Risk of bias statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+table(cleanHivDF0$study.quality.summary)
+```
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanHivDF <-  cleanHivDF0 %>% 
+               filter(hiv.analysis.indicator != "none") %>% 
+               mutate("id" = row_number()) %>% 
+    ### Scale all prevalence estimates back to decimals 
+    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           study.rurality, 
+           WHO.region,
+           screening.tests,
+           participants.sputum.collected,
+           bacteriological.tb.definition,
+           study.start.year, 
+           study.end.year, 
+           publication.year,
+           study.quality.summary,
+           ends_with("hiv.positive"), ends_with("hiv.negative"), ends_with("hiv.total"),
+           hiv.analysis.indicator) %>%
+    
+    mutate("tempPrevHivPos" =  case_when(hiv.analysis.indicator == 
+                                           "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.hiv.positive, 
+                                       hiv.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.hiv.positive,
+                                       hiv.analysis.indicator == 
+                                           "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.hiv.positive, 
+                                       hiv.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.positive, 
+                                       hiv.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.hiv.positive/n.participants.hiv.positive, 
+                                       hiv.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.hiv.positive/n.participants.hiv.positive,
+                                       hiv.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.hiv.positive/n.participants.hiv.positive,
+                                        hiv.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.positive),
+           "tempPrevHivNeg" = case_when(hiv.analysis.indicator == 
+                                            "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.hiv.negative, 
+                                        hiv.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.hiv.negative,
+                                        hiv.analysis.indicator == 
+                                            "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.hiv.negative, 
+                                        hiv.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.negative, 
+                                       hiv.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.hiv.negative/n.participants.hiv.negative, 
+                                       hiv.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.hiv.negative/n.participants.hiv.negative,
+                                       hiv.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.hiv.negative/n.participants.hiv.negative,
+                                       hiv.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.negative)) %>%
+    pivot_longer(cols = c(tempPrevHivNeg,tempPrevHivPos), 
+                 names_to = "HIVStatus", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(hiv.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            HIVStatus == "HivPos" ~ (adj.prev100k.ci.upper.bacteriological.tb.hiv.positive-
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.hiv.positive)/3.92,
+                                        hiv.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            HIVStatus == "HivNeg" ~ (adj.prev100k.ci.upper.bacteriological.tb.hiv.negative-
+                                                                   adj.prev100k.ci.lower.bacteriological.tb.hiv.negative)/3.92,
+                                        hiv.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            HIVStatus == "HivPos" ~ (adj.prev100k.ci.upper.smear.positive.tb.hiv.positive-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.hiv.positive)/3.92,
+                                        hiv.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            HIVStatus == "HivNeg" ~ (adj.prev100k.ci.upper.smear.positive.tb.hiv.negative-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.hiv.negative)/3.92,
+                                        hiv.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            HIVStatus == "HivPos" ~ (prev100k.ci.upper.bacteriological.tb.hiv.positive-
+                                                                 prev100k.ci.lower.bacteriological.tb.hiv.positive)/3.92,
+                                        hiv.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            HIVStatus == "HivNeg" ~ (prev100k.ci.upper.bacteriological.tb.hiv.negative-
+                                                                   prev100k.ci.lower.bacteriological.tb.hiv.negative)/3.92,
+                                        hiv.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            HIVStatus == "HivPos" ~ (prev100k.ci.upper.smear.positive.tb.hiv.positive-
+                                                                 prev100k.ci.lower.smear.positive.tb.hiv.positive)/3.92,
+                                        hiv.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            HIVStatus == "HivNeg" ~ (prev100k.ci.upper.smear.positive.tb.hiv.negative-
+                                                                   prev100k.ci.lower.smear.positive.tb.hiv.negative)/3.92,
+                                        hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivPos" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.positive),
+                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivNeg" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.negative)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(hiv.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  HIVStatus == "HivPos" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.hiv.positive/
+                                                                           (1-adj.prev100k.ci.upper.bacteriological.tb.hiv.positive)) -
+                                                                       log(adj.prev100k.ci.lower.bacteriological.tb.hiv.positive/
+                                                                               (1-adj.prev100k.ci.lower.bacteriological.tb.hiv.positive))) /3.92,
+                                              hiv.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  HIVStatus == "HivNeg" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.hiv.negative/
+                                                                             (1-adj.prev100k.ci.upper.bacteriological.tb.hiv.negative)) -
+                                                                         log(adj.prev100k.ci.lower.bacteriological.tb.hiv.negative /
+                                                                                 (1-adj.prev100k.ci.lower.bacteriological.tb.hiv.negative))) /3.92,
+                                              hiv.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  HIVStatus == "HivPos" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.hiv.positive/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.hiv.positive)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.hiv.positive /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.hiv.positive)))/3.92,
+                                              hiv.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  HIVStatus == "HivNeg" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.hiv.negative/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.hiv.negative)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.hiv.negative /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.hiv.negative)))/3.92,
+                                              hiv.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 HIVStatus == "HivPos" ~ (log(prev100k.ci.upper.bacteriological.tb.hiv.positive/
+                                                                     (1-prev100k.ci.upper.bacteriological.tb.hiv.positive)) -
+                                                                 log(prev100k.ci.lower.bacteriological.tb.hiv.positive/
+                                                                     (1-prev100k.ci.lower.bacteriological.tb.hiv.positive))) /3.92,
+                                                 hiv.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 HIVStatus == "HivNeg" ~ (log(prev100k.ci.upper.bacteriological.tb.hiv.negative/
+                                                                        (1-prev100k.ci.upper.bacteriological.tb.hiv.negative)) -
+                                                                    log(prev100k.ci.lower.bacteriological.tb.hiv.negative /
+                                                                        (1-prev100k.ci.lower.bacteriological.tb.hiv.negative))) /3.92,
+                                                 hiv.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     HIVStatus == "HivPos" ~ (log(prev100k.ci.upper.smear.positive.tb.hiv.positive/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.hiv.positive)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.hiv.positive /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.hiv.positive)))/3.92,
+                                                 hiv.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     HIVStatus == "HivNeg" ~ (log(prev100k.ci.upper.smear.positive.tb.hiv.negative/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.hiv.negative)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.hiv.negative /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.hiv.negative)))/3.92, 
+                                            hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivPos" ~ 
+                                            log(1/(n.participants.hiv.positive*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivNeg" ~ 
+                                            log(1/(n.participants.hiv.negative*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(is.na(study.geography), 
+                                                       NA, 
+                                                       ifelse(study.geography == "Nationally representative", 
+                                                       "Yes", "No")),
+
+                                       year_z = ifelse(!is.na(study.end.year), 
+                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+                                                       (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       
+                                       symptomScreen = ifelse(is.na(screening.tests), 
+                                                                    NA, 
+                                                                    ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No")),
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected), 
+                                                                       NA, 
+                                                                       ifelse(!grepl("x-ray|all participants|unknown|other",
+                                                                        participants.sputum.collected,ignore.case=TRUE),
+                                                                 "Yes", "No")),
+                                       XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
+                                                                  NA, ifelse(!grepl("smear|micros|field|NTP", 
+                                                                              bacteriological.tb.definition,
+                                                                              ignore.case=TRUE), 
+                                                                  "Yes", 
+                                                                   "No")),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdj <- varianceAdjust("hiv")
+
+bactModelDF <- cleanHivDF %>%
+    select(id, WHO.region, study.country, study.rurality,
+           HIVStatus, year_z, 
+           natRep, bias, symptomScreen, symptomsRequired, 
+           XpertCultRequired, 
+           LogOdds, LogOddsStandardError, hiv.analysis.indicator, 
+           n.participants.hiv.positive, n.participants.hiv.negative, 
+           publication.year, study.end.year) %>%
+    pivot_wider(names_from = HIVStatus,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(logOR = LogOdds_HivPos - LogOdds_HivNeg,
+           unadj_logOR_se = sqrt(LogOddsStandardError_HivPos^2 + LogOddsStandardError_HivNeg^2), 
+           logOR_se = ifelse(grepl("adj", hiv.analysis.indicator), 
+                                     unadj_logOR_se,
+                                     ifelse(grepl("smear", hiv.analysis.indicator),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"])))) %>% filter(id !=4)
+
+```
+More descriptives 
+
+```{r}
+table(bactModelDF$WHO.region)
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=WHO.region)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=WHO.region)
+table(bactModelDF$natRep)
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=natRep)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=natRep)
+table(bactModelDF$bias)
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=bias)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=bias)
+table(bactModelDF$symptomScreen)
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=symptomScreen)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=symptomScreen)
+
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=symptomsRequired)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=symptomsRequired)
+
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=XpertCultRequired)
+bactModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=XpertCultRequired)
+
+bactModelDF %>% reframe(Participants = sum(n.participants.hiv.positive + n.participants.hiv.negative, na.rm=TRUE), .by=study.rurality)
+bactModelDF %>% mutate(n.participants.hiv.positive = ifelse(study.rurality == "Rural only", 
+                                                     n.participants.hiv.positive + 10407, 
+                                                    n.participants.hiv.positive), 
+                       n.participants.hiv.negative = ifelse(study.rurality == "Rural only", 
+                                                     n.participants.hiv.negative + 10443,
+                                                     n.participants.hiv.negative)) %>% 
+                       
+                                                reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=study.rurality)
+```
+
+# Model 1: Main effect model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|study.country) + (1|id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(mainEffectMod)
+plot(mainEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- bactModelDF %>%
+      select(study.country, LogOdds_HivNeg) %>%
+      mutate(logOR_se=1)
+
+mainEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1, 
+                                 allow_new_levels = TRUE) %>% 
+                    mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+mainEffectModEst %>% ungroup %>% mean_qi(hivRatio)
+
+### output for contribution table
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][1]))
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][3]))
+exp(as.numeric(summary(mainEffectMod)[["fixed"]][4]))
+```
+
+Survey-level effects
+
+```{r}
+surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=bactModelDF,
+                                 re_formula = ~ 1  + (1|study.country) + (1|id),
+                                 allow_new_levels = TRUE) %>%
+                    mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+surveyEffectModEst %>% mean_qi(hivRatio)
+
+# saveRDS(surveyEffectModEst, file="output/surveyModelEstimates.rds", version=2)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+### Get the empirical values 
+empirical_prev <- bactModelDF %>%
+    transmute(
+        id,
+        WHO.region = WHO.region,
+        year_z = year_z,
+        logOR_se,
+        natRep = natRep,
+        bias = bias,
+        symptomScreen = symptomScreen, 
+        p_hivneg_empirical = plogis(LogOdds_HivNeg),
+        p_hivpos_empirical = plogis(LogOdds_HivPos),
+        or_empirical = p_hivpos_empirical / p_hivneg_empirical,
+        or_empirical = (p_hivpos_empirical / (1 - p_hivpos_empirical)) / 
+            (p_hivneg_empirical / (1 - p_hivneg_empirical))  # odds ratio
+    ) %>% mutate(type = "Survey-specific ratios",
+                 type2 = "Survey-specific TB prevalence")
+    
+```
+
+Bring estimates from regional model together to make a forest plot for the manuscript.
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.width = 20, fig.height = 28}
+
+# Join survey labels
+names <- cleanHivDF0 %>%
+    mutate(id = row_number()) %>%
+    select(id, figure.id.yr)
+
+# Survey-level estimates
+survey_sum <- surveyEffectModEst %>%
+    group_by(id) %>%
+    mean_qi(hivRatio) %>%
+    mutate(grouping = "survey") %>%
+    left_join(names, by = "id") %>%
+    left_join(bactModelDF %>% select(id, WHO.region), by = "id")
+
+# Global summary
+global_sum <- mainEffectModEst %>%
+    ungroup() %>%
+    mean_qi(hivRatio) %>%
+    mutate(grouping = "Overall",  
+           figure.id.yr = "Overall")
+
+# Combine all
+forestDF <- bind_rows(survey_sum, global_sum)
+
+# Fill display label and facet group
+forestDF <- forestDF %>%
+    mutate(
+        display_label_raw = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
+        facet_group = case_when(
+            grouping == "survey" ~ WHO.region,
+            # grouping == "regional" ~ figure.id.yr,
+            grouping == "Overall" ~ "Overall"
+        ), 
+        type="Posterior mean and 95% credible interval"
+    )
+
+# Define facet order
+group_order <- c(
+    # "Africa region", 
+    # "Americas region",
+    # "Eastern Mediterranean region", 
+    # "South-East Asia region", 
+    # "Western Pacific region", 
+    "Overall"
+)
+
+# Separate surveys and summaries
+surveys_only <- forestDF %>%
+    filter(grouping == "survey") %>%
+    # group_by(facet_group) %>%
+    arrange(desc(hivRatio), .by_group = TRUE) %>%
+    ungroup()
+
+summaries_only <- forestDF %>%
+    filter(grouping != "survey")
+
+# Recombine with surveys first, then summaries (preserves facet-wise order)
+forestDF_plot <- bind_rows(surveys_only, summaries_only) %>%
+    # mutate(facet_group = factor(facet_group, levels = group_order)) %>%
+    mutate(display_label = case_when(
+        grouping == "Overall" ~ "Overall",
+        # grouping == "regional" ~ paste0("<b>", display_label_raw, "</b>"),
+        TRUE ~ display_label_raw
+    )) %>%
+    mutate(display_label = factor(display_label, levels = rev(unique(display_label))))
+
+# Prepare empirical data
+empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
+    rename(display_label_raw = figure.id.yr) %>%
+    select(display_label_raw, or_empirical) %>%
+    mutate(
+        grouping = "survey",
+        display_label = display_label_raw
+    ) %>%
+    mutate(
+           type = "Ratios calculated from reported prevalence")
+
+# Plot
+forestRatio <- ggplot(forestDF_plot) +
+    geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
+    geom_point(data = empirical_prev_labels,
+               aes(x = display_label, y = or_empirical, color=type), alpha=0.8, size=8) +
+    geom_pointinterval(aes(x = display_label, y = hivRatio, ymin = .lower, ymax = .upper, fill=type),
+                       size = 0.25) +
+    coord_flip() +
+    scale_color_manual(values = myPal[c(2,1)]) +
+    scale_y_log10(
+        breaks = c(0.25, 0.5, 1, 2, 4),
+        labels = c("0.25", "0.5", "1", "2", "4"),
+    ) +
+    # scale_x_discrete(labels = label_wrap(30)) + 
+    labs(
+        x = NULL,
+        y = "HIV positive-to-HIV negative ratio of bacteriologically-confirmed TB prevalence"
+    ) +
+    theme_minimal(base_size = 10) +
+    theme(
+        strip.text.y = element_blank(),
+        strip.background = element_blank(),
+        # panel.spacing.y = unit(1, "lines"),
+        # axis.text.y = ggtext::element_markdown(hjust = 1),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        legend.position = "bottom", legend.title=element_blank(),
+        legend.spacing.y = unit(-.25, 'cm'),
+        legend.box.margin=margin(-10,-10,-6,-10),
+        panel.spacing = unit(0.18, "cm"),
+        plot.margin = unit(c(.1, .7, 0, .1), "cm")
+    ) ; forestRatio
+
+# Save
+ggsave(plot = forestRatio, "output/hivFigure2.png", height = 12.5, width=8.5, units = "in")
+```
+
+# Model 3: Effect over time 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 + year_z | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd) +
+                           prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectMod)
+plot(timeEffectMod)
+```
+
+Prediction
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+ndTime <- bactModelDF %>%
+    select(logOR_se) %>%
+    crossing(year_z = seq(min(cleanHivDF$year_z, na.rm = TRUE), max(cleanHivDF$year_z, na.rm = TRUE), 1))
+
+timeEffectModEst <- add_epred_draws(object = timeEffectMod,
+                                 newdata=na.omit(ndTime),
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>%
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+```
+
+Main estimate
+```{r}
+timeEffectModEst %>%
+    group_by(year_z) %>%
+    mean_qi(hivRatio) %>%
+    mutate(Year = year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE))) %>%
+    select(Year, hivRatio, .lower, .upper)
+
+### output for contribution table
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
+exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
+
+bayes_R2(timeEffectMod)
+
+timeEffectModEst 
+
+```
+
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+    y <- timeEffectModEst  %>%
+    group_by(year_z) %>%
+    mean_qi(hivRatio) %>%
+    mutate(Year = year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE))) %>%
+    select(Year, hivRatio, .lower, .upper) 
+
+    ggplot(data = y) +
+    geom_lineribbon(.width = 0.95, alpha = 0.25, fill="mediumturquoise", aes(x = Year,
+               y = hivRatio, ymin = .lower, ymax = .upper)) +
+    geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = `Study standard error`),
+               colour = "black") +
+    expand_limits(y=0) +
+    labs(y = "HivPos-to-hivneg odds ratio",
+         x = "Year") +
+    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+#### Annual rate of change 
+minYr <- min(timeEffectModEst$year_z)
+maxYr <- max(timeEffectModEst$year_z)
+
+startYr <- timeEffectModEst %>% filter(year_z == minYr) %>% select(hivRatio) %>% ungroup()
+endYr <- timeEffectModEst %>% filter(year_z == maxYr) %>% select(hivRatio)%>% ungroup()
+         data.frame( hivRatio = ((endYr[,"hivRatio"] - startYr[,"hivRatio"])/startYr[,"hivRatio"])/length(minYr:maxYr)*100) %>%
+          mean_qi(hivRatio) 
+```
+# Sub group analysis
+
+## National surveys
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(natRep=="Yes"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+subNatEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(natRep=="No"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(natEffectMod)
+plot(natEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+ndNat <- bactModelDF %>%
+         filter(natRep == "Yes") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+natEffectModEst <- add_epred_draws(object = natEffectMod,
+                                 newdata=ndNat,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+ndSubnat <- bactModelDF %>%
+         filter(natRep == "No") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+subnatEffectModEst <- add_epred_draws(object = subNatEffectMod,
+                                 newdata=ndSubnat,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate - National surveys
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+natEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+Main estimate - subnational surveys
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+subnatEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+## Study quality (Low vs. not low)
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+lowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(bias == "Low"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+notLowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(bias == "Not low"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(lowBiasEffectMod)
+plot(lowBiasEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+ndLowBias <- bactModelDF %>%
+         filter(bias == "Low") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+ndNotLowBias <- bactModelDF %>%
+         filter(bias == "Not low") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+lowBiasEffectModEst <- add_epred_draws(object = lowBiasEffectMod,
+                                 newdata=ndLowBias,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+notLowBiasEffectModEst <- add_epred_draws(object = notLowBiasEffectMod,
+                                 newdata=ndNotLowBias,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate - low risk of bias
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+lowBiasEffectModEst %>% 
+    ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+Main estimate - not low risk of bias
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+notLowBiasEffectModEst %>% 
+    ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+
+## Symptom screen used vs. no symptom screen used
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+
+sympYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(symptomScreen == "Yes"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+sympNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(symptomScreen == "No"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(sympYesEffectMod)
+plot(sympYesEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+ndSympYes <- bactModelDF %>%
+         filter(symptomScreen == "Yes") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+ndSympNo <- bactModelDF %>%
+         filter(symptomScreen == "No") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+sympYesEffectModEst <- add_epred_draws(object = sympYesEffectMod,
+                                 newdata=ndSympYes,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+sympNoEffectModEst <- add_epred_draws(object = sympNoEffectMod,
+                                 newdata=ndSympNo,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate - used symptom screening
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+sympYesEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+Main estimate - did not use symptom screening
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+sympNoEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+## Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+xpCltReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(XpertCultRequired == "Yes"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + (1 | study.country) + (1 | id),
+                       data = bactModelDF %>% filter(XpertCultRequired == "No"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(xpCltReqYesEffectMod)
+plot(xpCltReqYesEffectMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+ndxpCltReqYes <- bactModelDF %>%
+         filter(XpertCultRequired == "Yes") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+ndxpCltReqNo <- bactModelDF %>%
+         filter(XpertCultRequired == "No") %>%
+         select(study.country, LogOdds_HivNeg) %>%
+         mutate(logOR_se=1)
+
+xpCltReqYesEffectModEst <- add_epred_draws(object = xpCltReqYesEffectMod,
+                                 newdata=ndxpCltReqYes,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+xpCltReqNoEffectModEst <-  add_epred_draws(object = xpCltReqNoEffectMod,
+                                 newdata=ndxpCltReqNo,
+                                 re_formula = NA) %>% 
+                           mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate - required xpert or culture
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+xpCltReqYesEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+Main estimate - did not require xpert or culture
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
+xpCltReqNoEffectModEst %>% ungroup() %>%
+    mean_qi(hivRatio) %>% 
+    select(hivRatio, .lower, .upper)
+```
+
+Country-level effects
+
+```{r}
+# ndCountry <- newBactModelDF %>%
+#              select(study.country, LogOdds_HivNeg, 
+#                     id, GDI,
+#                     alcohol.use.disorder,
+#                     type2.diabetes.mellitus, 
+#                     bmi, HIV.AIDS, smoking) %>%
+#              mutate(logOR_se=1, 
+#                     year_z = 10)
+# 
+# countryEffectModEst <- add_epred_draws(object = multiMod,
+#                                  newdata=ndCountry,
+#                                  re_formula = ~ 1  + (1|study.country), 
+#                                  allow_new_levels = TRUE) %>% 
+#                     mutate(hivRatio = exp(.epred),
+#                            type="Posterior mean and 95% credible interval") 
+# 
+# countryEffectModEst %>% group_by(study.country) %>% mean_qi(hivRatio) 
+# # write_csv(countryEffectModEst %>% group_by(study.country) %>% mean_qi(hivRatio), here("output/countryMFRatios.csv"))
+# countryEffectModEst %>% group_by(study.country) %>% mean_qi(hivRatio) %>% select(study.country, hivRatio) -> countryRatios
+# 
+# ### Setup a world map 
+# world_map <- map_data("world")
+# world_map <- subset(world_map, region != "Antarctica")
+# 
+# world <- map_data("world")
+# world <- world[world$region != "Antarctica", ]
+# 
+# countryMap <- left_join(countryRatios %>% rename(region=study.country), 
+#                          world) %>% rename(study.country = region)
+# library(geosphere) 
+# centroids <- world_map %>% 
+#     group_by(region) %>% 
+#     group_modify(~ data.frame(centroid(cbind(.x$long, .x$lat))))
+# 
+# nCountriesGeo <- left_join(countryMap, centroids %>% rename(study.country = region))
+# 
+# ggplot(countryMap) +
+#     geom_map(
+#         dat = world_map, map = world_map, aes(map_id = region),
+#         fill = "lightgrey", color = "black", size = 0.25) +
+#     geom_map(dat = countryMap, map = world_map, aes(map_id = study.country, fill = hivRatio), color="black") +
+#     scale_fill_gradient(low = "pink", high = "darkred", 
+#                         name = "HivPos-to-hivneg ratio") +
+#     expand_limits(x = world_map$long, y = world_map$lat) + 
+#     theme_void() + theme(legend.position = "inside",
+#                             legend.position.inside = c(.15,.2))
+# 
+
+```
+
+# Smear positive analysis 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+cleanHivSmrDF0 <- smrPosIndicator("hiv") %>% filter(hiv.smr.analysis.indicator !="none")
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanHivSmrDF <- cleanHivSmrDF0 %>% 
+                 filter(hiv.smr.analysis.indicator != "none") %>% 
+                 mutate("id" = row_number()) %>%
+                 ### Scale all prevalence estimates back to decimals 
+                 mutate_at(vars(matches('prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>% 
+                 select(id,
+                       covidence.id, 
+                       figure.id.yr, 
+                       study.geography, 
+                       title.extracted,
+                       study.country,
+                       WHO.region,
+                       study.start.year, 
+                       study.end.year, 
+                       ends_with("hiv.positive"), ends_with("hiv.negative"), ends_with("hiv.total"),
+                       hiv.smr.analysis.indicator) %>%
+    
+    mutate("tempPrevHivPos" =  case_when(hiv.smr.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.hiv.positive,
+                                       hiv.smr.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.positive, 
+                                       hiv.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.hiv.positive/n.participants.hiv.positive,
+                                        hiv.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.positive),
+           "tempPrevHivNeg" = case_when(hiv.smr.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.hiv.negative,
+                                        hiv.smr.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.negative, 
+                                       hiv.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.hiv.negative/n.participants.hiv.negative,
+                                       hiv.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.hiv.negative)) %>%
+    pivot_longer(cols = c(tempPrevHivNeg,tempPrevHivPos), 
+                 names_to = "Sex", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(hiv.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "HivPos" ~ (adj.prev100k.ci.upper.smear.positive.tb.hiv.positive-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.hiv.positive)/3.92,
+                                        hiv.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "HivNeg" ~ (adj.prev100k.ci.upper.smear.positive.tb.hiv.negative-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.hiv.negative)/3.92,
+                                       
+                                        hiv.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "HivPos" ~ (prev100k.ci.upper.smear.positive.tb.hiv.positive-
+                                                                 prev100k.ci.lower.smear.positive.tb.hiv.positive)/3.92,
+                                        hiv.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "HivNeg" ~ (prev100k.ci.upper.smear.positive.tb.hiv.negative-
+                                                                   prev100k.ci.lower.smear.positive.tb.hiv.negative)/3.92,
+                                        hiv.smr.analysis.indicator %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "HivPos" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.positive),
+                                        hiv.smr.analysis.indicator  %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "HivNeg" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.negative)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           "LogOddsStandardError" = case_when(hiv.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "HivPos" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.hiv.positive/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.hiv.positive)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.hiv.positive /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.hiv.positive)))/3.92,
+                                              hiv.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "HivNeg" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.hiv.negative/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.hiv.negative)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.hiv.negative /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.hiv.negative)))/3.92,
+                                                 hiv.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "HivPos" ~ (log(prev100k.ci.upper.smear.positive.tb.hiv.positive/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.hiv.positive)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.hiv.positive /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.hiv.positive)))/3.92,
+                                                 hiv.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "HivNeg" ~ (log(prev100k.ci.upper.smear.positive.tb.hiv.negative/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.hiv.negative)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.hiv.negative /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.hiv.negative)))/3.92, 
+                                            hiv.smr.analysis.indicator %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "HivPos" ~ 
+                                            log(1/(n.participants.hiv.positive*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        hiv.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "HivNeg" ~ 
+                                            log(1/(n.participants.hiv.negative*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
+                                       # year_z = ifelse(!is.na(study.end.year), 
+                                       #                 study.end.year - round(mean(study.end.year, na.rm=TRUE))
+                                       #                 (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
+
+smrModelDF <- cleanHivSmrDF %>%
+    select(id, WHO.region, study.country, Sex, natRep, LogOdds, LogOddsStandardError, 
+           n.participants.hiv.positive, n.participants.hiv.negative) %>%
+    pivot_wider(names_from = Sex,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(
+        logOR = LogOdds_HivPos - LogOdds_HivNeg,
+        logOR_se = sqrt(LogOddsStandardError_HivPos^2 + LogOddsStandardError_HivNeg^2) 
+    ) 
+```
+
+# Smear positive descriptive statistics
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
+
+print(paste(dim(cleanHivSmrDF0)[1], "unique surveys with sex-stratified smear positive TB"))
+
+# sort(unique(cleanHivDF0$title.extracted))
+print(paste(length(unique(cleanHivSmrDF0$title.extracted))-1, "unique publications"))
+
+print(paste(sum(!is.na(cleanHivSmrDF0$n.participants.hiv.negative)), "studies report participant numbers totaling", 
+            sum(cleanHivSmrDF0$n.participants.hiv.negative, cleanHivSmrDF0$n.participants.hiv.positive, na.rm = TRUE), "participants"))
+
+print(paste0(round(sum(cleanHivSmrDF0$n.participants.hiv.positive, na.rm=TRUE)/sum(cleanHivSmrDF0$n.participants.hiv.negative, cleanHivSmrDF0$n.participants.hiv.positive, na.rm = TRUE)*100, 2), "% of participants were hivpos" ))
+```
+More descriptives 
+
+```{r}
+table(smrModelDF$WHO.region)
+smrModelDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=WHO.region)
+smrModelDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=WHO.region)
+```
+
+# Model X: Smear positive main effect 
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1 | study.country) + (1|id),
+                       data = smrModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           # prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(mainEffectSmrMod)
+plot(mainEffectSmrMod)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+nd <- smrModelDF %>%
+      select(study.country, LogOdds_HivNeg) %>%
+      mutate(logOR_se=1)
+
+
+mainEffectSmrModEst <- add_epred_draws(object = mainEffectSmrMod,
+                                 newdata=nd,
+                                 re_formula = ~ 1) %>% 
+                    mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r}
+mainEffectSmrModEst %>% ungroup %>% mean_qi(hivRatio)
+```
+
+Survey specific estimate
+```{r}
+surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=bactModelDF,
+                                 re_formula = ~ 1  + (1|study.country) + (1|id),
+                                 allow_new_levels = TRUE) %>%
+                    mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+surveyEffectModEst %>% mean_qi(hivRatio) %>% 
+    select(id, study.country, hivRatio, .lower, .upper)
+```
