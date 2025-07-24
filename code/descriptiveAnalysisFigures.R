@@ -16,6 +16,11 @@
 ### 
 ### source(here("code/descriptiveAnalysisFigures.R"))
 ### descriptPlots(cleanDF0 = cleanDF0, fileSuffix = "RuralitySurveys")
+
+# source(here("code/bacterialPositiveIndicator.R"))
+# cleanDF0 <- bactPostIndicator("hiv") %>% filter(hiv.analysis.indicator !="none")
+### source(here("code/descriptiveAnalysisFigures.R"))
+# descriptPlots(cleanDF0 = cleanDF0, fileSuffix = "HIVSurveys")
 ##############################################################################|
 
 descriptPlots <- function(cleanDF0,
@@ -220,35 +225,7 @@ print(
                   aes(x=study.country, y=total.studies, label = n), hjust = 1.5, color = "white") + 
         labs(x = "Survey country", y="Number of prevalence surveys") 
 )
-### Also make a bar plot colored by WHO Region
-print(
-ggplot(nCountry) + 
-    geom_col(aes(x=study.country, y=n, fill = World.regions.according.to.WHO), color = "black") + 
-    theme_minimal() +
-    coord_flip() + theme(legend.position = "inside",
-                         legend.position.inside = c(.85,.15), 
-                         legend.background = element_rect(color = "white"),
-                         panel.grid.minor = element_blank(),
-                         panel.grid.major = element_blank()) +
-    geom_text(aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
-    scale_fill_manual(values=myPal, name = "WHO Region") + 
-    labs(x = "Survey country", y="Number of prevalence surveys") + 
-    ggtitle("Number of prevalence surveys by country")
-)
-##### WHO REGION
-nRegion <- cleanDF %>% 
-           count(World.regions.according.to.WHO)
-print(
-ggplot(nRegion) + 
-    geom_col(aes(x=World.regions.according.to.WHO, y=n), color = "black") + 
-    theme_minimal() +
-    coord_flip() + theme(legend.position="bottom",
-                         panel.grid.minor = element_blank(),
-                         panel.grid.major = element_blank()) +
-    geom_text(aes(x=World.regions.according.to.WHO, y=n, label = n), hjust = 2, color ="white") + 
-    labs(x = "Survey region", y="Number of prevalence surveys") + 
-    ggtitle("Number of prevalence surveys by World Bank region")
-)
+
 ##### PLOTS BY PREVALENCE STRATIFICATIONS #####################################
 # reportStrats0 <- cleanDF %>% select("covidence.id", "study.country", 
 #                                    colnames(cleanDF)[grep("report", colnames(cleanDF))])
@@ -430,41 +407,7 @@ cleanDF %>%
     geom_text(aes(label = after_stat(count)), stat = "count", hjust = 1.5, colour = "white") +
     ggtitle("Combination of TB diagnostic methods")
 )
-##### BY TIME AND REGION ####################################################
-timeRegion <- cleanDF %>% 
-              select(study.start.year, World.regions.according.to.WHO, study.country) %>% 
-              group_by(study.start.year) %>% 
-              count(World.regions.according.to.WHO)
 
-print(
-ggplot(timeRegion, aes(x=study.start.year)) + 
-    geom_point(aes(y=World.regions.according.to.WHO, color=World.regions.according.to.WHO, size = n)) + 
-    theme_minimal() + 
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          legend.title = element_blank()) +
-    ggtitle("Survey start years by World Bank region") + 
-    labs(y="", x="") + 
-    guides(color = guide_legend(nrow = 2))
-)
-
-timeRegion <- cleanDF %>% 
-    group_by(publication.year) %>% 
-    count(World.regions.according.to.WHO) 
-
-print(
-ggplot(timeRegion, aes(x=publication.year)) + 
-    geom_point(aes(y=World.regions.according.to.WHO, color=World.regions.according.to.WHO, size = n)) + 
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_blank(),
-          legend.title = element_blank()) +
-    labs(y="", x="") + 
-    ggtitle("Study publication years by World Bank region") + 
-    guides(color = guide_legend(nrow = 2))
-)
 ##### PARTICIPANT RATIOS ####################################################
 ##### Male to female ratio of participants ##### 
 print(
