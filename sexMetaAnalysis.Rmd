@@ -44,6 +44,8 @@ source(here("code/varianceComponentModel.R"))
 
 
 cleanSexDF0 <- bactPostIndicator("sex") %>% filter(sex.analysis.indicator !="none")
+### Calculate mean publication lag 
+meanLag <- round(mean(cleanSexDF0$publication.year - cleanSexDF0$study.end.year, na.rm=TRUE))
 ```
 
 # Descriptive statistics
@@ -214,8 +216,9 @@ cleanSexDF <-  cleanSexDF0 %>%
                                                        ifelse(study.geography == "Nationally representative", 
                                                        "Yes", "No")),
 
-                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
-                                       
+                                       year_z = ifelse(!is.na(study.end.year), 
+                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+                                                       (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
                                        bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
                                        
                                        symptomScreen = ifelse(is.na(screening.tests), 
@@ -657,7 +660,7 @@ timeEffectModEst
     select(Year, mfRatio, .lower, .upper) 
 
     ggplot(data = y) +
-    geom_lineribbon(.width = 0.95, alpha = 0.25, fill="violet", aes(x = Year,
+    geom_lineribbon(.width = 0.95, alpha = 0.25, fill="chocolate4", aes(x = Year,
                y = mfRatio, ymin = .lower, ymax = .upper)) +
     geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
                aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = `Study standard error`),
@@ -665,7 +668,8 @@ timeEffectModEst
     expand_limits(y=0) +
     labs(y = "Male-to-female odds ratio",
          x = "Year") +
-    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
+    theme_minimal(base_size = 30)  + theme(legend.position = "bottom") +  
+    scale_size_continuous(range = c(3,11))
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
@@ -794,7 +798,8 @@ data.frame(WHO.region = startYr$WHO.region,
          color = "WHO region") +
     scale_color_manual("", values = wes_palette("Cavalcanti1")) +
     scale_fill_manual("", values = wes_palette("Cavalcanti1")) +
-    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
+    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")  +  
+    scale_size_continuous(range = c(3,11))
 ```
 
 # Sub group analysis
@@ -1611,7 +1616,7 @@ Setup and read in external data sources
 ##############################################################################|
 
 covariates <- read.csv(file=here("data/covariates_1990-2021.csv")) %>% 
-    rename(study.country = location_name) %>%
+    dplyr::rename(study.country = location_name) %>%
     filter(
            sex_name != "Both", 
            metric_name == "Rate") %>% 
@@ -1684,19 +1689,32 @@ GDI <- read_csv(here("data/GenderDevelopmentIndex.csv"))[,1:2] %>%
     rename(study.country = Country)
 ### Rename several countries 
 GDI[which(GDI$study.country == "Eswatini (Kingdom of)"), "study.country"] <- "Eswatini"
-    
+GDI[which(GDI$study.country == "Tanzania (United Republic of)"), "study.country"] <- "Tanzania"
+
 ### Covariates updated 
 covariates <- full_join(covariates, smoking.prevalence)
 covariates <- full_join(covariates, bmi)
+covariates[which(covariates$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
+
 covariates <- full_join(covariates, GDI)
     
 ### Rename several countries 
 covariates[which(covariates$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
-covariates[which(covariates$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
 covariates[which(covariates$study.country == "Lao People's Democratic Republic"), "study.country"] <- "Laos"
 covariates[which(covariates$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
 newBactModelDF <- left_join(bactModelDF, covariates)
+
+### manually adjust some rows that have missing data 
+newBactModelDF[which(newBactModelDF$id == 21), 23:33] <- newBactModelDF[which(newBactModelDF$id == 20), 23:33]
+
+newBactModelDF[which(newBactModelDF$id == 58), 23:33] <- newBactModelDF[which(newBactModelDF$id == 57), 23:33]
+
+newBactModelDF[which(newBactModelDF$id == 51), 23:33] <- newBactModelDF[which(newBactModelDF$id == 34), 23:33]
+
+newBactModelDF[which(newBactModelDF$id == 97), 23:33] <- newBactModelDF[which(newBactModelDF$id == 98), 23:33]
+
+newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- (covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]
 ```
 
 Model specification (TB incidence univariate)
@@ -1786,7 +1804,7 @@ Model specification diabetes
 
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
-                                  1 +  diabetes.mellitus +
+                                  1 +  type2.diabetes.mellitus +
                                   (1 | study.country) + (1 | id),
                               data = newBactModelDF,
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -1903,9 +1921,8 @@ Model specification (multivariate)
 
 multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
-                          alcohol.use.disorder + diabetes.mellitus + 
-                          bmi + HIV.AIDS + 
-                          TB.incidence + smoking + 
+                          alcohol.use.disorder + type2.diabetes.mellitus + 
+                          bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
                       data = newBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -1946,7 +1963,7 @@ stanplot(multiMod)
 regCoVList <- list()
 model.regions <- unique(na.omit(bactModelDF$WHO.region))[c(-1,-5)]
 
-for (i in 2:length(model.regions)){
+for (i in 1:length(model.regions)){
     region <- model.regions[i]
     print(region)
     
@@ -1961,18 +1978,18 @@ for (i in 2:length(model.regions)){
                        cores = 4,
                        iter = 4000)
     
-    regionTBIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                                1 + TB.incidence + 
-                                (1 | study.country) + (1 | id),
-                       data = newBactModelDF %>% filter(WHO.region == region),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
+    # regionTBIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+    #                             1 + TB.incidence + 
+    #                             (1 | study.country) + (1 | id),
+    #                    data = newBactModelDF %>% filter(WHO.region == region),
+    #                    prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+    #                        prior(normal(0, 10), class = b) +
+    #                        prior(exponential(2), class = sd),
+    #                    family = gaussian(),
+    #                    control = list(adapt_delta = 0.99),
+    #                    chains = 4,
+    #                    cores = 4,
+    #                    iter = 4000)
     
     regionHivMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                             1 + HIV.AIDS + 
@@ -2072,7 +2089,6 @@ for (i in 2:length(model.regions)){
                                   rownames(summary(regionDiabetesMod)[["fixed"]])[2],
                                   rownames(summary(regionHivMod)[["fixed"]])[2], 
                                   rownames(summary(regionSmokingMod)[["fixed"]])[2],
-                                  rownames(summary(regionTBIncMod)[["fixed"]])[2],
                                   rownames(summary(regionBMIMod)[["fixed"]])[2]), 
                       
                     PE = c(round(exp(as.numeric(summary(regionMainMod)[["fixed"]][1,1])),4), 
@@ -2082,7 +2098,7 @@ for (i in 2:length(model.regions)){
                            round(exp(as.numeric(summary(regionDiabetesMod)[["fixed"]][2,1])),4),
                            round(exp(as.numeric(summary(regionHivMod)[["fixed"]][1,1])),4), 
                            round(exp(as.numeric(summary(regionSmokingMod)[["fixed"]][2,1])),4), 
-                           round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,1])),4),
+                           # round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,1])),4),
                            round(exp(as.numeric(summary(regionBMIMod)[["fixed"]][2,1])),4)), 
                     
                     CrI = c(paste(round(exp(as.numeric(summary(regionMainMod)[["fixed"]][1,3])),4), ",",
@@ -2106,8 +2122,8 @@ for (i in 2:length(model.regions)){
                         paste(round(exp(as.numeric(summary(regionSmokingMod)[["fixed"]][2,3])),4), ",",
                                     round(exp(as.numeric(summary(regionSmokingMod)[["fixed"]][2,4])),4)), 
                         
-                        paste(round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,3])),4), ",",
-                                round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,4])),4)),
+                        # paste(round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,3])),4), ",",
+                        #         round(exp(as.numeric(summary(regionTBIncMod)[["fixed"]][2,4])),4)),
                     
                         paste(round(exp(as.numeric(summary(regionBMIMod)[["fixed"]][2,3])),4), ",",
                               round(exp(as.numeric(summary(regionBMIMod)[["fixed"]][2,4])),4))))
@@ -2132,7 +2148,7 @@ regCoVList[["Western Pacific region"]]
 ```
 
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
 regMultiList <- list()
 
 for (i in 1:length(model.regions)){
@@ -2143,7 +2159,7 @@ for (i in 1:length(model.regions)){
                                 1 + year_z + GDI +
                                 alcohol.use.disorder + diabetes.mellitus + 
                                 bmi + HIV.AIDS + 
-                                TB.incidence + smoking + 
+                                smoking + 
                                   (1 | study.country) + (1 | id),
                        data = newBactModelDF %>% filter(WHO.region == region),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -2203,6 +2219,7 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                        WHO.region,
                        study.start.year, 
                        study.end.year, 
+                       publication.year,
                        ends_with("male"), ends_with("sex"),
                        sex.smr.analysis.indicator) %>%
     
@@ -2271,7 +2288,11 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                                         sex.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
                                             log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
                                 mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
-                                       year_z = study.start.year - round(mean(study.start.year, na.rm=TRUE)),
+                                       year_z = ifelse(is.na(study.end.year), 
+                                                       (publication.year - meanLag) - 
+                                                           round(mean((publication.year - meanLag), na.rm=TRUE)),
+                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE))
+                                                       ),
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
 
 smrModelDF <- cleanSexSmrDF %>%
