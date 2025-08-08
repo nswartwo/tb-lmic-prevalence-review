@@ -51,43 +51,20 @@ cleanHivDF0 <- bactPostIndicator("hiv") %>%
                                                       ifelse(covidence.id == 26911, 
                                                              "n.prevalent.tb", 
                                                              hiv.analysis.indicator))) %>% 
-               filter(hiv.analysis.indicator !="none")
-
+               filter(hiv.analysis.indicator !="none",
+##### Remove duplicate survey 
+                      covidence.id != 26886)
 ### Calculate mean publication lag 
 meanLag <- round(mean(cleanHivDF0$publication.year - cleanHivDF0$study.end.year, na.rm=TRUE))
 ```
 
-# Descriptive statistics
-
-```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
-
-print(paste(dim(cleanHivDF0)[1], "unique surveys with HIV-stratified bacteriological positive TB"))
-
-print(paste(length(unique(cleanHivDF0$title.extracted))-1, "unique publications"))
-
-print(paste(sum(!is.na(cleanHivDF0$n.participants.hiv.negative)), "studies report participant numbers totaling", 
-            sum(cleanHivDF0$n.participants.hiv.negative, cleanHivDF0$n.participants.hiv.positive, na.rm = TRUE), "participants"))
-
-print(paste0(round(sum(cleanHivDF0$n.participants.hiv.positive, na.rm=TRUE)/sum(cleanHivDF0$n.participants.hiv.positive, cleanHivDF0$n.participants.hiv.negative, na.rm = TRUE)*100, 2), "% of participants were HIV positive" ))
-
-
-```
-
-# Risk of bias statistics
-
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-table(cleanHivDF0$study.quality.summary)
-```
-
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
-
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
 cleanHivDF <-  cleanHivDF0 %>% 
-               filter(hiv.analysis.indicator != "none") %>% 
                mutate("id" = row_number()) %>% 
     ### Scale all prevalence estimates back to decimals 
-    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>%
+    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.|prev100k.prevalent.tb.|prev100k.ci.([a-z]{3})er.prevalent.tb.')),  ~ (. / 1e5)) %>%
     select(id,
            covidence.id, 
            figure.id.yr, 
@@ -177,10 +154,16 @@ cleanHivDF <-  cleanHivDF0 %>%
                                         hiv.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
                                             HIVStatus == "HivNeg" ~ (prev100k.ci.upper.smear.positive.tb.hiv.negative-
                                                                    prev100k.ci.lower.smear.positive.tb.hiv.negative)/3.92,
-                                        hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                        hiv.analysis.indicator == "prev100k.ci.prevalent.tb" & 
+                                            HIVStatus == "HivPos" ~ (prev100k.ci.upper.prevalent.tb.hiv.positive-
+                                                                 prev100k.ci.lower.prevalent.tb.hiv.positive)/3.92,
+                                        hiv.analysis.indicator == "prev100k.ci.prevalent.tb" & 
+                                            HIVStatus == "HivNeg" ~ (prev100k.ci.upper.prevalent.tb.hiv.negative-
+                                                                   prev100k.ci.lower.prevalent.tb.hiv.negative)/3.92,
+                                        hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb",
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivPos" ~ 
                                             sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.positive),
-                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb",
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivNeg" ~ 
                                             sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.hiv.negative)),
   
@@ -226,10 +209,20 @@ cleanHivDF <-  cleanHivDF0 %>%
                                                                             (1-prev100k.ci.upper.smear.positive.tb.hiv.negative)) -
                                                                         log(prev100k.ci.lower.smear.positive.tb.hiv.negative /
                                                                             (1-prev100k.ci.lower.smear.positive.tb.hiv.negative)))/3.92, 
-                                            hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                hiv.analysis.indicator == "prev100k.ci.prevalent.tb" &
+                                                     HIVStatus == "HivPos" ~ (log(prev100k.ci.upper.prevalent.tb.hiv.positive/
+                                                                          (1-prev100k.ci.upper.prevalent.tb.hiv.positive)) -
+                                                                      log(prev100k.ci.lower.prevalent.tb.hiv.positive /
+                                                                          (1-prev100k.ci.lower.prevalent.tb.hiv.positive)))/3.92,
+                                                 hiv.analysis.indicator == "prev100k.ci.prevalent.tb" &
+                                                     HIVStatus == "HivNeg" ~ (log(prev100k.ci.upper.prevalent.tb.hiv.negative/
+                                                                            (1-prev100k.ci.upper.prevalent.tb.hiv.negative)) -
+                                                                        log(prev100k.ci.lower.prevalent.tb.hiv.negative /
+                                                                            (1-prev100k.ci.lower.prevalent.tb.hiv.negative)))/3.92, 
+                                            hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivPos" ~ 
                                             log(1/(n.participants.hiv.positive*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
-                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                        hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivNeg" ~ 
                                             log(1/(n.participants.hiv.negative*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
                                 mutate(natRep = ifelse(is.na(study.geography), 
@@ -270,7 +263,7 @@ bactModelHivDF <- cleanHivDF %>%
     select(covidence.id, id, WHO.region, study.country, study.rurality,
            HIVStatus, year_z, hiv.status.definition, study.quality.summary,
            natRep, bias, symptomScreen, symptomsRequired, 
-           XpertCultRequired, 
+           XpertCultRequired, #`Adjusted Prevalence`, `Standard Error`,
            LogOdds, LogOddsStandardError, hiv.analysis.indicator, 
            n.participants.female, n.participants.male, 
            n.participants.hiv.positive, n.participants.hiv.negative, 
@@ -285,77 +278,51 @@ bactModelHivDF <- cleanHivDF %>%
                                      unadj_logOR_se,
                                      ifelse(grepl("smear", hiv.analysis.indicator),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
-                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"])))) %>% filter(id !=4, hiv.status.definition == "HIV test")
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"])))) %>% filter(hiv.status.definition == "HIV test")
 
 ```
-More descriptives 
 
-```{r}
-table(bactModelHivDF$WHO.region)
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=WHO.region)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=WHO.region)
-table(bactModelHivDF$natRep)
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=natRep)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=natRep)
-table(bactModelHivDF$bias)
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=bias)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=bias)
-table(bactModelHivDF$symptomScreen)
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=symptomScreen)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=symptomScreen)
-
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=symptomsRequired)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=symptomsRequired)
-
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE), .by=XpertCultRequired)
-bactModelHivDF %>% reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=XpertCultRequired)
-
-bactModelHivDF %>% reframe(Participants = sum(n.participants.hiv.positive + n.participants.hiv.negative, na.rm=TRUE), .by=study.rurality)
-bactModelHivDF %>% mutate(n.participants.hiv.positive = ifelse(study.rurality == "Rural only", 
-                                                     n.participants.hiv.positive + 10407, 
-                                                    n.participants.hiv.positive), 
-                       n.participants.hiv.negative = ifelse(study.rurality == "Rural only", 
-                                                     n.participants.hiv.negative + 10443,
-                                                     n.participants.hiv.negative)) %>% 
-                       
-                                                reframe(PercHivPos = sum(n.participants.hiv.positive, na.rm=TRUE)/sum(n.participants.hiv.negative + n.participants.hiv.positive, na.rm=TRUE)*100, .by=study.rurality)
-
-#### how many people have hiv results 
-# bactModelHivDF %>% summarise(percSex = (n.participants.hiv.negative + n.participants.hiv.positive) / (n.participants.male + n.participants.female), 
-#                           perAge = (n.participants.hiv.negative + n.participants.hiv.positive) / 
-#                                    sum(n.participants.age.grp.0, n.participants.age.grp.1, n.participants.age.grp.2, 
-#                                        n.participants.age.grp.3, n.participants.age.grp.4, n.participants.age.grp.5, 
-#                                        n.participants.age.grp.6, n.participants.age.grp.7, na.rm = T))
-```
-
-### Figure of countries 
+### Figure of countries used in quantitative analysis 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
 library(geosphere)
 library(maps)
 nCountry <- bactModelHivDF %>% 
-            count(study.country) 
+            count(study.country) %>% 
+            mutate(n=as.factor(n))
 
-world_map <- map_data("world")
-world_map <- subset(world_map, region != "Antarctica")
+world_map <- map_data("world", region = c("Morocco", "Algeria", "Tunisia", "Libya",
+             "Egypt", "Mauritania", "Mali", "Burkina Faso",
+             "Niger", "Chad", "Sudan", "Ethiopia", "Eritrea",
+             "Djibouti", "South Sudan", "Somalia", "Senegal",
+             "Cape Verde", "Gambia", "Guinea", "Guinea-Bissau",
+             "Liberia", "Sierra Leone", "Ivory Coast", "Ghana",
+             "Togo", "Benin", "Nigeria", "Cameroon", 
+             "Central African Republic", "Gabon", "Equatorial Guinea",
+             "Sao Tome and Principe", "Uganda", "Republic of Congo", 
+             "Democratic Republic of the Congo", "Rwanda", "Burundi",
+             "Kenya", "Tanzania", "Angola", "Mozambique", "Malawi", 
+             "Mauritius", "Seychelles", "Comoros", 
+             "Botswana", "Zimbabwe", "Zambia", "Namibia", "Swaziland", 
+             "South Africa", "Lesotho", "Western Sahara"))
 
-centroids <- world_map %>% 
-    group_by(region) %>% 
-    group_modify(~ data.frame(centroid(cbind(.x$long, .x$lat))))
+nCountryMap <- left_join(world_map, nCountry %>% rename(region=study.country), by="region")
 
-nCountriesGeo <- left_join(nCountry, centroids %>% rename(study.country = region))
-
-ggplot(nCountry) +
-    geom_map(
-        dat = world_map, map = world_map, aes(map_id = region),
-        fill = "lightgrey", color = "black", size = 0.25) +
-    geom_map(map = world_map, aes(map_id = study.country, fill = n), color="black", label=n) +
-    scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
-                        name = "Number of\nprevalence surveys") +
-    with(nCountriesGeo, annotate(geom="label", x = lon, y=lat, label = n, size = 3)) +
-    expand_limits(x = world_map$long, y = world_map$lat) + 
+ggplot(nCountryMap, aes(x=long, y=lat)) +
+          geom_polygon(aes(group = region, subgroup = group), 
+                       fill="lightgrey")  +
+      geom_polygon(aes(group = region, subgroup = group, 
+                       fill = n), colour = "white")  +
+  coord_map(projection = "mercator",
+            xlim = c(-26,64), ylim = c(-35,38)) +
+    # # scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
+    # #                     name = "Number of\nprevalence surveys") +
+    scale_fill_manual(values= c("lightblue", "dodgerblue4"), 
+                      name = "Number of\nprevalence surveys",
+                      na.translate = FALSE) +
     theme_void() + theme(legend.position = "inside",
-                            legend.position.inside = c(.47,.3)) 
+                            legend.position.inside = c(.3,.4))
+
 
 ggsave(here("output/hivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
 
@@ -402,11 +369,6 @@ mainEffectModEst <- add_epred_draws(object = mainEffectMod,
 Main estimate
 ```{r}
 mainEffectModEst %>% ungroup %>% mean_qi(hivRatio)
-
-### output for contribution table
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][1]))
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][3]))
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][4]))
 ```
 
 Survey-level effects
@@ -420,8 +382,6 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                            type="Posterior mean and 95% credible interval")
 
 surveyEffectModEst %>% mean_qi(hivRatio)
-
-# saveRDS(surveyEffectModEst, file="output/surveyModelEstimates.rds", version=2)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
@@ -445,14 +405,30 @@ empirical_prev <- bactModelHivDF %>%
     
 ```
 
-Bring estimates from regional model together to make a forest plot for the manuscript.
+Bring estimates from study model together to make a forest plot for the manuscript.
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.width = 20, fig.height = 28}
 
 # Join survey labels
 names <- cleanHivDF0 %>%
     mutate(id = row_number()) %>%
-    select(id, figure.id.yr)
+    select(id, figure.id.yr) %>%
+    mutate(figure.id.yr = recode(figure.id.yr, 
+                   "South Africa (Western Cape Province, c) 2005" = 
+                   "South Africa\n(Western Cape Province) 2005",
+                   "South Africa (Western Cape Province) 2008" = 
+                   "South Africa\n(Western Cape Province) 2008", 
+                   "Malawi (Blantyre) 2019-2020"=
+                   "Malawi\n(Blantyre) 2019-2020", 
+                   "Zimbabwe (Harare) 2005-2006" =
+                   "Zimbabwe\n(Harare) 2005-2006", 
+                   "Lesotho (National) 2019" =
+                    "Lesotho\n(National) 2019", 
+                   "Zambia (Lusaka Province) 2005"=
+                       "Zambia\n(Lusaka Province) 2005", 
+                   "Zambia (National)  2013-2014"=
+                       "Zambia\n(National)  2013-2014"
+                   ))
 
 # Survey-level estimates
 survey_sum <- surveyEffectModEst %>%
@@ -528,22 +504,23 @@ empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
 # Plot
 forestRatio <- ggplot(forestDF_plot) +
     geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
-    geom_point(data = empirical_prev_labels,
-               aes(x = display_label, y = or_empirical, color=type), alpha=0.8, size=8) +
+        geom_point(data = empirical_prev_labels,
+           aes(x = display_label, y = or_empirical, color=type), alpha=0.8, size=8) +
     geom_pointinterval(aes(x = display_label, y = hivRatio, ymin = .lower, ymax = .upper, fill=type),
-                       size = 8) +
+                       size = 15) +
     coord_flip() +
     scale_color_manual(values = myPal[c(2,1)]) +
     scale_y_log10(
-        breaks = c(0.25, 0.5, 1, 2, 4),
-        labels = c("0.25", "0.5", "1", "2", "4"),
+        breaks = c(0.25, 0.5, 1, 2, 4, 8, 16),
+        labels = c("0.25", "0.5", "1", "2", "4", "8", "16"),
     ) +
     # scale_x_discrete(labels = label_wrap(30)) + 
     labs(
         x = NULL,
-        y = "HIV positive-to-HIV negative ratio of bacteriologically-confirmed TB prevalence"
+        y = "HIV positive-to-HIV negative ratio\nof bacteriologically-confirmed TB prevalence"
     ) +
-    theme_minimal(base_size = 15) +
+    theme_minimal(base_size = 18) +
+    expand_limits(y=c(0,16)) +
     theme(
         strip.text.y = element_blank(),
         strip.background = element_blank(),
@@ -560,414 +537,41 @@ forestRatio <- ggplot(forestDF_plot) +
     ) ; forestRatio
 
 # Save
-ggsave(plot = forestRatio, "output/hivFigure2.png", height = 8, width=10, units = "in")
+ggsave(plot = forestRatio, "output/hivFigure2.png", height = 8, width=12, units = "in")
 ```
 
-# Model 2: Effect over time 
+### Covariate analysis 
 
+# Model 2-3: Covariate analysis
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+# covariates <- read.csv("~/Downloads/hivCovariates.csv")
+# bactModelHivCovDF <- left_join(bactModelHivDF, covariates)
+
+```
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + year_z + (1 + year_z | study.country) + (1 | id),
-                       data = bactModelHivDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd) +
-                           prior(lkj(4), class=cor),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(timeEffectMod)
-plot(timeEffectMod)
-```
-
-Prediction
-
-```{r, warning = FALSE, message=FALSE, cache=TRUE, echo=FALSE}
-ndTime <- bactModelHivDF %>%
-    select(logOR_se) %>%
-    crossing(year_z = seq(min(cleanHivDF$year_z, na.rm = TRUE), max(cleanHivDF$year_z, na.rm = TRUE), 1))
-
-timeEffectModEst <- add_epred_draws(object = timeEffectMod,
-                                 newdata=na.omit(ndTime),
-                                 re_formula = NA,
-                                 allow_new_levels = TRUE) %>%
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval")
-```
-
-Main estimate
-
-```{r}
-timeEffectModEst %>%
-    group_by(year_z) %>%
-    mean_qi(hivRatio) %>%
-    mutate(Year = year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE))) %>%
-    select(Year, hivRatio, .lower, .upper)
-
-### output for contribution table
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
-
-bayes_R2(timeEffectMod)
-
-timeEffectModEst 
-
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-    y <- timeEffectModEst  %>%
-    group_by(year_z) %>%
-    mean_qi(hivRatio) %>%
-    mutate(Year = year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE))) %>%
-    select(Year, hivRatio, .lower, .upper) 
-
-    ggplot(data = y) +
-    geom_lineribbon(.width = 0.95, alpha = 0.25, fill="mediumturquoise", aes(x = Year,
-               y = hivRatio, ymin = .lower, ymax = .upper)) +
-    geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanHivDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = `Study standard error`),
-               colour = "black") +
-    expand_limits(y=0) +
-    labs(y = "HivPos-to-hivneg odds ratio",
-         x = "Year") +
-    theme_minimal(base_size = 30)  + theme(legend.position = "bottom")
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-#### Annual rate of change 
-minYr <- min(timeEffectModEst$year_z)
-maxYr <- max(timeEffectModEst$year_z)
-
-startYr <- timeEffectModEst %>% filter(year_z == minYr) %>% select(hivRatio) %>% ungroup()
-endYr <- timeEffectModEst %>% filter(year_z == maxYr) %>% select(hivRatio)%>% ungroup()
-         data.frame( hivRatio = ((endYr[,"hivRatio"] - startYr[,"hivRatio"])/startYr[,"hivRatio"])/length(minYr:maxYr)*100) %>%
-          mean_qi(hivRatio) 
-```
-# Sub group analysis
-
-## National surveys
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(natRep=="Yes"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                               prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-subNatEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(natRep=="No"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                               prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(natEffectMod)
-plot(natEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-ndNat <- bactModelHivDF %>%
-         filter(natRep == "Yes") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-natEffectModEst <- add_epred_draws(object = natEffectMod,
-                                 newdata=ndNat,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-
-ndSubnat <- bactModelHivDF %>%
-         filter(natRep == "No") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-subnatEffectModEst <- add_epred_draws(object = subNatEffectMod,
-                                 newdata=ndSubnat,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate - National surveys
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-natEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-Main estimate - subnational surveys
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-subnatEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-## Study quality (Low vs. not low)
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-
-lowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(bias == "Low"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-notLowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(bias == "Not low"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(lowBiasEffectMod)
-plot(lowBiasEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-ndLowBias <- bactModelHivDF %>%
-         filter(bias == "Low") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-ndNotLowBias <- bactModelHivDF %>%
-         filter(bias == "Not low") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-lowBiasEffectModEst <- add_epred_draws(object = lowBiasEffectMod,
-                                 newdata=ndLowBias,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-
-notLowBiasEffectModEst <- add_epred_draws(object = notLowBiasEffectMod,
-                                 newdata=ndNotLowBias,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate - low risk of bias
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-lowBiasEffectModEst %>% 
-    ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-Main estimate - not low risk of bias
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-notLowBiasEffectModEst %>% 
-    ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-
-## Symptom screen used vs. no symptom screen used
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-
-sympYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(symptomScreen == "Yes"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-sympNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(symptomScreen == "No"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(sympYesEffectMod)
-plot(sympYesEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-ndSympYes <- bactModelHivDF %>%
-         filter(symptomScreen == "Yes") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-ndSympNo <- bactModelHivDF %>%
-         filter(symptomScreen == "No") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-sympYesEffectModEst <- add_epred_draws(object = sympYesEffectMod,
-                                 newdata=ndSympYes,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-
-sympNoEffectModEst <- add_epred_draws(object = sympNoEffectMod,
-                                 newdata=ndSympNo,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate - used symptom screening
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-sympYesEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-Main estimate - did not use symptom screening
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-sympNoEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-## Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-xpCltReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(XpertCultRequired == "Yes"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelHivDF %>% filter(XpertCultRequired == "No"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(xpCltReqYesEffectMod)
-plot(xpCltReqYesEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-ndxpCltReqYes <- bactModelHivDF %>%
-         filter(XpertCultRequired == "Yes") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-ndxpCltReqNo <- bactModelHivDF %>%
-         filter(XpertCultRequired == "No") %>%
-         select(study.country, LogOdds_HivNeg) %>%
-         mutate(logOR_se=1)
-
-xpCltReqYesEffectModEst <- add_epred_draws(object = xpCltReqYesEffectMod,
-                                 newdata=ndxpCltReqYes,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-
-xpCltReqNoEffectModEst <-  add_epred_draws(object = xpCltReqNoEffectMod,
-                                 newdata=ndxpCltReqNo,
-                                 re_formula = NA) %>% 
-                           mutate(hivRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate - required xpert or culture
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-xpCltReqYesEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
-```
-
-Main estimate - did not require xpert or culture
-```{r, echo=FALSE, warning = FALSE, message=FALSE, cache=TRUE}
-xpCltReqNoEffectModEst %>% ungroup() %>%
-    mean_qi(hivRatio) %>% 
-    select(hivRatio, .lower, .upper)
+# artEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+#                            1  + (1|study.country) + (1|id),
+#                        data = bactModelHivDF,
+#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+#                            prior(exponential(2), class = sd),
+#                        family = gaussian(),
+#                        control = list(adapt_delta = 0.99),
+#                        chains = 4,
+#                        cores = 4,
+#                        iter = 4000)
 ```
 
 ### Prevalence to notification comparison 
 
 ```{r}
-hivPop <- read.csv("~/Downloads/HIVPrevalence.csv") %>%
+### Population with HIV data from UNAIDS
+hivPop <- read.csv(here("data/hivAnalysis/hivPrevalence.csv")) %>%
           mutate(hivPop = as.numeric(Estimate)) %>%
           select(study.end.year, study.country, hivPop)
-pop <- read.csv("~/Downloads/populationData.csv") %>% 
-           melt(id.vars = c("Country.Name", "Series.Name")) %>%
+### Total population data from World Bank
+pop <- read.csv(here("data/populationData.csv")) %>% 
+          melt(id.vars = c("Country.Name", "Series.Name")) %>%
           mutate(year = as.integer(gsub("X", "", variable))) %>% 
           select(! variable) %>%
           pivot_wider(id_cols = c(Country.Name, year), 
@@ -976,10 +580,13 @@ pop <- read.csv("~/Downloads/populationData.csv") %>%
                  study.end.year = year) %>%
           mutate(pop = male + female) %>% 
           select(study.country, study.end.year, pop) %>%
-       left_join(hivPop)
+          left_join(hivPop)
     
+### Read in TB notification data from WHO
+notif0 <- read.csv(here("data/TB_notifications_2025-07-18.csv"))
 
-notif0 <- read.csv("~/Downloads/TB_notifications_2025-07-18.csv")
+### Calculate the HIV-status stratified TB notification 
+### rate and transform to log odds space
 notif0 <- notif0 %>% 
           filter(year %in% unique(bactModelHivDF$study.end.year), 
                 country %in% unique(bactModelHivDF$study.country)) %>% 
@@ -1013,66 +620,115 @@ notif0 <- notif0 %>%
                       names_prefix = "notifRate",
                       values_to = "notifRate",
                       values_drop_na = TRUE) %>%
-        select(study.country, study.end.year, `HIVStatus`, notifRate) %>% 
+        select(study.country, study.end.year, `HIVStatus`, notifRate, pop, hivPop) %>%
         mutate(notifRate = ifelse(notifRate==0, 
-                                  NA, notifRate))
+                                  NA, notifRate), 
+               "Standard Error" = case_when(HIVStatus == "HivPos" ~ 
+                                                sqrt((notifRate*(1-notifRate))/hivPop), 
+                                            HIVStatus == "HivNeg" ~ 
+                                                sqrt((notifRate*(1-notifRate))/(pop-hivPop))),
+               "LogOdds_notif" = log(notifRate/(1-notifRate)),
+               "LogOddsStandardError_notif" = case_when(HIVStatus == "HivPos" ~ 
+                                                  log(1/(hivPop*notifRate*(1-notifRate)))^2,
+                                                        HIVStatus == "HivNeg" ~ 
+                                                  log(1/((pop-hivPop)*notifRate*(1-notifRate)))^2))
+       
+        ###############################################################################
+        #### original setup for the stratified p:n analysis
+        # left_join(cleanHivDF %>% 
+        #                filter(covidence.id %in% bactModelHivDF$covidence.id) %>%
+        #                select(id, 
+        #                       study.country, 
+        #                       study.end.year, 
+        #                       HIVStatus, 
+        #                       LogOdds, LogOddsStandardError), notif0,  by = c("study.country", "study.end.year", "HIVStatus"))
 
+### Widen and calculate the log odds ratio and associated standard error
+notif  <- notif0 %>%
+          select(study.country, study.end.year, HIVStatus, LogOdds_notif, LogOddsStandardError_notif) %>%
+          pivot_wider(names_from = HIVStatus,
+                     values_from = c(LogOdds_notif, LogOddsStandardError_notif),
+                     names_sep = "_") %>%
+          mutate(logOR_notif = LogOdds_notif_HivPos - LogOdds_notif_HivNeg,
+                 logOR_se_notif = sqrt(LogOddsStandardError_notif_HivPos^2 + LogOddsStandardError_notif_HivNeg^2)) %>%
+          right_join(bactModelHivDF, by=c("study.country", "study.end.year"))
 
-notif <- 
-        left_join(cleanHivDF %>% 
-                       filter(covidence.id %in% bactModelHivDF$covidence.id) %>%
-                       select(id, 
-                              study.country, 
-                              study.end.year, 
-                              HIVStatus, 
-                              LogOdds, LogOddsStandardError), notif0,  by = c("study.country", "study.end.year", "HIVStatus"))
-
-
-
-mainEffectPNMod <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~ 
-                           1  + HIVStatus + (HIVStatus | study.country) + (1|id) + offset(log(notifRate)),
-                       data = notif,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           # prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-summary(mainEffectPNMod)
-# mainEffectPNMod %>% as_draws_df() %>% select(b_Intercept, )
-
-nd_pn <- crossing(unique(notif$study.country), 
-                      unique(notif$HIVStatus)) %>%
-             mutate(LogOddsStandardError=1,
-                    notifRate=1)
-
-colnames(nd_pn)[1:2] <- c("study.country", "HIVStatus")
-
-mainEffectPNModEst <- add_epred_draws(object = mainEffectPNMod,
-                                 newdata=nd_pn,
-                                 re_formula =  ~ 1 + HIVStatus + 
-                                                (HIVStatus | study.country) + 
-                                                 offset(log(notifRate)),
-                                 allow_new_levels = TRUE) %>%
-                    mutate(pnRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval")
-
-
-mainEffectPNModEstSummary <- mainEffectPNModEst %>% group_by(study.country, HIVStatus) %>% mean_qi(pnRatio, na.rm=T); mainEffectPNModEstSummary
-
-ggplot() + 
-    geom_point(data=mainEffectPNModEstSummary, aes(x=reorder(study.country, pnRatio), y=pnRatio, group=HIVStatus, color = HIVStatus), position=position_dodge(width = .75), size=2.5) + 
-    geom_errorbar(data=mainEffectPNModEstSummary, aes(x = reorder(study.country, pnRatio), ymin=.lower, ymax=.upper, color=HIVStatus), position=position_dodge(width = .75), size=1) +
-    # geom_point(data=notifPrevStrat2, aes(x=reorder(study.country, pnRatio), y=empiricalRatio), color="black") + 
-    theme_minimal() + 
-    scale_color_manual(values = c("darkorange3", "darkorchid3"))+
-    coord_flip() + ylab("Prevalence to notification ratio") + 
-    xlab("") + theme( legend.position=c(.95,.15), legend.background = element_rect(fill="white")) +
-    expand_limits(y=1) + geom_hline(yintercept = 1, linetype = 2) + 
-    scale_y_continuous(breaks=seq(0, 14, 2))
+###############################################################################
+### Run a multivariate model
+#prevalence model:
+prev_model <- bf(
+  logOR | se(logOR_se, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country),
+  resp = "prevalence"
+)
+ 
+#notifications model:
+notif_model <- bf(
+  logOR_notif | se(logOR_se_notif, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country),
+  resp = "notification"
+)
+ 
+#fit the model
+p_to_n_sex_model <- brm(
+  formula = prev_model + notif_model + set_rescor(FALSE),
+  data = data,
+  family = gaussian(),
+  prior = c(
+    prior(student_t(7, 0, 1.5), class = Intercept, resp = "prevalence"),
+    prior(student_t(7, 0, 1.5), class = Intercept, resp = "notification"),
+    prior(exponential(2), class = sd, resp = "prevalence"),
+    prior(exponential(2), class = sd, resp = "notification")
+  ),
+  control = list(adapt_delta = 0.99),
+  chains = 4,
+  cores = 4,
+  iter = 4000
+)
+###############################################################################
+### ORIGINAL CODE TO TRY TO RUN STRATIFIED P:N RATIOS
+# mainEffectPNMod <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~
+#                            1  + HIVStatus + (HIVStatus | study.country) + (1|id) + offset(log(notifRate)),
+#                        data = notif,
+#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+#                            # prior(normal(0, 10), class = b) +
+#                            prior(exponential(2), class = sd),
+#                        family = gaussian(),
+#                        control = list(adapt_delta = 0.99),
+#                        chains = 4,
+#                        cores = 4,
+#                        iter = 4000)
+# 
+# summary(mainEffectPNMod)
+# # mainEffectPNMod %>% as_draws_df() %>% select(b_Intercept, )
+# 
+# nd_pn <- crossing(unique(notif$study.country), 
+#                       unique(notif$HIVStatus)) %>%
+#              mutate(LogOddsStandardError=1,
+#                     notifRate=1)
+# 
+# colnames(nd_pn)[1:2] <- c("study.country", "HIVStatus")
+# 
+# mainEffectPNModEst <- add_epred_draws(object = mainEffectPNMod,
+#                                  newdata=nd_pn,
+#                                  re_formula =  ~ 1 + HIVStatus + 
+#                                                 (HIVStatus | study.country) + 
+#                                                  offset(log(notifRate)),
+#                                  allow_new_levels = TRUE) %>%
+#                     mutate(pnRatio = exp(.epred),
+#                            type="Posterior mean and 95% credible interval")
+# 
+# 
+# mainEffectPNModEstSummary <- mainEffectPNModEst %>% group_by(study.country, HIVStatus) %>% mean_qi(pnRatio, na.rm=T); mainEffectPNModEstSummary
+# 
+# ggplot() + 
+#     geom_point(data=mainEffectPNModEstSummary, aes(x=reorder(study.country, pnRatio), y=pnRatio, group=HIVStatus, color = HIVStatus), position=position_dodge(width = .75), size=2.5) + 
+#     geom_errorbar(data=mainEffectPNModEstSummary, aes(x = reorder(study.country, pnRatio), ymin=.lower, ymax=.upper, color=HIVStatus), position=position_dodge(width = .75), size=1) +
+#     # geom_point(data=notifPrevStrat2, aes(x=reorder(study.country, pnRatio), y=empiricalRatio), color="black") + 
+#     theme_minimal() + 
+#     scale_color_manual(values = c("darkorange3", "darkorchid3"))+
+#     coord_flip() + ylab("Prevalence to notification ratio") + 
+#     xlab("") + theme( legend.position=c(.95,.15), legend.background = element_rect(fill="white")) +
+#     expand_limits(y=1) + geom_hline(yintercept = 1, linetype = 2) + 
+#     scale_y_continuous(breaks=seq(0, 14, 2))
 
 
 # notif %>% left_join(cleanHivDF %>% select(study.country, `Adjusted Prevalence`)) %>% 
