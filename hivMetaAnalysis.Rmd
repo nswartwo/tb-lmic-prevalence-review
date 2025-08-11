@@ -382,6 +382,18 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                            type="Posterior mean and 95% credible interval")
 
 surveyEffectModEst %>% mean_qi(hivRatio)
+
+nd_country <- bactModelHivDF %>% select(study.country) %>% unique() %>% 
+              mutate(logOR_se = 1)
+
+countryEffectModEst <- add_epred_draws(object = mainEffectMod,
+                                 newdata=nd_country,
+                                 re_formula = ~ 1  + (1|study.country),
+                                 allow_new_levels = TRUE) %>%
+                    mutate(hivRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+countryEffectModEst %>% mean_qi(hivRatio)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
@@ -544,7 +556,7 @@ ggsave(plot = forestRatio, "output/hivFigure2.png", height = 8, width=12, units 
 
 # Model 2-3: Covariate analysis
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-# covariates <- read.csv("~/Downloads/hivCovariates.csv")
+# covariates <- read.csv(here("data/hivAnalysis/hivCovariates.csv"))
 # bactModelHivCovDF <- left_join(bactModelHivDF, covariates)
 
 ```
@@ -588,9 +600,10 @@ notif0 <- read.csv(here("data/TB_notifications_2025-07-18.csv"))
 ### Calculate the HIV-status stratified TB notification 
 ### rate and transform to log odds space
 notif0 <- notif0 %>% 
-          filter(year %in% unique(bactModelHivDF$study.end.year), 
+          ## Add 2007 because 2006 data for Zimbabwe does not exist
+          filter(year %in% c(unique(bactModelHivDF$study.end.year),2007),  
                 country %in% unique(bactModelHivDF$study.country)) %>% 
-         select(country, g_whoregion, 
+          select(country, g_whoregion, 
                 year, 
                 newrel_m15plus, 
                 newrel_f15plus,
@@ -633,16 +646,6 @@ notif0 <- notif0 %>%
                                                         HIVStatus == "HivNeg" ~ 
                                                   log(1/((pop-hivPop)*notifRate*(1-notifRate)))^2))
        
-        ###############################################################################
-        #### original setup for the stratified p:n analysis
-        # left_join(cleanHivDF %>% 
-        #                filter(covidence.id %in% bactModelHivDF$covidence.id) %>%
-        #                select(id, 
-        #                       study.country, 
-        #                       study.end.year, 
-        #                       HIVStatus, 
-        #                       LogOdds, LogOddsStandardError), notif0,  by = c("study.country", "study.end.year", "HIVStatus"))
-
 ### Widen and calculate the log odds ratio and associated standard error
 notif  <- notif0 %>%
           select(study.country, study.end.year, HIVStatus, LogOdds_notif, LogOddsStandardError_notif) %>%
@@ -651,89 +654,75 @@ notif  <- notif0 %>%
                      names_sep = "_") %>%
           mutate(logOR_notif = LogOdds_notif_HivPos - LogOdds_notif_HivNeg,
                  logOR_se_notif = sqrt(LogOddsStandardError_notif_HivPos^2 + LogOddsStandardError_notif_HivNeg^2)) %>%
-          right_join(bactModelHivDF, by=c("study.country", "study.end.year"))
+          right_join(bactModelHivDF %>% 
+                     mutate(study.end.year = recode(study.end.year, `2006` = 2007)), by=c("study.country", "study.end.year")) %>% 
+        mutate(study.end.year = recode(study.end.year, `2007` = 2006))
 
 ###############################################################################
 ### Run a multivariate model
 #prevalence model:
 prev_model <- bf(
-  logOR | se(logOR_se, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country),
-  resp = "prevalence"
+  logOR | se(logOR_se, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country)
 )
  
 #notifications model:
 notif_model <- bf(
-  logOR_notif | se(logOR_se_notif, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country),
-  resp = "notification"
+  logOR_notif | se(logOR_se_notif, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country)
 )
  
 #fit the model
-p_to_n_sex_model <- brm(
+p_to_n_hiv_model <- brm(
   formula = prev_model + notif_model + set_rescor(FALSE),
-  data = data,
-  family = gaussian(),
+  data = notif,
+  family = gaussian(), 
+  # sample_prior = "only",
   prior = c(
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "prevalence"),
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "notification"),
-    prior(exponential(2), class = sd, resp = "prevalence"),
-    prior(exponential(2), class = sd, resp = "notification")
+    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logOR"),
+    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logORnotif"),
+    prior(exponential(2), class = sd, resp = "logOR"),
+    prior(exponential(2), class = sd, resp = "logORnotif")
   ),
   control = list(adapt_delta = 0.99),
   chains = 4,
   cores = 4,
   iter = 4000
 )
-###############################################################################
-### ORIGINAL CODE TO TRY TO RUN STRATIFIED P:N RATIOS
-# mainEffectPNMod <- brms::brm(formula = LogOdds | se(LogOddsStandardError, sigma=TRUE) ~
-#                            1  + HIVStatus + (HIVStatus | study.country) + (1|id) + offset(log(notifRate)),
-#                        data = notif,
-#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-#                            # prior(normal(0, 10), class = b) +
-#                            prior(exponential(2), class = sd),
-#                        family = gaussian(),
-#                        control = list(adapt_delta = 0.99),
-#                        chains = 4,
-#                        cores = 4,
-#                        iter = 4000)
-# 
-# summary(mainEffectPNMod)
-# # mainEffectPNMod %>% as_draws_df() %>% select(b_Intercept, )
-# 
-# nd_pn <- crossing(unique(notif$study.country), 
-#                       unique(notif$HIVStatus)) %>%
-#              mutate(LogOddsStandardError=1,
-#                     notifRate=1)
-# 
-# colnames(nd_pn)[1:2] <- c("study.country", "HIVStatus")
-# 
-# mainEffectPNModEst <- add_epred_draws(object = mainEffectPNMod,
-#                                  newdata=nd_pn,
-#                                  re_formula =  ~ 1 + HIVStatus + 
-#                                                 (HIVStatus | study.country) + 
-#                                                  offset(log(notifRate)),
-#                                  allow_new_levels = TRUE) %>%
-#                     mutate(pnRatio = exp(.epred),
-#                            type="Posterior mean and 95% credible interval")
-# 
-# 
-# mainEffectPNModEstSummary <- mainEffectPNModEst %>% group_by(study.country, HIVStatus) %>% mean_qi(pnRatio, na.rm=T); mainEffectPNModEstSummary
-# 
-# ggplot() + 
-#     geom_point(data=mainEffectPNModEstSummary, aes(x=reorder(study.country, pnRatio), y=pnRatio, group=HIVStatus, color = HIVStatus), position=position_dodge(width = .75), size=2.5) + 
-#     geom_errorbar(data=mainEffectPNModEstSummary, aes(x = reorder(study.country, pnRatio), ymin=.lower, ymax=.upper, color=HIVStatus), position=position_dodge(width = .75), size=1) +
-#     # geom_point(data=notifPrevStrat2, aes(x=reorder(study.country, pnRatio), y=empiricalRatio), color="black") + 
-#     theme_minimal() + 
-#     scale_color_manual(values = c("darkorange3", "darkorchid3"))+
-#     coord_flip() + ylab("Prevalence to notification ratio") + 
-#     xlab("") + theme( legend.position=c(.95,.15), legend.background = element_rect(fill="white")) +
-#     expand_limits(y=1) + geom_hline(yintercept = 1, linetype = 2) + 
-#     scale_y_continuous(breaks=seq(0, 14, 2))
+
+summary(p_to_n_hiv_model)
+
+nd <- notif %>% select(study.country) %>%
+        unique() %>%
+        mutate(logOR_se_notif=1, logOR_se =1)
+
+mainEffectPNEst <- add_epred_draws(object = p_to_n_hiv_model,
+                                      newdata=nd,
+                                      re_formula =   ~ 1 + (1 | study.country),
+                                 allow_new_levels = TRUE) %>%
+                    mutate(#ratio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
 
 
-# notif %>% left_join(cleanHivDF %>% select(study.country, `Adjusted Prevalence`)) %>% 
-#     mutate(`Adjusted Prevalence` / notifRate)
+mainEffectPNEstSummary <- mainEffectPNEst %>%
+                             group_by(study.country, .category) %>%
+                             mean_qi(exp(.epred), na.rm=T); mainEffectPNEstSummary
 
+mainEffectPNEstSummary <- mainEffectPNEst %>%
+                             group_by(.category) %>%
+                             mean_qi(exp(.epred), na.rm=T); mainEffectPNEstSummary
+```
+
+```{r}
+mainEffectPNEst %>% pivot_wider(names_from = .category,
+                     values_from = c(.epred),
+                     names_sep = "_") %>%
+                     group_by(study.country) %>%
+                     mean_qi(expit(logOR-logORnotif), na.rm=T)
+
+mainEffectPNEst %>% pivot_wider(names_from = .category,
+                     values_from = c(.epred),
+                     names_sep = "_") %>% 
+                     ungroup() %>%
+                     mean_qi(expit(logOR-logORnotif), na.rm=T)
 ```
 
 # Smear positive analysis 
