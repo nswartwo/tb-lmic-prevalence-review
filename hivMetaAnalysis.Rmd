@@ -38,10 +38,15 @@ myPal <- c("black", "mediumturquoise")
 source(here("code/bacterialPositiveIndicator.R"))
 source(here("code/smearPositiveIndicator.R"))
 source(here("code/varianceComponentModel.R"))
+##############################################################################|
+##### All surveys that we extracted HIV data from
+##############################################################################|
+allHIV <- readRDS(here("data/fullDataClean.rds")) %>% 
+          filter(report.hiv == "Yes")
 
 ##############################################################################|
-##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
-
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING HIV status for 
+##### QUANTITATIVE ANALYSIS                                  #################
 
 cleanHivDF0 <- bactPostIndicator("hiv") %>% 
 ##### Manually move the two South African studies that report "prevalent TB" which 
@@ -57,6 +62,82 @@ cleanHivDF0 <- bactPostIndicator("hiv") %>%
 ### Calculate mean publication lag 
 meanLag <- round(mean(cleanHivDF0$publication.year - cleanHivDF0$study.end.year, na.rm=TRUE))
 ```
+
+### Figure of countries of all identified surveys
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
+library(maps)
+nCountryAll <- allHIV %>% 
+            count(study.country) %>% 
+            mutate(n=as.factor(n))
+
+world_map <- map_data("world")
+world_map <- world_map[world_map$region != "Antarctica", ]
+
+nCountryMap <- left_join(world_map, nCountryAll %>% rename(region=study.country), by="region")
+
+ggplot(nCountryMap, aes(x=long, y=lat)) +
+          geom_polygon(aes(group = region, subgroup = group), 
+                       fill="lightgrey")  +
+      geom_polygon(aes(group = region, subgroup = group,
+                       fill = n), colour = "white")  +
+    scale_fill_manual(values= c("lightblue", "dodgerblue3", "blue4"),
+                      name = "Number of\nprevalence surveys",
+                      na.translate = FALSE) +
+    theme_void() + theme(legend.position = "inside",
+                            legend.position.inside = c(.47,.35))
+
+
+ggsave(here("output/allHivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
+
+```
+
+
+### Figure of countries used in quantitative analysis 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
+library(maps)
+nCountry <- bactModelHivDF %>% 
+            count(study.country) %>% 
+            mutate(n=as.factor(n))
+
+world_map <- map_data("world", region = c("Morocco", "Algeria", "Tunisia", "Libya",
+             "Egypt", "Mauritania", "Mali", "Burkina Faso",
+             "Niger", "Chad", "Sudan", "Ethiopia", "Eritrea",
+             "Djibouti", "South Sudan", "Somalia", "Senegal",
+             "Cape Verde", "Gambia", "Guinea", "Guinea-Bissau",
+             "Liberia", "Sierra Leone", "Ivory Coast", "Ghana",
+             "Togo", "Benin", "Nigeria", "Cameroon", 
+             "Central African Republic", "Gabon", "Equatorial Guinea",
+             "Sao Tome and Principe", "Uganda", "Republic of Congo", 
+             "Democratic Republic of the Congo", "Rwanda", "Burundi",
+             "Kenya", "Tanzania", "Angola", "Mozambique", "Malawi", 
+             "Mauritius", "Seychelles", "Comoros", 
+             "Botswana", "Zimbabwe", "Zambia", "Namibia", "Swaziland", 
+             "South Africa", "Lesotho", "Western Sahara"))
+
+nCountryMap <- left_join(world_map, nCountry %>% rename(region=study.country), by="region")
+
+ggplot(nCountryMap, aes(x=long, y=lat)) +
+          geom_polygon(aes(group = region, subgroup = group), 
+                       fill="lightgrey")  +
+      geom_polygon(aes(group = region, subgroup = group, 
+                       fill = n), colour = "white")  +
+  coord_map(projection = "mercator",
+            xlim = c(-26,64), ylim = c(-35,38)) +
+    # # scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
+    # #                     name = "Number of\nprevalence surveys") +
+    scale_fill_manual(values= c("lightblue", "dodgerblue3"), 
+                      name = "Number of\nprevalence surveys",
+                      na.translate = FALSE) +
+    theme_void() + theme(legend.position = "none",
+                            legend.position.inside = c(.3,.4))
+
+
+ggsave(here("output/hivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
+
+```
+
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 ##############################################################################|
@@ -279,52 +360,6 @@ bactModelHivDF <- cleanHivDF %>%
                                      ifelse(grepl("smear", hiv.analysis.indicator),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"])))) %>% filter(hiv.status.definition == "HIV test")
-
-```
-
-### Figure of countries used in quantitative analysis 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
-library(geosphere)
-library(maps)
-nCountry <- bactModelHivDF %>% 
-            count(study.country) %>% 
-            mutate(n=as.factor(n))
-
-world_map <- map_data("world", region = c("Morocco", "Algeria", "Tunisia", "Libya",
-             "Egypt", "Mauritania", "Mali", "Burkina Faso",
-             "Niger", "Chad", "Sudan", "Ethiopia", "Eritrea",
-             "Djibouti", "South Sudan", "Somalia", "Senegal",
-             "Cape Verde", "Gambia", "Guinea", "Guinea-Bissau",
-             "Liberia", "Sierra Leone", "Ivory Coast", "Ghana",
-             "Togo", "Benin", "Nigeria", "Cameroon", 
-             "Central African Republic", "Gabon", "Equatorial Guinea",
-             "Sao Tome and Principe", "Uganda", "Republic of Congo", 
-             "Democratic Republic of the Congo", "Rwanda", "Burundi",
-             "Kenya", "Tanzania", "Angola", "Mozambique", "Malawi", 
-             "Mauritius", "Seychelles", "Comoros", 
-             "Botswana", "Zimbabwe", "Zambia", "Namibia", "Swaziland", 
-             "South Africa", "Lesotho", "Western Sahara"))
-
-nCountryMap <- left_join(world_map, nCountry %>% rename(region=study.country), by="region")
-
-ggplot(nCountryMap, aes(x=long, y=lat)) +
-          geom_polygon(aes(group = region, subgroup = group), 
-                       fill="lightgrey")  +
-      geom_polygon(aes(group = region, subgroup = group, 
-                       fill = n), colour = "white")  +
-  coord_map(projection = "mercator",
-            xlim = c(-26,64), ylim = c(-35,38)) +
-    # # scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
-    # #                     name = "Number of\nprevalence surveys") +
-    scale_fill_manual(values= c("lightblue", "dodgerblue4"), 
-                      name = "Number of\nprevalence surveys",
-                      na.translate = FALSE) +
-    theme_void() + theme(legend.position = "inside",
-                            legend.position.inside = c(.3,.4))
-
-
-ggsave(here("output/hivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
 
 ```
 
