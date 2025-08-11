@@ -589,24 +589,37 @@ ggsave(plot = forestRatio, "output/hivFigure2.png", height = 8, width=12, units 
 
 ### Covariate analysis 
 
-# Model 2-3: Covariate analysis
+# Model 2: Covariate analysis
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-# covariates <- read.csv(here("data/hivAnalysis/hivCovariates.csv"))
-# bactModelHivCovDF <- left_join(bactModelHivDF, covariates)
+artCoverage <- read.csv(here("data/hivAnalysis/unaids-2025-adult-art-coverage.csv")) %>% rename(study.country=spectrum_country, 
+           study.end.year = year)
+bactModelHivCovDF <- left_join(bactModelHivDF, artCoverage %>% 
+                                   select(study.country,
+                                          study.end.year, 
+                                          art_coverage)) %>%
+                     mutate(art_coverage = art_coverage * 100)
 
 ```
+
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
-# artEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-#                            1  + (1|study.country) + (1|id),
-#                        data = bactModelHivDF,
-#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-#                            prior(exponential(2), class = sd),
-#                        family = gaussian(),
-#                        control = list(adapt_delta = 0.99),
-#                        chains = 4,
-#                        cores = 4,
-#                        iter = 4000)
+artEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                           1 + art_coverage + (1|study.country) + (1|id),
+                       data = bactModelHivCovDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+```
+
+Summarize and check
+
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+summary(artEffectMod)
+plot(artEffectMod)
 ```
 
 ### Prevalence to notification comparison 
