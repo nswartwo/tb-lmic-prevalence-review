@@ -626,22 +626,8 @@ plot(artEffectMod)
 
 ```{r}
 ### Population with HIV data from UNAIDS
-hivPop <- read.csv(here("data/hivAnalysis/hivPrevalence.csv")) %>%
-          mutate(hivPop = as.numeric(Estimate)) %>%
-          select(study.end.year, study.country, hivPop)
-### Total population data from World Bank
-pop <- read.csv(here("data/populationData.csv")) %>% 
-          melt(id.vars = c("Country.Name", "Series.Name")) %>%
-          mutate(year = as.integer(gsub("X", "", variable))) %>% 
-          select(! variable) %>%
-          pivot_wider(id_cols = c(Country.Name, year), 
-                      names_from = Series.Name, values_from = value) %>% 
-          rename(study.country = Country.Name, 
-                 study.end.year = year) %>%
-          mutate(pop = male + female) %>% 
-          select(study.country, study.end.year, pop) %>%
-          left_join(hivPop)
-    
+pop <- artCoverage
+
 ### Read in TB notification data from WHO
 notif0 <- read.csv(here("data/TB_notifications_2025-07-18.csv"))
 
@@ -664,35 +650,35 @@ notif0 <- notif0 %>%
                 study.end.year = year) %>%
          left_join(pop, by=c("study.country", "study.end.year")) %>%
          mutate(notifRateHivPos = ifelse(study.end.year < 2019, 
-                                     hivtest_pos / hivPop, 
+                                     hivtest_pos / hivpop, 
                                      ifelse(is.na(newrel_hivpos_014), 
-                                            newrel_hivpos / hivPop,
-                                           (newrel_hivpos - newrel_hivpos_014)/hivPop)), 
+                                            newrel_hivpos / hivpop,
+                                           (newrel_hivpos - newrel_hivpos_014)/hivpop)), 
                 
                 notifRateHivNeg = ifelse(study.end.year == 2014, 
-                                     (newrel_m15plus + newrel_f15plus - hivtest_pos) / (pop - hivPop), 
+                                     (newrel_m15plus + newrel_f15plus - hivtest_pos) / (totpop - hivpop), 
                                      ifelse(study.end.year < 2014, 
-                                     (new_sp + new_sn - hivtest_pos) / (pop-hivPop), 
+                                     (new_sp + new_sn - hivtest_pos) / (totpop-hivpop), 
                                      ifelse(is.na(newrel_hivpos_014), 
-                                            (newrel_m15plus + newrel_f15plus - newrel_hivpos) / (pop-hivPop), 
-                                            (newrel_m15plus + newrel_f15plus - newrel_hivpos - newrel_hivpos_014) / (pop-hivPop))))) %>%
+                                            (newrel_m15plus + newrel_f15plus - newrel_hivpos) / (totpop-hivpop), 
+                                            (newrel_m15plus + newrel_f15plus - newrel_hivpos - newrel_hivpos_014) / (totpop-hivpop))))) %>%
          pivot_longer(cols=starts_with("notifRate"),
                       names_to = "HIVStatus",
                       names_prefix = "notifRate",
                       values_to = "notifRate",
                       values_drop_na = TRUE) %>%
-        select(study.country, study.end.year, `HIVStatus`, notifRate, pop, hivPop) %>%
+        select(study.country, study.end.year, `HIVStatus`, notifRate, totpop, hivpop) %>%
         mutate(notifRate = ifelse(notifRate==0, 
                                   NA, notifRate), 
                "Standard Error" = case_when(HIVStatus == "HivPos" ~ 
-                                                sqrt((notifRate*(1-notifRate))/hivPop), 
+                                                sqrt((notifRate*(1-notifRate))/hivpop), 
                                             HIVStatus == "HivNeg" ~ 
-                                                sqrt((notifRate*(1-notifRate))/(pop-hivPop))),
+                                                sqrt((notifRate*(1-notifRate))/(totpop-hivpop))),
                "LogOdds_notif" = log(notifRate/(1-notifRate)),
                "LogOddsStandardError_notif" = case_when(HIVStatus == "HivPos" ~ 
-                                                  log(1/(hivPop*notifRate*(1-notifRate)))^2,
+                                                  log(1/(hivpop*notifRate*(1-notifRate)))^2,
                                                         HIVStatus == "HivNeg" ~ 
-                                                  log(1/((pop-hivPop)*notifRate*(1-notifRate)))^2))
+                                                  log(1/((totpop-hivpop)*notifRate*(1-notifRate)))^2))
        
 ### Widen and calculate the log odds ratio and associated standard error
 notif  <- notif0 %>%
