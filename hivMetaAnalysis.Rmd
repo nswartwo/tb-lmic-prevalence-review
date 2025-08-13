@@ -26,10 +26,11 @@ library(metafor)
 library(meta)
 library(brms)
 library(scales)
-# library(posterior)
 library(tidybayes)
 library(wesanderson)
 library(ggplot2)
+library(maps)
+
 
 expit <- function (x) {exp(x)/(1 + exp(x))}
 
@@ -66,7 +67,6 @@ meanLag <- round(mean(cleanHivDF0$publication.year - cleanHivDF0$study.end.year,
 ### Figure of countries of all identified surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
-library(maps)
 nCountryAll <- allHIV %>% 
             count(study.country) %>% 
             mutate(n=as.factor(n))
@@ -90,54 +90,8 @@ ggplot(nCountryMap, aes(x=long, y=lat)) +
 
 ggsave(here("output/allHivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
 
+rm(allHIV)
 ```
-
-
-### Figure of countries used in quantitative analysis 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
-library(maps)
-nCountry <- bactModelHivDF %>% 
-            count(study.country) %>% 
-            mutate(n=as.factor(n))
-
-world_map <- map_data("world", region = c("Morocco", "Algeria", "Tunisia", "Libya",
-             "Egypt", "Mauritania", "Mali", "Burkina Faso",
-             "Niger", "Chad", "Sudan", "Ethiopia", "Eritrea",
-             "Djibouti", "South Sudan", "Somalia", "Senegal",
-             "Cape Verde", "Gambia", "Guinea", "Guinea-Bissau",
-             "Liberia", "Sierra Leone", "Ivory Coast", "Ghana",
-             "Togo", "Benin", "Nigeria", "Cameroon", 
-             "Central African Republic", "Gabon", "Equatorial Guinea",
-             "Sao Tome and Principe", "Uganda", "Republic of Congo", 
-             "Democratic Republic of the Congo", "Rwanda", "Burundi",
-             "Kenya", "Tanzania", "Angola", "Mozambique", "Malawi", 
-             "Mauritius", "Seychelles", "Comoros", 
-             "Botswana", "Zimbabwe", "Zambia", "Namibia", "Swaziland", 
-             "South Africa", "Lesotho", "Western Sahara"))
-
-nCountryMap <- left_join(world_map, nCountry %>% rename(region=study.country), by="region")
-
-ggplot(nCountryMap, aes(x=long, y=lat)) +
-          geom_polygon(aes(group = region, subgroup = group), 
-                       fill="lightgrey")  +
-      geom_polygon(aes(group = region, subgroup = group, 
-                       fill = n), colour = "white")  +
-  coord_map(projection = "mercator",
-            xlim = c(-26,64), ylim = c(-35,38)) +
-    # # scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
-    # #                     name = "Number of\nprevalence surveys") +
-    scale_fill_manual(values= c("lightblue", "dodgerblue3"), 
-                      name = "Number of\nprevalence surveys",
-                      na.translate = FALSE) +
-    theme_void() + theme(legend.position = "none",
-                            legend.position.inside = c(.3,.4))
-
-
-ggsave(here("output/hivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
-
-```
-
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 ##############################################################################|
@@ -302,10 +256,10 @@ cleanHivDF <-  cleanHivDF0 %>%
                                                                             (1-prev100k.ci.lower.prevalent.tb.hiv.negative)))/3.92, 
                                             hiv.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivPos" ~ 
-                                            log(1/(n.participants.hiv.positive*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                            (1/(n.participants.hiv.positive*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
                                         hiv.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", "n.prevalent.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & HIVStatus == "HivNeg" ~ 
-                                            log(1/(n.participants.hiv.negative*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                            (1/(n.participants.hiv.negative*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
                                 mutate(natRep = ifelse(is.na(study.geography), 
                                                        NA, 
                                                        ifelse(study.geography == "Nationally representative", 
@@ -360,6 +314,50 @@ bactModelHivDF <- cleanHivDF %>%
                                      ifelse(grepl("smear", hiv.analysis.indicator),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"])))) %>% filter(hiv.status.definition == "HIV test")
+
+```
+
+### Figure of countries used in quantitative analysis 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 35}
+nCountry <- bactModelHivDF %>% 
+            count(study.country) %>% 
+            mutate(n=as.factor(n))
+
+world_map <- map_data("world", region = c("Morocco", "Algeria", "Tunisia", "Libya",
+             "Egypt", "Mauritania", "Mali", "Burkina Faso",
+             "Niger", "Chad", "Sudan", "Ethiopia", "Eritrea",
+             "Djibouti", "South Sudan", "Somalia", "Senegal",
+             "Cape Verde", "Gambia", "Guinea", "Guinea-Bissau",
+             "Liberia", "Sierra Leone", "Ivory Coast", "Ghana",
+             "Togo", "Benin", "Nigeria", "Cameroon", 
+             "Central African Republic", "Gabon", "Equatorial Guinea",
+             "Sao Tome and Principe", "Uganda", "Republic of Congo", 
+             "Democratic Republic of the Congo", "Rwanda", "Burundi",
+             "Kenya", "Tanzania", "Angola", "Mozambique", "Malawi", 
+             "Mauritius", "Seychelles", "Comoros", 
+             "Botswana", "Zimbabwe", "Zambia", "Namibia", "Swaziland", 
+             "South Africa", "Lesotho", "Western Sahara"))
+
+nCountryMap <- left_join(world_map, nCountry %>% rename(region=study.country), by="region")
+
+ggplot(nCountryMap, aes(x=long, y=lat)) +
+          geom_polygon(aes(group = region, subgroup = group), 
+                       fill="lightgrey")  +
+      geom_polygon(aes(group = region, subgroup = group, 
+                       fill = n), colour = "white")  +
+  coord_map(projection = "mercator",
+            xlim = c(-26,64), ylim = c(-35,38)) +
+    # # scale_fill_gradient(low = "lightblue", high = "dodgerblue4", 
+    # #                     name = "Number of\nprevalence surveys") +
+    scale_fill_manual(values= c("lightblue", "dodgerblue3"), 
+                      name = "Number of\nprevalence surveys",
+                      na.translate = FALSE) +
+    theme_void() + theme(legend.position = "none",
+                            legend.position.inside = c(.3,.4))
+
+
+ggsave(here("output/hivWorld.png"), plot=last_plot(), width = 15, height = 8.5, units = "in")
 
 ```
 
@@ -654,7 +652,6 @@ notif0 <- notif0 %>%
                                      ifelse(is.na(newrel_hivpos_014), 
                                             newrel_hivpos / hivpop,
                                            (newrel_hivpos - newrel_hivpos_014)/hivpop)), 
-                
                 notifRateHivNeg = ifelse(study.end.year == 2014, 
                                      (newrel_m15plus + newrel_f15plus - hivtest_pos) / (totpop - hivpop), 
                                      ifelse(study.end.year < 2014, 
@@ -676,9 +673,9 @@ notif0 <- notif0 %>%
                                                 sqrt((notifRate*(1-notifRate))/(totpop-hivpop))),
                "LogOdds_notif" = log(notifRate/(1-notifRate)),
                "LogOddsStandardError_notif" = case_when(HIVStatus == "HivPos" ~ 
-                                                  log(1/(hivpop*notifRate*(1-notifRate)))^2,
+                                                  (1/(hivpop*notifRate*(1-notifRate)))^2,
                                                         HIVStatus == "HivNeg" ~ 
-                                                  log(1/((totpop-hivpop)*notifRate*(1-notifRate)))^2))
+                                                  (1/((totpop-hivpop)*notifRate*(1-notifRate)))^2))
        
 ### Widen and calculate the log odds ratio and associated standard error
 notif  <- notif0 %>%
@@ -704,6 +701,26 @@ notif_model <- bf(
   logOR_notif | se(logOR_se_notif, sigma = TRUE) ~ 1 + (1 |p| id) + (1 | study.country)
 )
  
+notif_model_res <- brm(
+  formula = notif_model,
+  data = notif,
+  family = gaussian(), 
+  # sample_prior = "only",
+  prior = c(
+    prior(student_t(7, 0, 1.5), class = Intercept),
+    prior(exponential(2), class = sd)
+  ),
+  control = list(adapt_delta = 0.99),
+  chains = 4,
+  cores = 4,
+  iter = 4000
+)
+
+summary(notif_model_res)
+plot(notif_model_res)
+```
+
+```{r}
 #fit the model
 p_to_n_hiv_model <- brm(
   formula = prev_model + notif_model + set_rescor(FALSE),
