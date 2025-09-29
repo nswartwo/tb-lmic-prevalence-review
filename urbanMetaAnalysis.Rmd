@@ -245,15 +245,30 @@ cleanRuralityDF <-  cleanRuralityDF0 %>%
                                                                     ignore.case=TRUE), "Yes", "No"),
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
 ```
+
 ```{r}
 #### Calculate the variance adjustment for non-adjusted studies
 varAdj <- varianceAdjust("rurality")
 ```
 
+```{r}
+#one study has missing study.end.date
+#reading the manuscript, not clearly stated, but most likely date of prevalence survey is 2010
+
+cleanRuralityDF <- cleanRuralityDF %>%
+    mutate(year_z = case_when(
+        is.na(year_z) ~ 2010 - round(mean(cleanRuralityDF$study.start.year, na.rm=TRUE)),
+              TRUE ~ year_z)) %>%
+    mutate(study.end.year = case_when(
+        is.na(study.end.year) ~ 2010,
+              TRUE ~ study.end.year))
+
+
+```
 
 ```{r}
-bactModelDF <- cleanRuralityDF %>%
-    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, rurality.analysis.indicator) %>%
+cleanRuralityDF <- cleanRuralityDF %>%
+    select(id, WHO.region, study.country, Rurality, study.end.year, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, rurality.analysis.indicator) %>%
     pivot_wider(names_from = Rurality,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
@@ -268,17 +283,99 @@ bactModelDF <- cleanRuralityDF %>%
 ```
 
 ```{r}
-#one study has missing study.end.date
-#reading the manuscript, not clearly stated, but most likely date of prevalence survey is 2010
+###### Incidence rates and models with incidence rates
+###### Get the incidence rates
+incidence <- read.csv(here("models/TB_burden_countries_2025-05-06.csv"))
+# 1. Standardize country names in cleanRuralityDF
+incidence <- incidence %>%
+  mutate(country = case_when(
+    country == "Viet Nam" ~ "Vietnam",
+    country == "Lao People's Democratic Republic" ~ "Laos",
+    country == "Democratic People's Republic of Korea" ~ "North Korea",
+    country == "United Republic of Tanzania" ~ "Tanzania",
+    TRUE ~ country
+  ))
 
-bactModelDF <- bactModelDF %>%
-    mutate(year_z = case_when(
-        is.na(year_z) ~ 2010 - round(mean(cleanRuralityDF$study.start.year, na.rm=TRUE)),
-              TRUE ~ year_z)
-    )
+
+# 2. Perform the join
+cleanRuralityDF <- cleanRuralityDF %>%
+  left_join(
+    incidence %>% 
+      select(country, year, incidence = e_inc_100k),
+    by = c("study.country" = "country", "study.end.year" = "year")
+  )
+```
+
+
+Import the urbanisation data, and check
+https://ourworldindata.org/urbanization
+
+
+```{r}
+
+urbanization <- read.csv("data/share-of-population-urban.csv")
+
+countries_in_review <- cleanRuralityDF %>%
+    select(study.country) %>%
+    distinct() %>%
+    pull()
+
+urbanizationClean <- urbanization %>%
+    filter(Entity %in% countries_in_review) %>%
+    janitor::clean_names() %>%
+    mutate(pct_urban = urban_population_of_total_population/100) %>%
+    filter(year >= 2000)
+
+urbanizationClean %>%
+    ggplot() +
+    geom_line(aes(x = year, y=pct_urban, colour = entity)) +
+    scale_y_continuous(labels = scales::percent) +
+    facet_wrap(.~entity)
+
+
+urban_change <- urbanizationClean %>%
+  filter(year %in% c(2000, 2023)) %>%
+  select(entity, year, pct_urban) %>%
+  pivot_wider(names_from = year, values_from = pct_urban,
+              names_prefix = "yr_") %>%
+  mutate(
+    abs_change = yr_2023 - yr_2000,
+    pct_change = (yr_2023 - yr_2000) / yr_2000 * 100
+  )
+
+urban_change %>% arrange(desc(abs_change)) %>% print(n=26)
+
 
 
 ```
+
+Now get the percentage of population that was urban in the year of the survey
+
+```{r}
+
+urbanizationClean <- urbanizationClean %>%
+    mutate(year_z = year - round(mean(cleanRuralityDF0$study.start.year, na.rm=TRUE))) %>%
+    select(study.country = entity,
+           year_z,
+           pct_urban)
+    
+bactModelDF <- left_join(cleanRuralityDF, urbanizationClean)
+
+
+```
+
+
+We will drop the Eastern Med studies for the meta-analysis
+
+```{r}
+
+bactModelDF_noEM <- bactModelDF %>%
+    filter(WHO.region !="Eastern Mediterranean region") 
+
+
+```
+
+
 
 
 #### Bacteriologically-positive: Model 1: Main effect model
@@ -287,11 +384,12 @@ Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1|study.country) + (1|id),
-                       data = bactModelDF,
+                       data = bactModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            # prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
+                       backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
@@ -309,7 +407,7 @@ plot(mainEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-nd <- bactModelDF %>%
+nd <- bactModelDF_noEM %>%
       select(study.country, LogOdds_Rural) %>%
       mutate(logOR_se=1)
 
@@ -326,13 +424,12 @@ Main estimate
 mainEffectModEst %>% ungroup %>% mean_qi(urRatio)
 ```
 
-
 Survey-level effects
 
 ```{r}
 
 surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
-                                 newdata=bactModelDF,
+                                 newdata=bactModelDF_noEM,
                                  re_formula = ~ 1  + (1|study.country) + (1|id), 
                                  allow_new_levels = TRUE) %>% 
                     mutate(urRatio = exp(.epred),
@@ -346,17 +443,18 @@ surveyEffectModEst %>%
 
 
 
-#### Bacteriologically-positive: Model 2: Effect by world region model
+#### Bacteriologically-positive: Model 2: Effect by WHO region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 regionEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1|WHO.region) + (1|id),
-                       data = bactModelDF,
+                       data = bactModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            # prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
+                       backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
@@ -373,7 +471,7 @@ plot(regionEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndRegion <- bactModelDF %>%
+ndRegion <- bactModelDF_noEM %>%
       select(WHO.region, LogOdds_Rural) %>%
       mutate(logOR_se=1)
 
@@ -393,7 +491,7 @@ regionEffectModEst %>% group_by(WHO.region) %>% mean_qi(urRatio)
 
 ```{r}
 ### Get the empirical values 
-empirical_prev <- bactModelDF %>%
+empirical_prev <- bactModelDF_noEM %>%
     transmute(
         id,
         WHO.region = WHO.region,
@@ -424,18 +522,138 @@ empirical_prev <- bactModelDF %>%
     
 ```
 
+
+### Figure 2: Forest plot
+
+Bring estimates from regional model together to make a forest plot for the manuscript.
+
+```{r}
+# --- Combine modelled data ---
+forestDF <- bind_rows(survey_sum, region_sum, global_sum) %>%
+  mutate(
+    display_label_raw = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
+    facet_group = case_when(
+      grouping == "survey"   ~ WHO.region,
+      grouping == "regional" ~ figure.id.yr,
+      TRUE                   ~ "Overall"
+    )
+  )
+
+# ---- Ensure display_label text (bolding for region/overall) ----
+forestDF <- forestDF %>%
+  mutate(display_label = case_when(
+    grouping == "Overall"  ~ "<b>Overall</b>",
+    grouping == "regional" ~ paste0("<b>", display_label_raw, "</b>"),
+    TRUE                   ~ display_label_raw
+  ))
+
+# --- Set facet order manually for plotting (Overall last at bottom) ---
+group_order <- c(
+  "Overall",
+  "Western Pacific region",
+  "South-East Asia region",
+  "Eastern Mediterranean region",
+  "Africa region"
+)
+
+forestDF <- forestDF %>%
+  mutate(facet_group = factor(facet_group, levels = rev(group_order)))
+
+# --- Build per-facet ordered factor for plotting ---
+# 1) ordered survey-level labels per facet (excluding Overall)
+survey_order <- forestDF %>%
+  filter(grouping == "survey", facet_group != "Overall") %>%
+  arrange(facet_group, desc(urRatio)) %>%
+  mutate(display_label_facet = paste(facet_group, display_label, sep = "___")) %>%
+  pull(display_label_facet)
+
+# 2) append regional summaries per facet (excluding Overall)
+regional_order <- unlist(lapply(setdiff(group_order, "Overall"), function(f) {
+  survey_lvls <- survey_order[startsWith(survey_order, paste0(f, "___"))]
+  summary_lvls <- forestDF %>%
+    filter(grouping != "survey", as.character(facet_group) == f) %>%
+    mutate(display_label_facet = paste(facet_group, display_label, sep = "___")) %>%
+    pull(display_label_facet)
+  c(survey_lvls, summary_lvls)
+}))
+
+# 3) append the Overall summary last
+overall_label <- forestDF %>%
+  filter(facet_group == "Overall") %>%
+  mutate(display_label_facet = paste(facet_group, display_label, sep = "___")) %>%
+  pull(display_label_facet)
+
+final_levels <- c(overall_label, regional_order)
+
+# 4) apply factor levels to forestDF and empirical points
+forestDF <- forestDF %>%
+  mutate(
+    display_label_facet = paste(facet_group, display_label, sep = "___"),
+    display_label_facet = factor(display_label_facet, levels = rev(final_levels))  # reverse for coord_flip
+  )
+
+empirical_prev_labels <- empirical_prev_labels %>%
+  mutate(
+    display_label_facet = paste(facet_group, display_label, sep = "___"),
+    display_label_facet = factor(display_label_facet, levels = rev(final_levels))
+  )
+
+# --- Plot ---
+ggplot(forestDF) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "darkred") +
+  geom_pointinterval(
+    aes(x = display_label_facet, y = urRatio, ymin = .lower, ymax = .upper),
+    size = 0.25
+  ) +
+  geom_point(
+    data = empirical_prev_labels,
+    aes(x = display_label_facet, y = or_empirical),
+    colour = "mediumseagreen", shape = 1
+  ) +
+  coord_flip() +
+  facet_grid(facet_group ~ ., scales = "free", space = "free") +
+  scale_x_discrete(labels = function(x) gsub("^.*___", "", x)) +  # drop facet prefix
+  scale_y_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4),
+    labels = c("0.25", "0.5", "1", "2", "4")
+  ) +
+  labs(
+    x = NULL,
+    y = "Urban-to-rural bacteriologically-confirmed TB prevalence ratio\n(Posterior mean, 95% credible interval)"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(
+    strip.text.y = element_blank(),
+    strip.background = element_blank(),
+    panel.spacing.y = unit(1, "lines"),
+    axis.text.y = ggtext::element_markdown(hjust = 1),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    plot.background = element_rect(fill = "white")
+  )
+
+# Save
+ggsave("output/urFigure2.png", height = 10, width=8)
+
+```
+
+
 #### Bacteriologically-positive: Model 3: Effect over time 
+
+
+Note we include random intercepts for study country and survey id, and fixed effects term for centered year, as well as allowing the slope of centered year to vary by survey
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + year_z + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
+                           1 + year_z + (1 | study.country) + (1 + year_z | id),
+                       data = bactModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
+                       backend = "cmdstanr",
                        chains = 4,
                        cores = 4,
                        iter = 4000)
@@ -471,7 +689,7 @@ Main estimate
 timeEffectModEst %>% 
     group_by(year_z) %>% 
     mean_qi(urRatio) %>% 
-    mutate(Year = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + 2011) %>%
     select(Year, urRatio, .lower, .upper)
 
 ```
@@ -479,93 +697,76 @@ timeEffectModEst %>%
 
 ```{r}
     timeEffectModEst %>%
-    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)),
+    ggplot(aes(x = year_z + 2011,
                y = urRatio)) +
-    stat_lineribbon(.width = 0.95, alpha = 0.25, fill="mediumseagreen") +
+    stat_lineribbon(.width = 0.95, alpha = 0.5, fill="cadetblue") +
     geom_point(data = empirical_prev, 
-               aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
-               colour = "black") +
+               aes(x=year_z + 2011, y=or_empirical, size = 1/logOR_se), 
+               colour = "black", shape=1) +
     geom_hline(yintercept = 1, linetype = 2) +
-    labs(y = "Urban-to-rural odds ratio",
+    scale_y_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4),
+    labels = c("0.25", "0.5", "1", "2", "4")
+  ) +
+    scale_x_continuous(
+    limits = c(2000, 2020),
+    breaks = c(2000, 2005, 2010, 2015, 2020),
+    labels = c("2000", "2005", "2010", "2015", "2020")
+  ) +
+    scale_size_continuous(
+      name = "Inverse standard error (log-odds)",
+      range = c(1, 6),
+      guide = "legend"
+  ) +
+    labs(y = "Urban-to-rural prevalence ratio",
          x = "Year") +
     theme_bw()  + theme(legend.position = "bottom")
+
+ggsave("output/urFigure3.png", height = 5, width = 7)
 ```
 
-#### Bacteriologically-positive: Model 8: Change in prevalence over time.
-
-Only for countries with more than one survey
+Annual percentage change
 
 ```{r}
 
-multipleSurveysBactModelDF <- bactModelDF %>%
-    group_by(study.country) %>%
-    mutate(surveys = n()) %>%
-    filter(surveys >1)
+timeEffectMod_posterior <- as_draws_df(timeEffectMod)
+
+timeEffectMod_beta_year_draws <- timeEffectMod_posterior$b_year_z
+
+# Annual % change in OR
+timeEffectMod_annual_pct_draws <- (exp(timeEffectMod_beta_year_draws) - 1) * 100
+
+# Summarize
+timeEffectMod_annual_pct_draws %>% 
+  mean_qi()
 
 
 
 ```
 
-fit the model
+What is the posterior probability that the urban-to-rural prevalence ratio exceeded 1 by 2019?
 
 ```{r}
 
-timeEffectMod2 <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + year_z + (1 + year_z | study.country) + (1 | id),
-                       data = multipleSurveysBactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
+year_2019_z <- 2019 - 2011
+
+#get posterior draws for the linear predictor in 2019
+post_2019 <-  add_epred_draws(object = timeEffectMod,
+                              newdata = tibble(year_z = year_2019_z,
+                                               logOR_se =1), 
+                                               re_formula = NA)
+
+post_2019 <- post_2019 %>%
+  mutate(OR = exp(.epred))
+
+#compute posterior probability that OR > 1
+prob_OR_gt1 <- mean(post_2019$OR > 1)
+
+prob_OR_gt1
+
 
 
 ```
-
-Summarize and check 
-
-```{r}
-summary(timeEffectMod2)
-plot(timeEffectMod2)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-
-timeEffectModEst2 <- add_epred_draws(object = timeEffectMod2,
-                                 newdata=multipleSurveysBactModelDF,
-                                 re_formula = NA,
-                                 allow_new_levels = TRUE) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-
-Effect by country
-
-```{r}
-    timeEffectModEst2 %>%
-    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)),
-               y = urRatio, fill=study.country, group=study.country)) +
-    stat_lineribbon(.width = 0.95, alpha = 0.25) +
-    geom_point(data = empirical_prev %>% 
-                   inner_join(multipleSurveysBactModelDF), 
-                aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
-                colour = "black", shape=1) +
-    geom_hline(yintercept = 1, linetype = 2) +
-    facet_wrap(study.country~., scales = "free_y") +
-    labs(y = "Urban-to-rural odds ratio",
-         x = "Year") +
-    theme_bw()  + 
-    theme(legend.position = "none")
-```
-
-
-
 
 
 #### Bacteriologically-positive: Model 3b: Region effect over time 
@@ -573,12 +774,13 @@ Effect by country
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                              1 + year_z * WHO.region + (1 | study.country) + (1 | id), 
-                       data = bactModelDF,
+                              1 + year_z + (1 + year_z | WHO.region) + (1+ year_z |id), 
+                       data = bactModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
+                       backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
@@ -595,7 +797,7 @@ plot(timeEffectRegionMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndTimeReg <- bactModelDF %>%
+ndTimeReg <- bactModelDF_noEM %>%
              select(logOR_se, WHO.region) %>%
              distinct() %>%
              crossing(year_z = seq(min(cleanRuralityDF$year_z, na.rm = TRUE),
@@ -603,7 +805,7 @@ ndTimeReg <- bactModelDF %>%
 
 timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
                                  newdata=ndTimeReg,
-                                 re_formula = NA,
+                                 re_formula = ~(1 + year_z |WHO.region),
                                  allow_new_levels = TRUE) %>% 
                            mutate(urRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval") 
@@ -614,27 +816,21 @@ Main estimate
 timeEffectRegionModEst %>% 
     group_by(year_z, WHO.region) %>% 
     mean_qi(urRatio) %>% 
-    mutate(Year = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + 2011) %>%
     select(WHO.region, Year, urRatio, .lower, .upper) %>%
     arrange(WHO.region, Year)
+
 
 ```
 
 
 ```{r}
     timeEffectRegionModEst %>%
-    filter(WHO.region !="Americas region",
-           WHO.region !="Eastern Mediterranean region") %>%
-    ggplot(aes(x = year_z + round(mean(cleanRuralityDF$study.end.year, na.rm = TRUE)),
+    ggplot(aes(x = year_z + 2011,
                y = urRatio,
                fill = WHO.region, 
                color = WHO.region)) +
     stat_lineribbon(aes(color = WHO.region, fill = WHO.region), .width = 0.95, alpha = 0.25) +
-    geom_point(data = empirical_prev %>%
-                   filter(WHO.region !="Americas region",
-                          WHO.region !="Eastern Mediterranean region"), 
-               aes(x=year_z + round(mean(cleanRuralityDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = logOR_se), 
-               colour = "black") +
     geom_hline(yintercept = 1, linetype = 2) +
     facet_wrap(~ WHO.region) +
     labs(y = "Urban-to-rural odds ratio!",
@@ -644,547 +840,411 @@ timeEffectRegionModEst %>%
     theme_bw()  + theme(legend.position = "bottom")
 ```
 
-### Bacteriologically-positive: Univariate analysis of other covariates 
-
-#### Bacteriologically-positive: Model 6: National versus subnational 
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + natRep + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(natEffectMod)
-plot(natEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndNat <- bactModelDF %>%
-    select(logOR_se, natRep)
-
-natEffectModEst <- add_epred_draws(object = natEffectMod,
-                                 newdata=ndNat,
-                                 re_formula = NA) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate
-```{r}
-natEffectModEst %>% 
-    group_by(natRep) %>% 
-    mean_qi(urRatio) %>% 
-    select(natRep, urRatio, .lower, .upper)
-```
-
+Percentage change per year
 
 ```{r}
-    ggplot() +
-    # geom_hline(aes(yintercept = 1), linetype=2) +
-    geom_point(data = empirical_prev, aes(y=natRep, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
-    stat_pointinterval(data=natEffectModEst, aes(x=urRatio, y=natRep, color=type), .width = 0.95, size=20) +
-    scale_color_manual(values = myPal) +
-    scale_y_discrete(limits=rev, 
-                     labels = label_wrap(10)) +
-    labs(x = "Urban-to-rural prevalence ratio", color = "",
-         y = "Survey representativeness") +
-    scale_size_continuous(range = c(8,16)) +
-    theme_bw() + theme(
-                                     legend.position = c(.83,.2), legend.box.just = "right",
-                                     # legend.direction = "horizontal",
-          panel.grid.minor=element_blank())
-```
-
-#### Bacteriologically-positive: Model 6: Study quality (High vs. not high)
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-
-biasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + bias + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r}
-summary(biasEffectMod)
-plot(biasEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndBias <- bactModelDF %>%
-    select(logOR_se, bias)
-
-biasEffectModEst <- add_epred_draws(object = biasEffectMod,
-                                 newdata=ndBias,
-                                 re_formula = NA) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate
-```{r}
-biasEffectModEst %>% 
-    group_by(bias) %>% 
-    mean_qi(urRatio) %>% 
-    select(bias, urRatio, .lower, .upper)
-```
-
-
-```{r}
-    ggplot() +
-    geom_point(data = empirical_prev, aes(y=bias, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
-    stat_pointinterval(data=biasEffectModEst, aes(x=urRatio, y=bias, color=type), .width = 0.95, size=20) +
-    scale_color_manual(values = myPal) +
-    scale_y_discrete(limits=rev, 
-                     labels = label_wrap(10)) +
-    labs(x = "Male-to-female prevalence ratio", color = "",
-         y = "Low probability of survey bias vs. not low probability of survey bias") +
-    scale_size_continuous(range = c(8,16)) +
-    theme_bw() + theme(
-                                     legend.position = c(.83,.2), legend.box.just = "right",
-                                     # legend.direction = "horizontal",
-          panel.grid.minor=element_blank())
-```
-
-#### Bacteriologically-positive: Model 7: Symptom screen vs. no symptom screen
-
-Model specification
-```{r, warning = FALSE, message=FALSE, cache=TRUE}
-
-sympEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + symptomScreen + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r}
-summary(sympEffectMod)
-plot(sympEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndSymp <- bactModelDF %>%
-    select(logOR_se, symptomScreen)
-
-sympEffectModEst <- add_epred_draws(object = sympEffectMod,
-                                 newdata=ndSymp,
-                                 re_formula = NA) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate
-```{r}
-sympEffectModEst %>% 
-    group_by(symptomScreen) %>% 
-    mean_qi(urRatio) %>% 
-    select(symptomScreen, urRatio, .lower, .upper)
-```
-
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-    ggplot() +
-    geom_point(data = empirical_prev, aes(y=symptomScreen, x=or_empirical, color = type2, size=logOR_se), alpha = 0.5) +
-    stat_pointinterval(data=sympEffectModEst, aes(x=urRatio, y=symptomScreen, color=type), .width = 0.95, size=20) +
-    scale_color_manual(values = myPal) +
-    scale_y_discrete(limits=rev, 
-                     labels = label_wrap(10)) +
-    labs(x = "Male-to-female prevalence ratio", color = "",
-         y = "Symptom screening required") +
-    scale_size_continuous(range = c(8,16)) +
-    theme_bw(base_size = 30) + theme(
-                                     legend.position = c(.83,.2), legend.box.just = "right",
-                                     # legend.direction = "horizontal",
-          panel.grid.minor=element_blank(),
-          plot.title = element_text(size=36))
-```
- 
-#### Bacteriologically-positive: Model 8: country level urbanisation
-
-Import the urbanisation data, and check
-https://ourworldindata.org/urbanization
-
-
-```{r}
-
-urbanization <- read.csv("data/share-of-population-urban.csv")
-
-countries_in_review <- bactModelDF %>%
-    select(study.country) %>%
-    distinct() %>%
-    pull()
-
-urbanizationClean <- urbanization %>%
-    filter(Entity %in% countries_in_review) %>%
-    janitor::clean_names() %>%
-    mutate(pct_urban = urban_population_of_total_population/100)
-
-urbanizationClean %>%
-    ggplot() +
-    geom_line(aes(x = year, y=pct_urban, colour = entity)) +
-    scale_y_continuous(labels = scales::percent)
-
-```
-
-Now get the percentage of population that was urban in the year of the survey
-
-```{r}
-
-urbanizationClean <- urbanizationClean %>%
-    mutate(year_z = year - round(mean(cleanRuralityDF0$study.start.year, na.rm=TRUE))) %>%
-    select(study.country = entity,
-           year_z,
-           pct_urban)
-    
-urbanizationModelDF <- left_join(bactModelDF, urbanizationClean)
-
-
-```
-
-Construct a model to look at the effect of urbanization in country at time of survey
-
-```{r}
-
-urbanizationEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + pct_urban + (1 | study.country) + (1 | id),
-                       data = urbanizationModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-    
-
-
-```
-
-
-```{r}
-summary(urbanizationEffectMod)
-plot(urbanizationEffectMod)
-
-
-
-```
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndUrbanization <- crossing(
-    pct_urban = modelr::seq_range(urbanizationModelDF$pct_urban, n=30),
-    logOR_se = 1
-)
-
-urbanizationEffectModEst <- add_epred_draws(object = urbanizationEffectMod,
-                                 newdata=ndUrbanization,
-                                 re_formula = NA) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-    ggplot() +
-    geom_hline(aes(yintercept = 1), linetype=2) +
-    stat_lineribbon(data=urbanizationEffectModEst, aes(y=urRatio, x=pct_urban), .width = 0.95, alpha=0.5) +
-    scale_color_manual(values = myPal) +
-    labs(y = "Male-to-female prevalence ratio", color = "",
-         x = "Percent of population living in urban areas") +
-    theme_bw() + theme(panel.grid.minor=element_blank())
-```
-
-
-#### Bacteriologically-positive: Model 8: country level urbanisation by region
-
-```{r}
-
-urbanizationEffectMod2 <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + pct_urban*WHO.region + (1 | study.country) + (1 | id),
-                       data = urbanizationModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-
-```{r}
-summary(urbanizationEffectMod2)
-plot(urbanizationEffectMod2)
-
-
-
-```
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndUrbanization2 <- crossing(
-    pct_urban = modelr::seq_range(urbanizationModelDF$pct_urban, n=30),
-    WHO.region = unique(urbanizationModelDF$WHO.region),
-    logOR_se = 1
-)
-
-urbanizationEffectModEst2 <- add_epred_draws(object = urbanizationEffectMod2,
-                                 newdata=ndUrbanization2,
-                                 re_formula = NA) %>% 
-                           mutate(urRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-
-empirical_prev_urban <- urbanizationModelDF %>%
-    transmute(
-        id,
-        WHO.region = WHO.region,
-        year_z = year_z,
-        logOR_se,
-        natRep = natRep,
-        bias = bias,
-        pct_urban = pct_urban,
-        p_rural_empirical = plogis(LogOdds_Rural),
-        p_urban_empirical = plogis(LogOdds_Urban),
-        or_empirical = p_urban_empirical / p_rural_empirical,
-        or_empirical = (p_urban_empirical / (1 - p_urban_empirical)) / 
-            (p_rural_empirical / (1 - p_rural_empirical))  # odds ratio
-    ) %>% mutate(type = "Survey-specific ratios",
-                 type2 = "Survey-specific TB prevalence")
-
-
-urbanizationEffectModEst2 %>%
-    filter(WHO.region !="Eastern Mediterranean region") %>%
-    ggplot() +
-    geom_hline(aes(yintercept = 1), linetype=2) +
-    stat_lineribbon(aes(y=urRatio, x=pct_urban, fill=WHO.region), 
-                    .width = 0.95, alpha=0.5) +
-    geom_point(data = empirical_prev_urban %>% filter(WHO.region !="Eastern Mediterranean region"),
-               aes(x=pct_urban, y=or_empirical, size = logOR_se), shape = 1) +
-    facet_wrap(WHO.region ~.) +
-    scale_x_continuous(labels = scales::percent) +
-    scale_fill_brewer(palette = "Set1") +
-    labs(y = "Urban-to-rural prevalence ratio", color = "",
-         x = "Percent of population living in urban areas") +
-    theme_bw() + theme(panel.grid.minor=element_blank())
-```
-
-#### Multlivariate model, with all covariates
-
-
-```{r}
-
-mvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + pct_urban + WHO.region + year_z + natRep + bias + symptomScreen +
-                       (1 | study.country) + (1 | id),
-                       data = urbanizationModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-```{r}
-
-summary(mvMod)
-plot(mvMod)
-
-
-
-```
-
-```{r}
-
-summarize_draws(mvMod) %>%
-    filter(stringr::str_detect(variable, "b_"),
-           variable !="b_Intercept") %>%
-    select(variable, mean, q5, q95) %>%
-    mutate(across(is.numeric, exp)) %>%
-    ggplot() +
-    geom_hline(aes(yintercept = 1), linetype=2) +
-    geom_pointinterval(aes(y=mean, ymin=q5, ymax =q95, x=variable)) +
-    coord_flip() +
-    scale_y_log10() +
-    theme(panel.background = element_rect(colour="grey78"))
-
-
-```
-
-### Figure 2: Forest plot
-
-Bring estimates from regional model together to make a forest plot for the manuscript.
-
-```{r}
-
-# Join survey labels
-names <- cleanRuralityDF0 %>%
-  mutate(id = row_number()) %>%
-  select(id, figure.id.yr)  %>%
-  mutate(figure.id.yr = case_when(
-        figure.id.yr == "Kenya (Karemo) NA" ~ "Kenya (Karemo) 2010",
-              TRUE ~ figure.id.yr)
-    )
-
-    
-
-# Survey-level estimates
-survey_sum <- surveyEffectModEst %>%
-  group_by(id) %>%
-  mean_qi(urRatio) %>%
-  mutate(grouping = "survey") %>%
-  left_join(names, by = "id") %>%
-  left_join(bactModelDF %>% select(id, WHO.region), by = "id")
-
-# Regional summaries
-region_sum <- regionEffectModEst %>%
-  group_by(WHO.region) %>%
-  mean_qi(urRatio) %>%
-  mutate(grouping = "regional") %>%
-  rename(figure.id.yr = WHO.region)
-
-# Global summary
-global_sum <- mainEffectModEst %>%
-  ungroup() %>%
-  mean_qi(urRatio) %>%
-  mutate(grouping = "Overall",  
-         figure.id.yr = "Overall")
-
-# Combine all
-forestDF <- bind_rows(survey_sum, region_sum, global_sum)
-
-# Fill display label and facet group
-forestDF <- forestDF %>%
-  mutate(
-    display_label_raw = ifelse(is.na(figure.id.yr), grouping, figure.id.yr),
-    facet_group = case_when(
-      grouping == "survey" ~ WHO.region,
-      grouping == "regional" ~ figure.id.yr,
-      grouping == "Overall" ~ "Overall"
-    )
-  )
-
-# Define facet order
-group_order <- c(
-  "Africa region", 
-  "Eastern Mediterranean region", 
-  "South-East Asia region", 
-  "Western Pacific region", 
-  "Overall"
-)
-
-# Separate surveys and summaries
-surveys_only <- forestDF %>%
-  filter(grouping == "survey") %>%
-  group_by(facet_group) %>%
-  arrange(desc(urRatio), .by_group = TRUE) %>%
-  ungroup()
-
-summaries_only <- forestDF %>%
-  filter(grouping != "survey")
-
-# Recombine with surveys first, then summaries (preserves facet-wise order)
-forestDF_plot <- bind_rows(surveys_only, summaries_only) %>%
-  mutate(facet_group = factor(facet_group, levels = group_order)) %>%
-  mutate(display_label = case_when(
-    grouping == "Overall" ~ "<b>Overall</b>",
-    grouping == "regional" ~ paste0("<b>", display_label_raw, "</b>"),
-    TRUE ~ display_label_raw
-  )) %>%
-  mutate(display_label = factor(display_label, levels = rev(unique(display_label))))
-
-# Prepare empirical data
-empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
-  rename(display_label_raw = figure.id.yr) %>%
-  select(display_label_raw, WHO.region, or_empirical) %>%
-  mutate(
-    grouping = "survey",
-    facet_group = WHO.region,
-    display_label = display_label_raw
+newdata <- expand.grid(
+  year_z = seq(min(bactModelDF_noEM$year_z), max(bactModelDF_noEM$year_z), length.out = 2), 
+  WHO.region = unique(bactModelDF_noEM$WHO.region),
+  id = NA 
+) %>%
+  mutate(logOR_se =1)
+
+pred_draws <- add_epred_draws(timeEffectRegionMod, newdata = newdata, re_formula = ~(1 + year_z | WHO.region))
+
+region_pct_change <- pred_draws %>%
+  group_by(.draw, WHO.region) %>%
+  summarise(
+    logOR_diff = diff(.epred),
+    n_years = diff(range(year_z)),  
+    .groups = "drop"
   ) %>%
-  mutate(facet_group = factor(facet_group, levels = group_order))
+  mutate(
+    slope_per_year = logOR_diff / n_years,
+    annual_pct_change = (exp(slope_per_year) - 1) * 100
+  ) %>%
+  group_by(WHO.region) %>%
+  mean_qi(annual_pct_change)
 
-# Plot
-ggplot(forestDF_plot) +
-  geom_hline(yintercept = 1, linetype = "dashed", colour = "darkred") +
-  geom_pointinterval(aes(x = display_label, y = urRatio, ymin = .lower, ymax = .upper),
-                     size = 0.25) +
-  geom_point(data = empirical_prev_labels,
-             aes(x = display_label, y = or_empirical), colour = "mediumseagreen", shape = 1) +
-  coord_flip() +
-  facet_grid(facet_group ~ ., scales = "free", space = "free") +
-  scale_y_log10(
-    breaks = c(0.25, 0.5, 1, 2, 4),
-    labels = c("0.25", "0.5", "1", "2", "4")
-  ) +
-  labs(
-    x = NULL,
-    y = "Urban-to-rural bacteriologically-confirmed TB prevalence ratio\n(Posterior mean, 95% credible interval)"
-  ) +
-  theme_minimal(base_size = 10) +
-  theme(
-    strip.text.y = element_blank(),
-    strip.background = element_blank(),
-    panel.spacing.y = unit(1, "lines"),
-    axis.text.y = ggtext::element_markdown(hjust = 1),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    plot.background = element_rect(fill = "white")
-  )
+region_pct_change
 
-# Save
-ggsave("output/urFigure2.png", height = 10)
+```
+
+Posterior probability >1 in 2019
+
+```{r}
+
+#get posterior draws for the linear predictor in 2019
+post_2019_region <-  add_epred_draws(object = timeEffectRegionMod,
+                              newdata = tibble(year_z = year_2019_z,
+                                               logOR_se =1)%>%
+                                                expand_grid(WHO.region = unique(bactModelDF_noEM$WHO.region)),
+                                               re_formula = ~(1 + year_z| WHO.region)) 
+
+post_2019_region <- post_2019_region %>%
+  mutate(OR = exp(.epred))
+
+#compute posterior probability that OR > 1
+prob_OR_gt1_region <-  post_2019_region %>%
+        group_by(WHO.region) %>%
+        summarise(post_prob = mean(OR > 1))
+
+prob_OR_gt1_region
+
+```
+
+
+### Bacteriologically-positive: Univariate analysis of covariates 
+
+
+First sort out the other two covariates (pct_urban, and TB incidence)
+
+```{r}
+
+#convert TB incidence so that we can estimate per 100 per 100,000 per year change, rather than per 1 per 100,000 per year change (not a meaningful unit)
+
+bactModelDF_noEM <- bactModelDF_noEM %>%
+  mutate(incidence_100 = incidence/100) %>%
+  mutate(pct_unit = pct_urban*100)
 
 
 ```
+
+Write functions for running models
+
+
+Firstly write a list of formulae that we will run
+
+```{r}
+
+formulas <- list(
+  
+  #Nationally representative
+  natRep_region = bf(logOR | se(logOR_se, sigma=TRUE) ~ 1 + natRep + (1 + natRep | WHO.region) + (1 | id)),
+  
+  #risk of bias
+  bias_region = bf(logOR | se(logOR_se, sigma=TRUE) ~ 1 + bias + (1 + bias | WHO.region) + (1 | id)),
+  
+  #symptom screening
+  symptom_region = bf(logOR | se(logOR_se, sigma=TRUE) ~ 1 + symptomScreen + (1 + symptomScreen | WHO.region) + (1 | id)),
+  
+  #TB incidence
+  incidence_region = bf(logOR | se(logOR_se, sigma=TRUE) ~ 1 + incidence_100 + (1 + incidence_100 | WHO.region) + (1 | id)),
+  
+  #Percent of population living in urban areas
+  pct_urban_region = bf(logOR | se(logOR_se, sigma=TRUE) ~ 1 + pct_unit + (1 + pct_unit | WHO.region) + (1 | id))
+  )
+```
+
+
+Function to fit the univariate models
+
+```{r}
+
+fit_univariate_models <- function(formula, data, iter = 4000, chains = 4, cores = 4){
+  
+  fit <- brm(
+    formula = formula,
+    data = data,
+    family = gaussian(),
+    backend = "cmdstanr",
+    prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+            prior(normal(0, 10), class = b) +
+            prior(exponential(2), class = sd),
+    control = list(adapt_delta = 0.99),
+    iter = iter,
+    chains = chains,
+    cores = cores
+  )
+
+  lst(univariate_fits = fit)
+}
+
+# Fit all univariate models
+fit_all_univariate <- function(formula_list, data, iter = 4000, chains = 4, cores = 4) {
+  
+  #If no names, create generic ones
+  if (is.null(names(formula_list))) {
+    names(formula_list) <- paste0("model_", seq_along(formula_list))
+  }
+  
+  #Fit each model and store in a named list
+  fits <- map(formula_list, ~ fit_univariate_models(.x, data, iter, chains, cores)$univariate_fits)
+  
+  # Return named list of fitted models
+  fits
+}
+
+```
+
+Function to take posterior draws and summarise global associations with covariates.
+
+```{r}
+
+tidy_region_effect_with_global <- function(fit) {
+  draws <- as_draws_df(fit)
+  
+  # Identify the single predictor slope (exclude intercept)
+  b_cols <- grep("^b_", names(draws), value = TRUE)
+  b_cols <- setdiff(b_cols, "b_Intercept")
+  if (length(b_cols) != 1) stop("Expected exactly one predictor column")
+  slope_name <- b_cols
+  coef_name <- str_remove(slope_name, "^b_")
+  
+  # Extract region-specific random slopes
+  r_cols <- grep(paste0("^r_WHO.region\\[.*,", coef_name, "\\]"), names(draws), value = TRUE)
+  regions <- str_match(r_cols, paste0("\\[(.*),", coef_name, "\\]"))[,2]
+  
+  # Compute regional ORs (equivalent to prevalence ratios, as prevalence is small)
+  region_tbl <- map2_dfr(r_cols, regions, function(col, region) {
+    draws %>%
+      rowwise() %>%
+      transmute(logOR = sum(c_across(all_of(c(slope_name, col))))) %>%
+      ungroup() %>%
+      mutate(or = exp(logOR)) %>%
+      mean_qi(or) %>%
+      mutate(coefficient = coef_name, area = region)
+  }) %>%
+    transmute(
+      coefficient,
+      area,
+      `odds_ratio_and95%cri` = paste0(round(or,2), " (", round(.lower,2), "-", round(.upper,2), ")")
+    )
+  
+  # Compute global OR from the mean of the regional random slopes
+  global_tbl <- draws %>%
+    rowwise() %>%
+    transmute(logOR = sum(c_across(all_of(slope_name))) +
+                      mean(c_across(all_of(r_cols)))) %>%
+    ungroup() %>%
+    mutate(or = exp(logOR)) %>%
+    mean_qi(or) %>%
+    mutate(coefficient = coef_name, area = "global") %>%
+    transmute(coefficient, area, `odds_ratio_and95%cri` = paste0(round(or,2), " (", round(.lower,2), "-", round(.upper,2), ")"))
+  
+  bind_rows(global_tbl, region_tbl)
+}
+
+
+
+```
+
+Summarise all posterior draws
+
+```{r}
+summarise_all_univariate <- function(fit_list) {
+  
+  # Identify regional models
+  region_names <- names(fit_list)[str_detect(names(fit_list), "_region$")]
+  
+  # Extract both global + regional summaries
+  all_tbl <- map_df(region_names, function(nm) {
+    
+    # global effects
+    global <- tidy_global_effect(fit_list[[nm]]) %>%
+      mutate(model = nm,
+             area = "Global")   # tag clearly
+    
+    # regional effects
+    regional <- tidy_region_effect(fit_list[[nm]]) %>%
+      mutate(model = nm)
+    
+    bind_rows(global, regional)
+  })
+  
+  # Arrange consistently
+  all_tbl %>%
+    arrange(coefficient, area, model)
+}
+
+```
+
+Now fit all the models. Note we exclude the two studies from EM
+
+```{r}
+res <- fit_all_univariate(formulas, data = bactModelDF_noEM)
+```
+
+Summarise the univariate associations, and arrange for output table
+
+```{r}
+all_univariate_out <- summarise_all_univariate(res)
+
+all_univariate_out_wide <- all_univariate_out %>%
+  select(coefficient, area, `odds_ratio_and95%cri`) %>%
+  pivot_wider(
+    names_from = area,
+    values_from = `odds_ratio_and95%cri`
+  ) %>%
+  arrange(coefficient) %>%
+  select(coefficient,
+         Global,
+         `Africa region` = `Africa.region`,
+         `South-East Asia region` = `South-East.Asia.region`,
+         `Western Pacific region` = Western.Pacific.region) %>%
+  mutate(
+      coefficient = case_when(
+        str_detect(coefficient, "natRep") ~ "Nationally representative (Yes vs No)",
+        str_detect(coefficient, "bias")   ~ "Bias (not low vs low)",
+        str_detect(coefficient, "symptomScreen") ~ "Symptom screening (Yes vs No)",
+        str_detect(coefficient, "incidence_100") ~ "National TB incidence (per 100/100,000 increase)",
+        str_detect(coefficient, "pct_unit") ~ "Percent of population in urban areas (per % point increase)",
+        TRUE ~ NA_character_
+      ))
+
+all_univariate_out_wide
+
+```
+
+Adjusted main effects. This is our multivariable model. We allow effects of coefficients (slopes) to vary by 3 global regions.
+
+```{r}
+
+multi_region_varying <- brms::brm(
+  logOR | se(logOR_se, sigma = TRUE) ~ 
+    1 + natRep + bias + symptomScreen + incidence_100 + pct_unit + (1 | id) + (1 + year_z + natRep + bias + symptomScreen + incidence_100 + pct_unit | WHO.region), 
+  data = bactModelDF_noEM,
+  family = gaussian(),
+  prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+          prior(normal(0, 10), class = b) +
+          prior(exponential(2), class = sd) +   
+          prior(lkj(2), class = cor, group = "WHO.region"),        
+  control = list(adapt_delta = 0.99),
+  backend = "cmdstanr",
+  iter = 4000,
+  chains = 4,
+  cores = 4
+)
+
+summary(multi_region_varying)
+
+```
+
+Now function for tudying up the regional effects
+
+```{r}
+tidy_multi_region_effects <- function(fit, region_order = NULL) {
+  draws <- as_draws_df(fit)
+  
+  # fixed-effect columns (excluding intercept)
+  fe_cols <- grep("^b_", names(draws), value = TRUE)
+  fe_cols <- setdiff(fe_cols, "b_Intercept")
+  if (length(fe_cols) < 1) stop("No fixed-effect b_ columns found (excluding intercept).")
+  coef_names <- sub("^b_", "", fe_cols)
+  
+  # global table
+  global_tbl <- map_dfr(seq_along(fe_cols), function(i) {
+    col <- fe_cols[i]
+    coef <- coef_names[i]
+    vals <- draws[[col]]
+    med <- median(vals)
+    lo  <- quantile(vals, 0.025)
+    hi  <- quantile(vals, 0.975)
+    or  <- exp(med); or_lo <- exp(lo); or_hi <- exp(hi)
+    tibble(
+      coefficient = coef,
+      area = "Global",
+      `odds_ratio_and95%cri` = sprintf("%.2f (%.2f-%.2f)", or, or_lo, or_hi)
+    )
+  })
+  
+  # region-specific table
+  region_tbl <- map_dfr(seq_along(fe_cols), function(i) {
+    col <- fe_cols[i]
+    coef <- coef_names[i]
+    # rcols like "r_WHO.region[Region.name,coef]"
+    r_pattern <- paste0("^r_WHO.region\\[([^,]+),", coef, "\\]")
+    rcols <- grep(r_pattern, names(draws), value = TRUE)
+    if (length(rcols) == 0) return(tibble())  # no regional slopes for this coef
+    
+    map_dfr(rcols, function(rcol) {
+      region <- sub(paste0("^r_WHO.region\\[([^,]+),", coef, "\\]$"), "\\1", rcol)
+      vals <- draws[[col]] + draws[[rcol]]   # vector add: fixed + region deviation
+      med <- median(vals)
+      lo  <- quantile(vals, 0.025)
+      hi  <- quantile(vals, 0.975)
+      or  <- exp(med); or_lo <- exp(lo); or_hi <- exp(hi)
+      tibble(
+        coefficient = coef,
+        area = region,
+        `odds_ratio_and95%cri` = sprintf("%.2f (%.2f-%.2f)", or, or_lo, or_hi)
+      )
+    })
+  })
+  
+  combined <- bind_rows(global_tbl, region_tbl)
+  
+  # pivot wider
+  wide <- combined %>%
+    pivot_wider(names_from = area, values_from = `odds_ratio_and95%cri`) %>%
+    arrange(coefficient) %>%
+  mutate(
+      coefficient = case_when(
+        str_detect(coefficient, "natRep") ~ "Nationally representative (Yes vs No)",
+        str_detect(coefficient, "bias")   ~ "Bias (not low vs low)",
+        str_detect(coefficient, "symptomScreen") ~ "Symptom screening (Yes vs No)",
+        str_detect(coefficient, "incidence_100") ~ "National TB incidence (per 100/100,000 increase)",
+        str_detect(coefficient, "pct_unit") ~ "Percent of population in urban areas (per % point increase)",
+        TRUE ~ NA_character_
+      ))
+  
+  if (!is.null(region_order)) {
+    region_order <- unique(c(region_order, "Global"))
+    cols <- c("coefficient", intersect(region_order, colnames(wide)))
+    other_cols <- setdiff(colnames(wide), cols)
+    wide <- wide %>% select(all_of(cols), all_of(other_cols))
+  }
+  
+  wide
+}
+
+
+```
+
+Run the function to get and tidy the multivariable associations.
+
+```{r}
+
+multi_region_out <- tidy_multi_region_effects(multi_region_varying)
+
+```
+
+Join together in a single table
+
+```{r}
+
+#first, standardise column names across the two tables
+all_uni <- all_univariate_out_wide %>%
+  rename(
+    coefficient = coefficient,
+    Global_univariate            = Global,
+    Africa_univariate            = `Africa region`,
+    `South-East Asia_univariate` = `South-East Asia region`,
+    `Western Pacific_univariate` = `Western Pacific region`
+  )
+
+multi <- multi_region_out %>%
+  rename(
+    coefficient = coefficient,
+    Global_multivariate            = Global,
+    Africa_multivariate            = Africa.region,
+    `South-East Asia_multivariate` = `South-East.Asia.region`,
+    `Western Pacific_multivariate` = Western.Pacific.region
+  ) 
+
+#join on coefficient
+combined <- full_join(all_uni, multi, by = "coefficient") %>%
+    select(coefficient,
+            Global_univariate, `Global_multivariate`,
+            `Africa_univariate`, `Africa_multivariate`,
+            `South-East Asia_univariate`, `South-East Asia_multivariate`,
+            `Western Pacific_univariate`, `Western Pacific_multivariate`)
+
+combined
+
+```
+
+
 
 
 ### Smear positive analysis 
@@ -1297,6 +1357,7 @@ cleanRuralitySmrDF <- cleanRuralitySmrDF0 %>%
 
 ```
 
+Prepare the dataset for smear-positive analysis
 
 ```{r}
 smrModelDF <- cleanRuralitySmrDF %>%
@@ -1326,17 +1387,27 @@ print(paste(sum(!is.na(cleanRuralitySmrDF0$n.participants.rural)), "studies repo
 print(paste0(round(sum(cleanRuralitySmrDF0$n.participants.urban, na.rm=TRUE)/sum(cleanRuralitySmrDF0$n.participants.rural, cleanRuralitySmrDF0$n.participants.urban, na.rm = TRUE)*100, 2), "% of participants were urban" ))
 ```
 
+We will also exclude the Eastern Mediterranean surveys from the main model.
+
+```{r}
+
+smrModelDF_noEM <- smrModelDF %>%
+    filter(WHO.region !="Eastern Mediterranean region") 
+
+```
+
 #### Smear positive: Model 1: Smear positive main effect 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1 | study.country) + (1|id),
-                       data = smrModelDF,
+                       data = smrModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            # prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
+                       backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
@@ -1354,7 +1425,8 @@ plot(mainEffectSmrMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-nd <- smrModelDF %>%
+
+nd <- smrModelDF_noEM %>%
       select(study.country, LogOdds_Rural) %>%
       mutate(logOR_se=1)
 
@@ -1369,17 +1441,19 @@ Main estimate
 ```{r}
 mainEffectSmrModEst %>% ungroup %>% mean_qi(urRatio)
 ```
+
 #### Smear positive:  Model 2: Smear positive effect by world region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1|WHO.region) + (1|id),
-                       data = smrModelDF,
+                       data = smrModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            # prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
+                       backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
@@ -1396,7 +1470,7 @@ plot(regionEffectSmrMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndRegion <- smrModelDF %>%
+ndRegion <- smrModelDF_noEM %>%
       select(WHO.region, LogOdds_Rural) %>%
       mutate(logOR_se=1)
 
@@ -1414,7 +1488,7 @@ regionEffectSmrModEst %>% group_by(WHO.region) %>% mean_qi(urRatio)
 
 ```{r}
 ### Get the empirical values 
-empirical_smr_prev <- smrModelDF %>%
+empirical_smr_prev <- smrModelDF_noEM %>%
     transmute(
         id,
         WHO.region = WHO.region,
@@ -1444,170 +1518,111 @@ ggplot() +
     
 ```
 
-```{r}
-###### Incidence rates and models with incidence rates
-###### Get the incidence rates
-incidence <- read.csv(here("models/TB_burden_countries_2025-05-06.csv"))
-# 1. Standardize country names in cleanRuralityDF
-incidence <- incidence %>%
-  mutate(country = case_when(
-    country == "Viet Nam" ~ "Vietnam",
-    country == "Lao People's Democratic Republic" ~ "Laos",
-    country == "Democratic People's Republic of Korea" ~ "North Korea",
-    country == "United Republic of Tanzania" ~ "Tanzania",
-    TRUE ~ country
-  ))
-
-
-# 2. Perform the join
-cleanRuralityDF <- cleanRuralityDF %>%
-  left_join(
-    incidence %>% 
-      select(country, year, incidence = e_inc_100k),
-    by = c("study.country" = "country", "study.start.year" = "year")
-  )
-bactModelDF <- cleanRuralityDF %>%
-    select(id, WHO.region, study.country, Rurality, year_z, natRep, bias, symptomScreen, LogOdds, LogOddsStandardError, incidence) %>%
-    pivot_wider(names_from = Rurality,
-                values_from = c(LogOdds, LogOddsStandardError),
-                names_sep = "_") %>%
-    mutate(
-        logOR = LogOdds_Urban - LogOdds_Rural,
-        logOR_se = sqrt(LogOddsStandardError_Urban^2 + LogOddsStandardError_Rural^2)
-    )
-```
+Change in smear-positive urban-to-rural prevalence ratio over time?
 
 ```{r}
-###### Model with incidence
-incidenceEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + incidence + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
+smrtimeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 | study.country) + (1 + year_z | id),
+                       data = smrModelDF_noEM,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
+                       backend = "cmdstanr",
                        chains = 4,
                        cores = 4,
                        iter = 4000)
-
-
-#######
-summary(incidenceEffectMod)
-plot(incidenceEffectMod)
-
-#######
-
-ndIncidence <- bactModelDF %>%
-  select(study.country, incidence) %>%
-  mutate(logOR_se = 1)
-
-# Generate predictions with fixed effects only
-incidenceEffectModEst <- add_epred_draws(
-  object = incidenceEffectMod,
-  newdata = ndIncidence,
-  re_formula = ~1 + (1 | study.country),  # include study.country random effects
-  allow_new_levels = TRUE  # allows predictions even for unseen levels
-) %>%
-  mutate(urRatio = exp(.epred),
-         type = "Posterior mean and 95% credible interval")
-
-summary_df <- incidenceEffectModEst %>%
-  group_by(study.country) %>%
-  mean_qi(urRatio)
-
-# Summarize predictions
-incidencePredictions %>%
-  group_by(incidence) %>%
-  mean_qi(logOR) %>%
-  ggplot(aes(x = incidence, y = logOR)) +
-  geom_line() +
-  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = 0.2) +
-  labs(title = "Predicted logOR across incidence levels",
-       y = "Predicted logOR",
-       x = "Incidence per 100,000")
-
-
-
-ggplot(summary_df, aes(x = reorder(study.country, urRatio), y = urRatio)) +
-  geom_point() +
-  geom_errorbar(aes(ymin = .lower, ymax = .upper), width = 0.2) +
-  coord_flip() +  # flips axes for better readability
-  labs(
-    title = "Predicted Odds Ratio by Study Country",
-    x = "Study Country",
-    y = "Posterior Mean Odds Ratio (with 95% Credible Interval)"
-  ) +
-  theme_minimal()
 ```
 
 ```{r}
-###### Model with incidence and region
-incidenceRegionMod <- brms::brm(
-  formula = logOR | se(logOR_se, sigma = TRUE) ~ 
-    incidence + (1 | WHO.region) + (1 | id),
-  data = bactModelDF,
-  prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-          prior(normal(0, 10), class = b) +
-          prior(exponential(2), class = sd),
-  family = gaussian(),
-  control = list(adapt_delta = 0.99),
-  chains = 4,
-  cores = 4,
-  iter = 4000
-)
 
-######
-summary(incidenceRegionMod)
-plot(incidenceRegionMod)
-
-######
-ndRegion2 <- bactModelDF %>%
-  select(WHO.region, incidence) %>%
-  mutate(logOR_se = 1)
-
-incidenceRegionModEst <- add_epred_draws(
-  object = incidenceRegionMod,
-  newdata = ndRegion2,
-  re_formula = ~ 1 + (1 | WHO.region),  # include WHO.region random effects
-  allow_new_levels = TRUE
-) %>%
-  mutate(
-    urRatio = exp(.epred),
-    type = "Posterior mean and 95% credible interval"
-  )
-
-incidenceRegionModEst %>%
-  group_by(WHO.region) %>%
-  mean_qi(urRatio)
-
-######### Plot the model
-ggplot() +
-  geom_vline(aes(xintercept = 1), linetype = 2) +
-  
-  # Empirical data points
-  geom_point(data = empirical_prev, 
-             aes(y = WHO.region, x = or_empirical, color = type2), 
-             alpha = 0.5, size = 8) +
-  
-  # Model estimates with intervals
-  stat_pointinterval(data = incidenceRegionModEst, 
-                     aes(x = urRatio, y = WHO.region, color = type), 
-                     .width = 0.95, size = 20) +
-  
-  scale_color_manual(values = myPal) +
-  scale_y_discrete(limits = rev, 
-                   labels = label_wrap(10)) +
-  
-  labs(x = "Urban-to-rural prevalence ratio",
-       y = "WHO region") +
-  
-  theme_bw() + 
-  theme(
-    legend.title = element_blank(), 
-    legend.position = "bottom", 
-    panel.grid.minor = element_blank()
-  )
+summary(smrtimeEffectMod)
+plot(smrtimeEffectMod)
+conditional_effects(smrtimeEffectMod)
 
 ```
 
+```{r}
+
+smrtimeEffectModEst <- add_epred_draws(object = smrtimeEffectMod,
+                                 newdata=ndTime,
+                                 re_formula = NA,
+                                 allow_new_levels = TRUE) %>% 
+                           mutate(urRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+
+```{r}
+smrtimeEffectModEst %>% 
+    group_by(year_z) %>% 
+    mean_qi(urRatio) %>% 
+    mutate(Year = year_z + 2011) %>%
+    select(Year, urRatio, .lower, .upper)
+
+```
+
+
+```{r}
+    smrtimeEffectModEst %>%
+    ggplot(aes(x = year_z + 2011,
+               y = urRatio)) +
+    stat_lineribbon(.width = 0.95, alpha = 0.5, fill="cadetblue") +
+    scale_y_log10(
+    breaks = c(0.25, 0.5, 1, 2, 4),
+    labels = c("0.25", "0.5", "1", "2", "4")
+  ) +
+    scale_x_continuous(
+    limits = c(2000, 2020),
+    breaks = c(2000, 2005, 2010, 2015, 2020),
+    labels = c("2000", "2005", "2010", "2015", "2020")
+  ) +
+    geom_hline(yintercept = 1, linetype = 2) +
+    labs(y = "Urban-to-rural prevalence ratio",
+         x = "Year",
+         size = "Log odds of standard error of TB prevalence") +
+    theme_bw()  + theme(legend.position = "bottom")
+```
+
+Annual percentage change
+
+```{r}
+
+smrtimeEffectMod_posterior <- as_draws_df(smrtimeEffectMod)
+
+smrtimeEffectMod_beta_year_draws <- smrtimeEffectMod_posterior$b_year_z
+
+# Annual % change in OR
+smrtimeEffectMod_annual_pct_draws <- (exp(smrtimeEffectMod_beta_year_draws) - 1) * 100
+
+# Summarize
+smrtimeEffectMod_annual_pct_draws %>% 
+  mean_qi()
+
+
+
+```
+
+What is the posterior probability that the urban-to-rural prevalence ratio exceeded 1 by 2019?
+
+```{r}
+
+#get posterior draws for the linear predictor in 2019
+smrpost_2019 <-  add_epred_draws(object = smrtimeEffectMod,
+                              newdata = tibble(year_z = year_2019_z,
+                                               logOR_se =1), 
+                                               re_formula = NA)
+
+smrpost_2019 <- smrpost_2019 %>%
+  mutate(OR = exp(.epred))
+
+#compute posterior probability that OR > 1
+smrprob_OR_gt1 <- mean(smrpost_2019$OR > 1)
+
+smrprob_OR_gt1
+
+
+
+```
