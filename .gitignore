@@ -2,3 +2,7 @@
 .DS_Store
 .Rhistory
 data/.Rapp.history
+data/checks
+*cache/
+*files/
+sexMetaAnalysis.pdf
