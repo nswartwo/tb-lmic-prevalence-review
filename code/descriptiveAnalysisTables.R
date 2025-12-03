@@ -215,9 +215,10 @@ studyRuralityDetails <- data.frame("Survey ID" = ruralitySurveys$figure.id,
 write.csv(studyRuralityDetails, file = here("output/descriptive/ruralityStudyTable.csv"))  
 
 ### HIV studies 
-hivSurveys <- cleanDF %>% filter(report.hiv == "Yes")
+# hivSurveys <- cleanDF %>% filter(report.hiv == "Yes")
+hivSurveys <- bactPostIndicator("hiv") %>% filter(hiv.analysis.indicator !="none")
 studyHIVDetails <- data.frame("Survey ID" = hivSurveys$figure.id, 
-                              "WHO region" = hivSurveys$World.regions.according.to.WHO,
+                              "WHO region" = hivSurveys$World.regions.according.to.WHO, #"Africa region", 
                               "Year(s) of study" = hivSurveys$study.years,
                               "HIV+ participants (N)" = hivSurveys$n.participants.hiv.positive,
                               "HIV+ TB positive (N)" = hivSurveys$n.bacteriological.tb.hiv.positive, 
