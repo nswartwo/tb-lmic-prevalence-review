@@ -1,0 +1,100 @@
+,Survey ID,Year(s) of study,WHO region,Reported measure of bacteriological TB,Female TB prevalence (as reported),Male TB prevalence (as reported),Female TB prevalence (as modelled),Male TB prevalence (as modelled),Total participants (N),Male participants (%),Probability of bias
+56,"Ethiopia (District 16, Addis Ababa) ",2001,Africa region,Count of smear positive TB,11,12,160,228,12149,43.25,Moderate
+11,"South Africa (Western Cape Province, a)",2005,Africa region,Count of bacteriological positive TB,41,38,1994,2568,3536,41.86,Moderate
+16,"South Africa (Western Cape Province, b)",2005,Africa region,Count of culture positive TB,30,37,1717,3779,2726,35.91,Moderate
+30,Uganda (Kisenyi),2005,Africa region,Count of smear positive TB,17,16,5574,2560,930,67.2,High
+32,Eritrea (National),2005,Africa region,Count of smear positive TB,8,7,67,113,38032,16.27,Moderate
+64,Zambia (Lusaka Province),2005,Africa region,Adjusted bacteriological positive TB prevalence,800 (470-1130),940 (560-1320),800,940,8325,NA,Moderate
+55,Ethiopia (Jimma Zone),2009,Africa region,Count of culture positive TB,10,7,72,51,27597,49.72,High
+27,Ethiopia (Dabat District) ,2010,Africa region,Count of smear positive TB,32,9,258,80,23590,47.44,Moderate
+61,Ethiopia (Tigray),2011,Africa region,Adjusted bacteriological positive TB prevalence,162 (153.60-171.17),352 (339.05-364.52),162,352,12175,44.36,Moderate
+42,Nigeria (National),2012,Africa region,Adjusted bacteriological positive TB prevalence,359 (213-505),751 (538-965),359,751,44186,41.14,Moderate
+53,Rwanda (National) ,2012,Africa region,Adjusted bacteriological positive TB prevalence,53 (20-86),208 (139-278),53,208,43128,42.19,Moderate
+92,Ethiopia (Hetosa District) ,2013,Africa region,Adjusted bacteriological positive TB prevalence,148.5 (81.9-210.4),112.2 (55.8-170.2),149,112,33073,51.12,Low
+96,Ghana (National),2013,Africa region,Adjusted bacteriological positive TB prevalence,303 (223-382),431 (327-536),303,431,61726,40,Low
+81,Zimbabwe (National),2014,Africa region,Adjusted bacteriological positive TB prevalence,288 (189-386),413 (303-523),288,413,33736,42.08,Low
+91,Ethiopia (Hawassa Zuria District) ,2016,Africa region,Count of bacteriological positive TB,18,16,146,131,24517,49.8,Low
+76,Lesotho (National),2019,Africa region,Adjusted bacteriological positive TB prevalence,327 (218-435),849 (642-1057),327,849,21719,39.58,Low
+57,Zimbabwe (Harare),2005-2006,Africa region,Crude bacteriological positive TB prevalence,570 (400-790),780 (530-1110),570,780,10092,39.34,Moderate
+24,Kenya (Asembo Area) ,2006-2007,Africa region,Count of bacteriological positive TB,65,58,501,764,20566,36.93,Low
+31,Uganda (Rubaga),2008-2009,Africa region,Count of bacteriological positive TB,22,17,1783,440,5102,75.81,High
+45,Ethiopia (National),2010-2011,Africa region,Adjusted bacteriological positive TB prevalence,246 (176-315),304 (219-388),246,304,46697,46.72,Low
+40,Tanzania (National),2011-2012,Africa region,Adjusted bacteriological positive TB prevalence,204 (137-272),410 (315-505),204,410,50436,41.11,Moderate
+14,Ethiopia (Shebedino District),2012-2013,Africa region,Crude smear positive TB prevalence,129 (66-255),67 (31-147),129,67,17466,51,Moderate
+15,Ethiopia (Lemu District),2012-2013,Africa region,Crude smear positive TB prevalence,56 (19-166),237 (139-406),56,237,10799,50.7,Moderate
+39,The Gambia (National),2012-2013,Africa region,Adjusted bacteriological positive TB prevalence,109 (54-164),333 (233-433),109,333,43100,40.61,Low
+95,Ethiopia (Multiple Areas),2012-2013,Africa region,Crude smear positive TB prevalence,121 (55-263),157 (80-310),121,157,10059,50.54,Moderate
+17,Malawi (National),2013-2014,Africa region,Adjusted bacteriological positive TB prevalence,374 (246-501),546 (335-757),374,546,31579,41.45,Low
+41,Zambia (National) ,2013-2014,Africa region,Adjusted bacteriological positive TB prevalence,487 (353-621),833 (641-1024),487,833,46099,42.21,Low
+68,Uganda (National) ,2014-2015,Africa region,Adjusted bacteriological positive TB prevalence,178 (109-248),734 (554-914),178,734,41154,42.49,Low
+78,Kenya (National),2015-2016,Africa region,Adjusted bacteriological positive TB prevalence,359 (258-460),809 (656-962),359,809,63050,41.31,Low
+99,Ethiopia (Dale District) ,2016-2017,Africa region,Crude bacteriological positive TB prevalence,93 (72-118),122 (98-151),93,122,136181,NA,Moderate
+69,Namibia (National),2017-2018,Africa region,Adjusted bacteriological positive TB prevalence,304.4 (196.2-412.7),643.3 (428.6-858.1),304,643,29495,42.7,Low
+82,South Africa (National),2017-2019,Africa region,Adjusted bacteriological positive TB prevalence,675 (494-855),1094 (835-1352),675,1094,35191,38.04,Low
+73,Eswatini (National),2018-2019,Africa region,Adjusted bacteriological positive TB prevalence,293 (181-404),425 (277-574),293,425,24356,40.8,Low
+84,South Africa (Kwazulu Natal),2018-2019,Africa region,Adjusted bacteriological positive TB prevalence,1100 (1000-1300),1800 (1500-2200),1100,1800,17118,32.13,Moderate
+93,Malawi (Blantyre),2019-2020,Africa region,Adjusted bacteriological positive TB prevalence,100 (55-183),225 (105-479),100,225,15897,38.57,Moderate
+38,Kenya (Karemo),NA,Africa region,Count of bacteriological positive TB,8,8,330,310,5004,51.54,Moderate
+58,Zimbabwe (Harare),NA,Africa region,Crude smear positive TB prevalence,280 (160-440),580 (370-870),280,580,10236,39.29,High
+33,Ecuador (Chine),2001,Americas region,Crude smear positive TB prevalence (no CI),13500,9000,13500,9000,653,51,High
+62,Brazil (Sete De Setembro Reserve) ,2003,Americas region,Count of bacteriological positive TB,5,5,1340,1377,736,49.32,High
+65,Pakistan (Shimshal Valley) ,1996,Eastern Mediterranean region,Count of smear positive TB,5,1,3759,1020,231,42.42,High
+66,Pakistan (Karachi),2002,Eastern Mediterranean region,Count of bacteriological positive TB,7,11,239,431,5479,46.58,High
+37,Pakistan (National) ,2010-2011,Eastern Mediterranean region,Adjusted bacteriological positive TB prevalence,320.4 (252.6-388.3),484.4 (392.2-576.5),320,484,105913,42.31,Moderate
+1,Sudan (National) ,2013-2014,Eastern Mediterranean region,Adjusted bacteriological positive TB prevalence,142.4 (96.2-210.9),232.8 (166.4-325.5),142,233,83202,43.32,Low
+43,Myanmar (National) ,1994,South-East Asia region,Count of smear positive TB,11,27,79,240,25178,44.76,Moderate
+18,Bangladesh (Matlab),2001,South-East Asia region,Count of smear positive TB,10,42,29,165,59395,42.85,High
+50,Bangladesh (Multiple Areas) ,2001,South-East Asia region,Count of smear positive TB,16,48,13,46,223936,46.22,Moderate
+28,Indonesia (National) ,2004,South-East Asia region,Adjusted smear positive TB prevalence,72 (29-115),138 (93-182),72,138,50154,48.42,Moderate
+12,Thailand (National) ,2012,South-East Asia region,Crude bacteriological positive TB prevalence,124.5 (18.1-157.3),360.5 (190.8-530.4),125,361,NA,NA,Moderate
+85,India (Kashmir Valley),2017,South-East Asia region,Count of bacteriological positive TB,17,7,82,32,42805,51.34,Moderate
+98,India (Saharia Tribal) ,2019,South-East Asia region,Crude bacteriological positive TB prevalence,546 (411-710),2170 (1895-2475),546,2170,20114,49.94,Moderate
+52,India (Tiruvallur District),1999-2001,South-East Asia region,Count of culture positive TB,86,430,202,1053,83390,48.99,Moderate
+2,India (Tiruvallur District),2001-2003,South-East Asia region,Count of culture positive TB,68,276,155,663,85474,48.68,Low
+4,India (Tiruvallur District),2004-2006,South-East Asia region,Count of culture positive TB,49,204,107,469,89413,48.62,Low
+3,India (Tiruvallur District),2006-2008,South-East Asia region,Count of culture positive TB,56,276,118,613,92255,48.77,Low
+35,India (Karachal),2007-2008,South-East Asia region,Crude bacteriological positive TB prevalence,933 (608-1257),2156 (1686-2625),933,2156,11116,47.87,Moderate
+60,India (Madhya Pradesh Tribal),2007-2008,South-East Asia region,Adjusted bacteriological positive TB prevalence,233 (101-364),554 (415-693),233,554,22270,48.63,Moderate
+7,India (Wardha District),2007-2009,South-East Asia region,Adjusted bacteriological positive TB prevalence,106.5 (60.5-152.5),247.9 (174.5-321.3),107,248,50332,49.92,Low
+19,Bangladesh (National) ,2007-2009,South-East Asia region,Adjusted smear positive TB prevalence,40.3 (13.4-121.4),121.7 (69.9-212.8),40,122,52098,46.46,Moderate
+29,India (Faridabad District) ,2008-2009,South-East Asia region,Count of bacteriological positive TB,30,70,63,138,98599,51.34,Low
+5,India (Kanpur Nagar District),2008-2010,South-East Asia region,Adjusted bacteriological positive TB prevalence,349.4 (210.7-488.2),591.4 (326.0-856.8),349,591,49496,NA,Low
+10,India (Assam State) ,2008-2010,South-East Asia region,Count of smear positive TB,5,8,590,1421,1410,39.93,High
+34,India (Andhra Pradesh State) ,2008-2010,South-East Asia region,Count of smear positive TB,5,6,315,437,2961,46.4,High
+59,India (Nelamangala Sub-Division) ,2008-2010,South-East Asia region,Crude bacteriological positive TB prevalence,50.9 (30.6-71.2),315.9 (261.8-370.0),51,316,63362,46.97,Moderate
+67,India (Mohali District) ,2008-2010,South-East Asia region,Crude bacteriological positive TB prevalence,14.2 (3.6-24.8),34.5 (18.2-50.8),14,35,85770,50.74,Low
+36,India (Jabalpur District),2009-2010,South-East Asia region,Crude bacteriological positive TB prevalence,109 (81.2-143.3),355.8 (304.4-413.4),109,356,95071,50.6,Low
+44,Myanmar (National) ,2009-2010,South-East Asia region,Adjusted bacteriological positive TB prevalence,367.4 (287.7-469.1),930.6 (742.6-1165.5),367,931,51367,43.6,Low
+63,"Bangladesh (Mirpur, Dhaka City)",2009-2010,South-East Asia region,Count of bacteriological positive TB,10,16,121,237,15024,44.97,Moderate
+54,India (Chennai),2010-2012,South-East Asia region,Adjusted bacteriological positive TB prevalence,140 (97-182),571 (487-656),140,571,55617,48.44,Low
+6,India (Gujarat State) ,2011-2012,South-East Asia region,Adjusted bacteriological positive TB prevalence,248.8 (186.7-311.0),610.9 (512.0-709.9),249,611,87530,49.42,Low
+97,"India (Pohari Block, Shivpuri District)","2012-2013, 2014-2015",South-East Asia region,Count of bacteriological positive TB,62,231,1246,4832,9756,49.01,Moderate
+87,India (Saharia Tribal) ,2013-2013,South-East Asia region,Count of bacteriological positive TB,62,231,1246,4832,9756,49.01,Moderate
+80,Indonesia (National) ,2013-2014,South-East Asia region,Adjusted bacteriological positive TB prevalence,460.6 (353.6-590.8),1082.7 (872.8-1337.3),461,1083,67944,46.56,Low
+9,India (Saharia Tribal) ,2015-2015,South-East Asia region,Count of bacteriological positive TB,46,149,906,3170,9775,48.08,Moderate
+77,DPR Korea (National),2015-2016,South-East Asia region,Adjusted bacteriological positive TB prevalence,319 (256-382),917 (783-1052),319,917,60683,44.55,Low
+79,Bangladesh (National) ,2015-2016,South-East Asia region,Adjusted bacteriological positive TB prevalence,143 (109-178),452 (379-526),143,452,98710,44.94,Low
+88,India (Maharashtra Tribal),2015-2017,South-East Asia region,Count of smear positive TB,1,3,28,91,6898,47.8,High
+94,India (Tiruvallur District),2015-2018,South-East Asia region,Count of bacteriological positive TB,28,164,85,555,62494,47.27,Moderate
+86,India (National Tribal) ,2015-2020,South-East Asia region,Count of bacteriological positive TB,65,134,167,377,74532,47.67,Moderate
+74,Myanmar (National) ,2017-2018,South-East Asia region,Count of bacteriological positive TB,86,236,223,843,66480,42.1,Moderate
+71,Nepal (National) ,2018-2019,South-East Asia region,Adjusted bacteriological positive TB prevalence,235.2 (171.4-299.1),530.1 (428.3-631.8),235,530,54200,42.39,Low
+75,India (National),2019-2021,South-East Asia region,Adjusted bacteriological positive TB prevalence,154 (131-177),472 (429-514),154,472,322480,44.07,Low
+51,"India (R.S. Pura Block, Jammu City) ",Not reported,South-East Asia region,Count of smear positive TB,2,8,87,297,5000,53.82,High
+8,China (National) ,2000,Western Pacific region,Adjusted bacteriological positive TB prevalence,115 (96-139),304 (275-337),115,304,NA,NA,Low
+26,Viet Nam (Bavi District) ,2000,Western Pacific region,Crude smear positive TB prevalence,79 (39-118),60 (23-97),79,60,35832,46.71,High
+46,Cambodia (National) ,2002,Western Pacific region,Count of bacteriological positive TB,116,151,1189,1916,17641,44.69,Low
+23,Viet Nam (Central Highlands),2003,Western Pacific region,Crude smear positive TB prevalence,18 (6-38),26 (12-49),18,26,68946,50.49,Moderate
+25,Phillipines (National),2007,Western Pacific region,Count of bacteriological positive TB,44,107,374,964,22867,48.55,Moderate
+20,China (Shandong Province),2010,Western Pacific region,Adjusted bacteriological positive TB prevalence,15.7 (3.9-27.5),43.3 (15.9-70.7),16,43,54279,46.81,Low
+22,China (National) ,2010,Western Pacific region,Adjusted bacteriological positive TB prevalence,64 (52-79),183 (157-215),64,183,252940,NA,Low
+83,China (Multiple Areas),2013,Western Pacific region,Crude bacteriological positive TB prevalence,93.35 (48.97-137.72),280.25 (198.37-362.14),93,280,34269,53.14,Moderate
+70,Philippines (National) ,2016,Western Pacific region,Adjusted bacteriological positive TB prevalence,627 (516-739),1713 (1482-1943),627,1713,46689,44.75,Low
+49,Viet Nam (Hanoi City) ,2003-2004,Western Pacific region,Count of bacteriological positive TB,12,10,185,230,10818,40.12,Moderate
+13,Viet Nam (National),2006-2007,Western Pacific region,Adjusted bacteriological positive TB prevalence,118 (75-161),536 (431-642),118,536,94170,45.24,Low
+47,Cambodia (National) ,2010-2011,Western Pacific region,Adjusted bacteriological positive TB prevalence,609 (486-763),1097 (895-1344),609,1097,37417,45.45,Low
+48,Lao Pdr (National),2010-2011,Western Pacific region,Adjusted bacteriological positive TB prevalence,366 (254-477),855 (646-1064),366,855,39212,45.24,Low
+90,China (Xinjiang Uyghur Region),2010-2011,Western Pacific region,Adjusted bacteriological positive TB prevalence,341 (143-538),519 (327-712),341,519,29835,48.39,Low
+72,Mongolia (National),2014-2015,Western Pacific region,Adjusted bacteriological positive TB prevalence,298 (225-372),840 (646-1033),298,840,50309,39.89,Low
+89,Viet Nam (National),2017-2018,Western Pacific region,Adjusted bacteriological positive TB prevalence,133 (89-198),522 (420-648),133,522,61763,43.96,Low
+21,China (Yunnan Province),NA,Western Pacific region,Count of bacteriological positive TB,26,75,554,1626,9305,49.58,Moderate
