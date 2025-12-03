@@ -102,52 +102,53 @@ newBactStratumDF <- cleanStratumDF0 %>% mutate(!!paste0(stratum,".analysis.indic
                         is.na(get(paste0("n.culture.positive.tb.", suffix))) &   
                         !is.na(get(paste0("n.smear.positive.tb.", suffix))) &     
                         !is.na(get(paste0("n.participants.", suffix)))  ~ "n.smear.positive.tb", 
-                        ### Bacteriological positive TB counts and participants reported by survey
+                        ### Adjusted bacteriological positive prevalence and 
+                        ### participants reported by survey
                         is.na(get(paste0("adj.prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.smear.positive.tb.", suffix))) & 
-                        is.na(get(paste0("n.bacteriological.tb.", suffix))) &     
                         is.na(get(paste0("n.culture.positive.tb.", suffix))) &   
                         is.na(get(paste0("n.smear.positive.tb.", suffix))) &   
                         !is.na(get(paste0("adj.prev100k.bacteriological.tb.", suffix))) & 
-                        !is.na(get(paste0("n.participants.", suffix))) ~ "adj.prev100k.bacteriological.tb",
-                        ### Smear positive TB counts and participants reported by survey
+                        (!is.na(get(paste0("n.participants.", suffix))) |
+                         !is.na(get(paste0("n.bacteriological.tb.", suffix)))) ~ "adj.prev100k.bacteriological.tb",
+                        ### Adjusted smear positive prevalence and participants reported by survey 
                         is.na(get(paste0("adj.prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("n.bacteriological.tb.", suffix))) &     
                         is.na(get(paste0("n.culture.positive.tb.", suffix))) &   
-                        is.na(get(paste0("n.smear.positive.tb.", suffix))) &   
                         is.na(get(paste0("adj.prev100k.bacteriological.tb.", suffix))) & 
                         !is.na(get(paste0("adj.prev100k.smear.positive.tb.", suffix))) & 
-                        !is.na(get(paste0("n.participants.", suffix))) ~ "adj.prev100k.smear.positive.tb",
-                        ### Bacteriological positive TB counts and participants reported by survey
-                        is.na(get(paste0("adj.prev100k.ci.bacteriological.tb.", suffix))) & 
+                        (!is.na(get(paste0("n.participants.", suffix))) |
+                         !is.na(get(paste0("n.smear.positive.tb.", suffix)))) ~ "adj.prev100k.smear.positive.tb",
+                        ### Unadjusted bacteriological positive prevalence and 
+                        ### participants reported by survey                        is.na(get(paste0("adj.prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.smear.positive.tb.", suffix))) & 
-                        is.na(get(paste0("n.bacteriological.tb.", suffix))) &     
                         is.na(get(paste0("n.culture.positive.tb.", suffix))) &   
                         is.na(get(paste0("n.smear.positive.tb.", suffix))) &   
                         is.na(get(paste0("adj.prev100k.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.smear.positive.tb.", suffix))) & 
                         !is.na(get(paste0("prev100k.bacteriological.tb.", suffix))) & 
-                        !is.na(get(paste0("n.participants.", suffix))) ~ "prev100k.bacteriological.tb",
-                        ### Smear positive TB counts and participants reported by survey
+                        (!is.na(get(paste0("n.participants.", suffix))) |
+                         !is.na(get(paste0("n.bacteriological.tb.", suffix)))) ~ "prev100k.bacteriological.tb",
+                        ### Adjusted smear positive prevalence and participants reported by survey 
                         is.na(get(paste0("adj.prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.ci.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("n.bacteriological.tb.", suffix))) &     
                         is.na(get(paste0("n.culture.positive.tb.", suffix))) &   
-                        is.na(get(paste0("n.smear.positive.tb.", suffix))) &   
                         is.na(get(paste0("adj.prev100k.bacteriological.tb.", suffix))) & 
                         is.na(get(paste0("adj.prev100k.smear.positive.tb.", suffix))) & 
                         is.na(get(paste0("prev100k.bacteriological.tb.", suffix))) & 
                         !is.na(get(paste0("prev100k.smear.positive.tb.", suffix))) & 
-                        !is.na(get(paste0("n.participants.", suffix))) ~ "prev100k.smear.positive.tb",
+                        (!is.na(get(paste0("n.participants.", suffix))) |
+                        !is.na(get(paste0("n.smear.positive.tb.", suffix)))) ~ "prev100k.smear.positive.tb",
                         .default = "none")) 
 
 print("distribution of samples for calculation:")
