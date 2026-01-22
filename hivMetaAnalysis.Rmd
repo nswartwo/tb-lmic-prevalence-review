@@ -51,8 +51,14 @@ artCoverage <- read.csv(here("data/hivAnalysis/unaids-2025-adult-art-coverage.cs
                ### We need to replace the HIV prevalence value for 2009 Uganda to 
                ### correspond to the Kampala City, which is 6.8 percent 
                mutate(hivPrev = ifelse(study.country == "Uganda" & study.end.year==2009, 
-                                       0.084, 
-                                       hivpop/totpop))
+                                       0.084, # From Jeff Imai-Eaton via Spectrum UNAIDS
+                                       hivpop/totpop),
+                      totpop = ifelse(study.country == "Uganda" & study.end.year==2009, 
+                                       1.5*1e6, # https://www.un.org/en/development/desa/population/publications/pdf/urbanization/urbanization-wallchart2009.pdf
+                                       totpop),
+                      hivpop = ifelse(study.country == "Uganda" & study.end.year==2009, 
+                                       totpop * hivPrev, 
+                                       hivpop))
 
               
 
@@ -1016,12 +1022,13 @@ artEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + art_coverage + (1|study.country) + (1|id),
                        data = bactModelHivCovDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
+                               prior(student_t(7, 0, 1.5), class = b),
+                               prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 6000)
+                       iter = 4000)
 ```
 
 Summarize and check
@@ -1321,7 +1328,7 @@ hphn_pn_estSummary <- hphn_np_estSummary %>%
 
 ```
 
-## Model 6: Covariate analysis with prevalence to notification ratios
+## Model 6: Covariate analysis with prevalence to notification ratios (no interaction)
 
 Model specification
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -1411,8 +1418,8 @@ p_to_n_hiv_covariate_model_intx <- brm(
   prior = c(
       prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsPrev"),
       prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsNotif"),
-      prior(normal(0,10), class = b, resp = "LogOddsPrev"),
-      prior(normal(0,10), class = b, resp = "LogOddsNotif"),
+      prior(student_t(7, 0, 1.5), class = b, resp = "LogOddsPrev"),
+      prior(student_t(7, 0, 1.5), class = b, resp = "LogOddsNotif"),
       prior(exponential(1), class = sd, resp = "LogOddsPrev"),
       prior(exponential(1), class = sd, resp = "LogOddsNotif")
   ),
@@ -1615,10 +1622,6 @@ print(paste0("Multiplicative impact of ART on HIV negative notification to preva
             round(lm(npCovHivNegUB ~ artCov, 
                data=npCovIntxDF)$coefficient["artCov"],4),
             ")"))
-
-
-
-
 ```
 
 # Smear positive analysis 
@@ -2056,3 +2059,61 @@ print(
 
 dev.off()
 ```
+
+
+```{r}
+### Primary analysis table
+hivTbl0 <- cleanHivDF0 %>% 
+            filter(covidence.id %in% bactModelHivDF$covidence.id) %>% unique() %>%
+            dplyr::select(starts_with("n.") & ends_with(c("hiv.positive", "hiv.negative", "hiv.total"))) %>% 
+            colSums(na.rm=TRUE)
+
+hivTbl <- matrix(hivTbl0,3,length(hivTbl0)/3, byrow = FALSE)[-3,]
+
+rownames(hivTbl) <- c("HIV positive (N)", "HIV negative (N)")
+
+library(gt)
+
+hivTbl_1 <- hivTbl %>% t() %>% as.data.frame() %>% 
+    mutate("Description" = unique(sapply(names(hivTbl0), function(x) sub("[^.]+\\.([^.]+)\\..*", "\\1", x))),
+           "Total (N)" = `HIV positive (N)` + `HIV negative (N)`, 
+           "HIV negative (%)" = round(`HIV negative (N)`/`Total (N)`*100,1), 
+           "HIV positive (%)" = round(`HIV positive (N)`/`Total (N)`*100,1)) %>% 
+    dplyr::select(Description, `HIV negative (N)`, `HIV negative (%)`, `HIV positive (N)`,`HIV positive (%)`, `Total (N)`) %>%
+    na.omit() %>%
+    gt() %>% 
+    tab_header(
+        title = paste("HIV status distribution totals across", 
+                      length(bactModelHivDF$covidence.id),  
+                      "TB prevalence surveys")) %>%
+    fmt_number(drop_trailing_zeros = TRUE); hivTbl_1
+
+
+### Secondary analysis table
+hivTbl0_b <- cleanHivDF0 %>% 
+          filter(!covidence.id %in% bactModelHivDF$covidence.id) %>% unique() %>%
+          dplyr::select(starts_with("n.") & ends_with(c("hiv.positive", "hiv.negative", "hiv.total"))) %>% 
+          colSums(na.rm=TRUE)
+
+hivTbl_b <- matrix(hivTbl0_b,3,length(hivTbl0_b)/3, byrow = FALSE)[-3,]
+
+rownames(hivTbl_b) <- c("HIV positive (N)", "HIV negative (N)")
+
+library(gt)
+
+hivTbl_1_b <- hivTbl_b %>% t() %>% as.data.frame() %>% 
+    mutate("Description" = unique(sapply(names(hivTbl0_b), function(x) sub("[^.]+\\.([^.]+)\\..*", "\\1", x))),
+           "Total (N)" = `HIV positive (N)` + `HIV negative (N)`, 
+           "HIV negative (%)" = round(`HIV negative (N)`/`Total (N)`*100,1), 
+           "HIV positive (%)" = round(`HIV positive (N)`/`Total (N)`*100,1)) %>% 
+    dplyr::select(Description, `HIV negative (N)`, `HIV negative (%)`, `HIV positive (N)`,`HIV positive (%)`, `Total (N)`) %>%
+    na.omit() %>%
+    gt() %>% 
+    tab_header(
+        title = paste("HIV status distribution totals across", 
+                      length(bactModelHivDF$covidence.id),  
+                      "TB prevalence surveys")) %>%
+    fmt_number(drop_trailing_zeros = TRUE); hivTbl_1_b
+
+```
+
