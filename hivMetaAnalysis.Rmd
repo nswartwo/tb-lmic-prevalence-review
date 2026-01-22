@@ -48,7 +48,13 @@ source(here("code/varianceComponentModel.R"))
 artCoverage <- read.csv(here("data/hivAnalysis/unaids-2025-adult-art-coverage.csv")) %>% 
                rename(study.country=spectrum_country, 
                       study.end.year = year) %>% 
-               mutate(hivPrev = hivpop/totpop) 
+               ### We need to replace the HIV prevalence value for 2009 Uganda to 
+               ### correspond to the Kampala City, which is 6.8 percent 
+               mutate(hivPrev = ifelse(study.country == "Uganda" & study.end.year==2009, 
+                                       0.084, 
+                                       hivpop/totpop))
+
+              
 
 ```
 
@@ -416,6 +422,7 @@ bactModelHivDF <- bactModelHivDFAll %>%
 ### Descriptive statistics of model data
 
 ```{r, echo=FALSE}
+#### Total participants among the main analysis surveys
 cleanHivDF0 %>% filter(!hiv.status.definition %in% c("Self-report", "Not specified"),
                    covidence.id != 26856) %>% 
                 mutate(totalParticipants = ifelse(is.na(n.participants.sex.total), 
@@ -424,7 +431,7 @@ cleanHivDF0 %>% filter(!hiv.status.definition %in% c("Self-report", "Not specifi
                 select(totalParticipants) %>% 
                 sum(na.rm = TRUE)
 
-
+#### Total participants among the secondary analysis surveys (self-reported HIV status)
 cleanHivDF0 %>% filter(hiv.status.definition %in% c("Self-report", "Not specified"),
                    covidence.id != 26856) %>% 
                 mutate(totalParticipants = ifelse(is.na(n.participants.sex.total), 
@@ -432,18 +439,6 @@ cleanHivDF0 %>% filter(hiv.status.definition %in% c("Self-report", "Not specifie
                                                   n.participants.sex.total)) %>%
                 select(totalParticipants) %>% 
                 sum(na.rm = TRUE)
-
-print(paste(
-      sum(!is.na(bactModelHivDF$n.participants.hiv.positive)), 
-      "surveys report participants totalling",
-      sum(bactModelHivDF$n.participants.hiv.positive, 
-      bactModelHivDF$n.participants.hiv.negative, na.rm=TRUE), "persons."))
-
-print(paste0(
-      round(sum(bactModelHivDF$n.participants.hiv.positive, na.rm=TRUE)/
-      sum(bactModelHivDF$n.participants.hiv.positive, 
-      bactModelHivDF$n.participants.hiv.negative, na.rm=TRUE) * 100, 2), 
-      "% of participants were HIV positive."))
 
 print(paste0( 
       sum(bactModelHivDF$natRep == "Yes"), " (",
@@ -680,7 +675,11 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                            type="Posterior mean and 95% credible interval")
 
 surveyEffectModEst %>% mean_qi(hivRatio)
+```
 
+Country-level estimates
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
 nd_country <- bactModelHivDF %>% select(study.country) %>% unique() %>% 
               mutate(logOR_se = 1)
 
@@ -1000,6 +999,9 @@ mainEffecSlfReptModEst %>% ungroup %>% mean_qi(hivRatio)
 # Covariate analysis 
 
 ## Model 3: Covariate analysis
+
+Add ART coverage into the dataset 
+
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 bactModelHivCovDF <- left_join(bactModelHivDF, artCoverage %>% 
                                    select(study.country,
@@ -1012,14 +1014,14 @@ Model specification
 ```{r, warning = FALSE, message=FALSE, cache=TRUE}
 artEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + art_coverage + (1|study.country) + (1|id),
-                       data = bactModelHivCovDF, 
+                       data = bactModelHivCovDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 6000)
 ```
 
 Summarize and check
@@ -1206,18 +1208,20 @@ notif <- rbind(notif_ratio %>%
                         LogOdds_HivNeg, 
                         LogOddsStandardError_HivNeg,
                         LogOdds_notif_HivNeg,
-                        LogOddsStandardError_notif_HivNeg) %>%
+                        LogOddsStandardError_notif_HivNeg, 
+                        study.end.year) %>%
                   mutate("HIVstatus" = "HivNeg") %>%
                   rename(LogOddsPrev = LogOdds_HivNeg, 
                          LogOddsStandardErrorPrev = LogOddsStandardError_HivNeg, 
                          LogOddsNotif = LogOdds_notif_HivNeg,
                          LogOddsStandardErrorNotif = LogOddsStandardError_notif_HivNeg),
-                 notif %>% 
+                 notif_ratio %>% 
                  select(study.country, 
                         LogOdds_HivPos, 
                         LogOddsStandardError_HivPos,
                         LogOdds_notif_HivPos,
-                        LogOddsStandardError_notif_HivPos) %>%
+                        LogOddsStandardError_notif_HivPos, 
+                        study.end.year) %>%
                   mutate("HIVstatus" = "HivPos") %>%
                   rename(LogOddsPrev = LogOdds_HivPos, 
                          LogOddsStandardErrorPrev = LogOddsStandardError_HivPos, 
@@ -1260,7 +1264,7 @@ prev_notif_model <- brm(
                     control = list(adapt_delta = 0.99),
                     chains = 4,
                     cores = 4,
-                    iter = 4000
+                    iter = 10000
 )
 ```
 
@@ -1317,83 +1321,20 @@ hphn_pn_estSummary <- hphn_np_estSummary %>%
 
 ```
 
-
-## Model 6: Multivariate model of the prevalence risk ratio and the notification rate ratio
-
-```{r, warning=FALSE}
-### Run a multivariate model
-# Using notification ratio model defined in Model 4. 
-#prevalence model:
-prev_ratio_model <- bf(
-                    logOR | se(logOR_se, sigma = TRUE) ~ 1 + (1 | p | study.country) #+ (1 | id)
-)
-
-#fit the model
-np_ratio_model <- brm(
-  formula = prev_ratio_model + notif_ratio_model + set_rescor(FALSE),
-  data = notif_ratio,
-  family = gaussian(), 
-  # sample_prior = "only",
-  prior = c(
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logOR"),
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logORnotif"),
-    prior(exponential(2), class = sd, resp = "logOR"),
-    prior(exponential(2), class = sd, resp = "logORnotif")
-  ),
-  control = list(adapt_delta = 0.99),
-  chains = 4,
-  cores = 4,
-  iter = 4000
-)
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(np_ratio_model)
-```
-
-Prediction 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-np_ratioEst <- add_epred_draws(object = np_ratio_model,
-                               newdata = notif %>% 
-                                       mutate(logOR_se_notif=1, 
-                                              logOR_se =1),
-                               re_formula = ~ 1 + (1 | study.country),
-                               allow_new_levels = TRUE) 
-
-np_ratioEstSummary <- np_ratioEst %>%
-                      pivot_wider(names_from = .category, 
-                                  names_prefix = "mod_",
-                                  values_from = .epred) %>%
-                          mutate(npRatio = exp(mod_logORnotif - mod_logOR)) %>%
-                          ungroup() %>%
-                      mean_qi(npRatio, na.rm=T) %>% 
-                      mutate(across(c(npRatio, .lower, .upper),
-                            round, 2)); np_ratioEstSummary
-
-np_ratioEstCountrySummary <- np_ratioEst %>%
-                             pivot_wider(names_from = .category,
-                                         names_prefix = "mod_",
-                                         values_from = .epred) %>%
-                             mutate(npRatio = exp(mod_logORnotif-mod_logOR)) %>%
-                             group_by(study.country) %>%
-                             mean_qi(npRatio, na.rm=T); np_ratioEstCountrySummary
-```
-
-## Model 7: Covariate analysis with prevalence to notification ratios
+## Model 6: Covariate analysis with prevalence to notification ratios
 
 Model specification
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 # Prevalence model with ART coverage
 prev_model_covariate <- bf(
-  logOR | se(logOR_se, sigma = TRUE) ~ 1 + art_coverage + (1 | p | study.country) #+ (1 | id)
+  LogOddsPrev | se(LogOddsStandardErrorPrev, sigma = TRUE) ~ 1 + art_coverage + HIVstatus + (1 | p | study.country)
 )
+
 # Notification model with ART coverage
 notif_model_covariate <- bf(
-  logOR_notif | se(logOR_se_notif, sigma = TRUE) ~ 1  + art_coverage + (1 | p | study.country) 
+  LogOddsNotif | se(LogOddsStandardErrorNotif, sigma = TRUE) ~ 1  + art_coverage + HIVstatus + (1 | p | study.country)
 )
+
 #fit the model
 p_to_n_hiv_covariate_model <- brm(
   formula = prev_model_covariate + notif_model_covariate + set_rescor(FALSE),
@@ -1403,105 +1344,280 @@ p_to_n_hiv_covariate_model <- brm(
   family = gaussian(), 
   # sample_prior = "only",
   prior = c(
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logOR"),
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "logORnotif"),
-    prior(exponential(2), class = sd, resp = "logOR"),
-    prior(exponential(2), class = sd, resp = "logORnotif")
-  ),
-  control = list(adapt_delta = 0.99),
-  chains = 4,
-  cores = 4,
-  iter = 4000
-)
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(p_to_n_hiv_covariate_model)
-
-# round(exp(as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,4])),2)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-notifHivRatioCovDF <- rbind(notif %>% 
-                            left_join(bactModelHivCovDF %>% select(study.country, study.end.year, art_coverage)) %>%
-                            filter(natRep == "Yes") %>%
-                           select(study.country, 
-                                  art_coverage,
-                                  LogOdds_HivNeg, 
-                                  LogOddsStandardError_HivNeg,
-                                  LogOdds_notif_HivNeg,
-                                  LogOddsStandardError_notif_HivNeg) %>%
-                          mutate("HIVstatus" = "HivNeg") %>%
-                          rename(LogOdds = LogOdds_HivNeg, 
-                                 LogOddsStandardError = LogOddsStandardError_HivNeg, 
-                                 LogOddsNotif = LogOdds_notif_HivNeg,
-                                 LogOddsStandardErrorNotif = LogOddsStandardError_notif_HivNeg),
-                         notif %>% 
-                           left_join(bactModelHivCovDF %>% select(study.country, study.end.year, art_coverage)) %>%
-                             filter(natRep == "Yes") %>%
-                           select(study.country, 
-                                  art_coverage,
-                                  LogOdds_HivPos, 
-                                  LogOddsStandardError_HivPos,
-                                  LogOdds_notif_HivPos,
-                                  LogOddsStandardError_notif_HivPos) %>%
-                          mutate("HIVstatus" = "HivPos") %>%
-                          rename(LogOdds = LogOdds_HivPos, 
-                                 LogOddsStandardError = LogOddsStandardError_HivPos, 
-                                 LogOddsNotif = LogOdds_notif_HivPos,
-                                 LogOddsStandardErrorNotif = LogOddsStandardError_notif_HivPos))
-
-###############################################################################
-### Run a multivariate model
-#prevalence model:
-prev_hivratio_covariate_model <- bf(
-  LogOdds | se(LogOddsStandardError, sigma = TRUE) ~ 1 + art_coverage + HIVstatus + (1 | p | study.country)
-)
- 
-#notifications model:
-notif_hivratio_covariate_model <- bf(
-  LogOddsNotif | se(LogOddsStandardErrorNotif, sigma = TRUE) ~ 1  + art_coverage + HIVstatus + (1 | p | study.country)
-)
-
-#fit the model
-notif_ratio_covariate_model <- brm(
-  formula = prev_hivratio_covariate_model + notif_hivratio_covariate_model + set_rescor(FALSE),
-  data = notifHivRatioCovDF,
-  family = gaussian(), 
-  # sample_prior = "only",
-  prior = c(
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOdds"),
-    prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsNotif"),
-      prior(student_t(7, 0, 1.5), class = b, resp = "LogOdds"),
+      prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsPrev"),
+      prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsNotif"),
+      prior(student_t(7, 0, 1.5), class = b, resp = "LogOddsPrev"),
       prior(student_t(7, 0, 1.5), class = b, resp = "LogOddsNotif"),
-      prior(exponential(1), class = sd, resp = "LogOdds"),
+      prior(exponential(1), class = sd, resp = "LogOddsPrev"),
       prior(exponential(1), class = sd, resp = "LogOddsNotif")
   ),
   control = list(adapt_delta = 0.99),
   chains = 4,
   cores = 4,
-  iter = 4000
+  iter = 10000
+)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+nd_pn_cov <- notif %>% 
+             left_join(bactModelHivCovDF %>% 
+                        select(study.country, 
+                               study.end.year, 
+                               art_coverage)) %>% 
+             mutate(LogOddsStandardErrorPrev = 1,
+                    LogOddsStandardErrorNotif =1)
+prev_notif_cov_est <-  p_to_n_hiv_covariate_model %>% 
+                       add_epred_draws(newdata = nd_pn_cov,
+                                   re_formula =  ~ 1 + (1 | study.country)) %>%
+                       ungroup() %>% 
+                       dplyr::select(study.country, .category, HIVstatus, .draw, .epred) %>%
+                       pivot_wider(names_from = .category, values_from = .epred) %>%
+                      # Note we use expit here to recover the probability; 
+                      # if we use exp we would recover the odds ratio. 
+                       mutate(npRatio = expit(LogOddsNotif - LogOddsPrev)) 
+
+prev_notif_cov_estSummary <- prev_notif_cov_est %>%
+                         group_by(HIVstatus) %>%
+                         mean_qi(npRatio, na.rm=T) %>% 
+                         mutate(across(c(npRatio, .lower, .upper), 
+                                round, 2)); prev_notif_cov_estSummary
+```
+
+## Model 7: Covariate analysis with prevalence to notification ratios (with interaction)
+
+Model specification
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Prevalence model with ART coverage
+prev_model_covariate_intx <- bf(
+  LogOddsPrev | se(LogOddsStandardErrorPrev, sigma = TRUE) ~ 1 + HIVstatus*art_coverage + (1 | p | study.country)
 )
 
-summary(notif_ratio_covariate_model)
+# Notification model with ART coverage
+notif_model_covariate_intx <- bf(
+  LogOddsNotif | se(LogOddsStandardErrorNotif, sigma = TRUE) ~ 1  + HIVstatus*art_coverage + (1 | p | study.country)
+)
+
+#fit the model
+p_to_n_hiv_covariate_model_intx <- brm(
+  formula = prev_model_covariate_intx + notif_model_covariate_intx + set_rescor(FALSE),
+  data = notif %>% 
+         left_join(bactModelHivCovDF %>% 
+         select(study.country, study.end.year, art_coverage)),
+  family = gaussian(), 
+  # sample_prior = "only",
+  prior = c(
+      prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsPrev"),
+      prior(student_t(7, 0, 1.5), class = Intercept, resp = "LogOddsNotif"),
+      prior(normal(0,10), class = b, resp = "LogOddsPrev"),
+      prior(normal(0,10), class = b, resp = "LogOddsNotif"),
+      prior(exponential(1), class = sd, resp = "LogOddsPrev"),
+      prior(exponential(1), class = sd, resp = "LogOddsNotif")
+  ),
+  control = list(adapt_delta = 0.99),
+  chains = 4,
+  cores = 4,
+  iter = 10000
+)
+```
 
 
-notif_ratio_est <-  notif_ratio_model %>% 
-                    add_epred_draws(newdata = notifHivRatioDF %>% 
-                                                  mutate(LogOddsStandardErrorNotif = 1,
-                                                         LogOddsStandardError = 1),
-                                         re_formula =   ~ 1 + (1 | study.country),
-                                         allow_new_levels = TRUE) %>%
-                    group_by(HIVstatus) %>%
-                    pivot_wider(names_from = .category, 
-                                names_prefix = "mod_",
-                                values_from = .epred) %>%
-                    mutate(mod_LogOdds = expit(mod_LogOdds) * 1e5,
-                           mod_LogOddsNotif = expit(mod_LogOddsNotif) * 1e5) %>% ungroup()
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+prev_notif_cov_intx_est <-  p_to_n_hiv_covariate_model_intx %>% 
+                       add_epred_draws(newdata = nd_pn_cov,
+                                   re_formula =  ~ 1 + (1 | study.country)) %>%
+                       ungroup() %>% 
+                       dplyr::select(study.country, .category, HIVstatus, .draw, .epred) %>%
+                       pivot_wider(names_from = .category, values_from = .epred) %>%
+                      # Note we use expit here to recover the probability; 
+                      # if we use exp we would recover the odds ratio. 
+                       mutate(npRatio = expit(LogOddsNotif - LogOddsPrev)) 
+
+prev_notif_cov_intx_estSummary <- prev_notif_cov_intx_est %>%
+                         group_by(HIVstatus) %>%
+                         mean_qi(npRatio, na.rm=T) %>% 
+                         mutate(across(c(npRatio, .lower, .upper), 
+                                round, 2)); prev_notif_cov_intx_estSummary
+```
+
+
+Impact of ART without interaction model
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(p_to_n_hiv_covariate_model)
+
+meanARTCoverage <- mean(nd_pn_cov$art_coverage)
+                   
+#### Check that this is approximately the same as above
+#### HIV positive notification to prevalence ratio
+round(expit(
+             #HIV positive notification rate with ART coverage at observed mean 
+             (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,1]) + 
+              as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][6,1]) + 
+              (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][5,1])*meanARTCoverage)) -
+             #HIV positive prevalence risk with ART coverage at observed mean 
+             (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][1,1]) + 
+              as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][4,1]) + 
+              (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][3,1])*meanARTCoverage))
+             ) ,2)
+
+
+artCovHivPos <- expit(
+                 #HIV positive notification rate with ART coverage 
+                 (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,1]) + 
+                  as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][6,1]) + 
+                  (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][5,1])*unique(nd_pn_cov$art_coverage))) -
+                 #HIV positive prevalence risk with ART coverage
+                 (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][1,1]) + 
+                  as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][4,1]) + 
+                  (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][3,1])*unique(nd_pn_cov$art_coverage)))
+             )
+
+artCovHivNeg <- expit(
+                 #HIV negative notification rate with ART coverage 
+                 (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][2,1]) + 
+                  (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][5,1])*unique(nd_pn_cov$art_coverage))) -
+                 #HIV negative prevalence risk with ART coverage
+                 (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][1,1]) + 
+                  (as.numeric(summary(p_to_n_hiv_covariate_model)[["fixed"]][3,1])*unique(nd_pn_cov$art_coverage)))
+                 ) 
+
+
+npCovDF <- data.frame(npCovHivPos = artCovHivPos, 
+                      npCovHivNeg = artCovHivNeg, 
+                      artCov = unique(nd_pn_cov$art_coverage))
+
+plot(npCovDF$npCovHivPos, npCovDF$artCov)
+
+
+lm(npCovHivPos ~ artCov, 
+   data=npCovDF)
+
+lm(npCovHivNeg ~ artCov, 
+   data=npCovDF)
+
+```
+
+
+Impact of ART with interaction model
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(p_to_n_hiv_covariate_model_intx)
+
+meanARTCoverage <- mean(nd_pn_cov$art_coverage)
+                   
+#### Check that this is approximately the same as above
+#### HIV positive notification to prevalence ratio
+round(expit(
+             #HIV positive notification rate with ART coverage at observed mean 
+             (as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][2,1]) + 
+              as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][6,1]) + 
+              sum(as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][7:8,1])*meanARTCoverage)) -
+             #HIV positive prevalence risk with ART coverage at observed mean 
+             (as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][1,1]) + 
+              as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][3,1]) + 
+              sum(as.numeric(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][4:5,1])*meanARTCoverage))
+             ) ,2)
+
+
+artCovIntxHivNeg <-expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","Estimate"] + 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_art_coverage","Estimate"])*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","Estimate"] + 
+              (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_art_coverage","Estimate"])*unique(nd_pn_cov$art_coverage))
+             )
+
+artCovIntxHivPos <-expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","Estimate"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_HIVstatusHivPos","Estimate"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][7:8,"Estimate"])*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","Estimate"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_HIVstatusHivPos","Estimate"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][4:5,"Estimate"])*unique(nd_pn_cov$art_coverage))
+             )
+
+npCovIntxDF <- data.frame(npCovHivPos = artCovIntxHivPos, 
+                          npCovHivNeg = artCovIntxHivNeg, 
+                          artCov = unique(nd_pn_cov$art_coverage))
+
+plot(npCovIntxDF$npCovHivPos, npCovIntxDF$artCov)
+
+### Upper and lower bounds of the interaction 
+npCovIntxDF$npCovHivPosLB <- expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","l-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_HIVstatusHivPos","l-95% CI"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][7:8,"l-95% CI"])*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","l-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_HIVstatusHivPos","l-95% CI"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][4:5,"l-95% CI"])*unique(nd_pn_cov$art_coverage))
+             )
+
+npCovIntxDF$npCovHivPosUB <- expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","u-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_HIVstatusHivPos","u-95% CI"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][7:8,"u-95% CI"])*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","u-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_HIVstatusHivPos","u-95% CI"] + 
+              sum(summary(p_to_n_hiv_covariate_model_intx)[["fixed"]][4:5,"u-95% CI"])*unique(nd_pn_cov$art_coverage))
+             )
+
+
+npCovIntxDF$npCovHivNegLB <- expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","l-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_art_coverage","l-95% CI"]*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","l-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_art_coverage","l-95% CI"]*unique(nd_pn_cov$art_coverage))
+             )
+
+npCovIntxDF$npCovHivNegUB <- expit(
+             #HIV positive notification rate with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_Intercept","u-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsNotif_art_coverage","u-95% CI"]*unique(nd_pn_cov$art_coverage)) -
+             #HIV positive prevalence risk with ART coverage 
+             (summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_Intercept","u-95% CI"] + 
+              summary(p_to_n_hiv_covariate_model_intx)[["fixed"]]["LogOddsPrev_art_coverage","u-95% CI"]*unique(nd_pn_cov$art_coverage))
+             )
+
+print(paste0("Multiplicative impact of ART on HIV positive notification to prevalence ratio: ",
+            round(lm(npCovHivPos ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4), 
+            " (", 
+            round(lm(npCovHivPosLB ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4),
+            ", ",
+            round(lm(npCovHivPosUB ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4),
+            ")"))
+
+
+print(paste0("Multiplicative impact of ART on HIV negative notification to prevalence ratio: ",
+            round(lm(npCovHivNeg ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4), 
+            " (", 
+            round(lm(npCovHivNegLB ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4),
+            ", ",
+            round(lm(npCovHivNegUB ~ artCov, 
+               data=npCovIntxDF)$coefficient["artCov"],4),
+            ")"))
+
+
+
 
 ```
 
