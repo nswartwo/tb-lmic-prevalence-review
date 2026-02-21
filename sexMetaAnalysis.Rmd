@@ -88,6 +88,12 @@ cleanSexDF <-  cleanSexDF0 %>%
            screening.tests,
            participants.sputum.collected,
            bacteriological.tb.definition,
+           xpert.used,
+           xpert.samples,
+           other.xpert.samples,
+           culture.used,
+           culture.samples,
+           other.culture.samples,
            study.start.year, 
            study.end.year, 
            publication.year,
@@ -225,17 +231,37 @@ cleanSexDF <-  cleanSexDF0 %>%
                                                                     ifelse(grepl("Symptom", 
                                                                     screening.tests, 
                                                                     ignore.case=TRUE), "Yes", "No")),
-                                       symptomsRequired = ifelse(is.na(participants.sputum.collected), 
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected) | grepl("unknown", 
+                                                                                                              participants.sputum.collected,ignore.case=TRUE), 
                                                                        NA, 
-                                                                       ifelse(!grepl("x-ray|all participants|unknown|other",
+                                                                       ifelse(!grepl("x-ray|all participants|other",
                                                                         participants.sputum.collected,ignore.case=TRUE),
                                                                  "Yes", "No")),
+
                                        XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
                                                                   NA, ifelse(!grepl("smear|micros|field|NTP", 
                                                                               bacteriological.tb.definition,
                                                                               ignore.case=TRUE), 
                                                                   "Yes", 
                                                                    "No")),
+                                       ### Fix those that were missed with the above attempt 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(26989,26928,26920,26918,26892,26861,26857), 
+                                                                  "Yes", XpertCultRequired), 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(28002), 
+                                                                  "No", XpertCultRequired),
+                                       #### if we used the culture positive count, then xpert culture was requried
+                                       XpertCultRequired = ifelse(grepl("culture", sex.analysis.indicator), 
+                                                                  "Yes", XpertCultRequired),
+                                       #### if we used the smear positive prevs, then xpert culture was not requried
+                                       XpertCultRequired = ifelse(grepl("smear", sex.analysis.indicator), 
+                                                                  "No", XpertCultRequired),
+                                       XpertCultUsed = ifelse((grepl("Yes", xpert.used) & 
+                                                                 (grepl("All samples", xpert.samples) |
+                                                                  !grepl("mear|NAAT", other.xpert.samples))) |
+                                                                  (grepl("Yes", culture.used) & 
+                                                                  grepl("All samples|Subset", culture.samples) & 
+                                                                  !grepl("HIV", other.culture.samples)), 
+                                                                 "Yes", "No"),
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
 
 ##############################################################################|
@@ -245,10 +271,10 @@ cleanSexDF <-  cleanSexDF0 %>%
 varAdj <- varianceAdjust("sex")
 
 bactModelDF <- cleanSexDF %>%
-    select(id, WHO.region, study.country, study.rurality,
+    select(id, covidence.id, title.extracted, WHO.region, study.country, study.rurality,
            Sex, year_z, 
            natRep, bias, symptomScreen, symptomsRequired, 
-           XpertCultRequired, 
+           XpertCultRequired,  XpertCultUsed,
            LogOdds, LogOddsStandardError, sex.analysis.indicator, 
            n.participants.male, n.participants.female, 
            publication.year, study.end.year) %>%
@@ -269,6 +295,121 @@ Descriptive output for survey subgroups explored below
 
 ```{r}
 table(bactModelDF$WHO.region)
+
+
+### How many persons diagnosed with bacteriologically-confirmed TB 
+### Case 1: we used the reported count so simply sum 
+### 38 total surveys; no missing 
+cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(sex.analysis.indicator == 
+                                          "n.bacteriological.tb" ~ n.bacteriological.tb.male + n.bacteriological.tb.female, 
+                                      sex.analysis.indicator == 
+                                          "n.culture.positive.tb" ~ n.culture.positive.tb.male + n.culture.positive.tb.female, 
+                                      sex.analysis.indicator == 
+                                          "n.smear.positive.tb" ~ n.smear.positive.tb.male + n.smear.positive.tb.female)) %>% 
+    select(diagnosedCases) %>% sum() -> cases1
+
+cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(sex.analysis.indicator == 
+                                          "n.bacteriological.tb" ~ n.bacteriological.tb.male , 
+                                      sex.analysis.indicator == 
+                                          "n.culture.positive.tb" ~ n.culture.positive.tb.male , 
+                                      sex.analysis.indicator == 
+                                          "n.smear.positive.tb" ~ n.smear.positive.tb.male )) %>% 
+    select(diagnosedCases) %>% sum() -> maleCases1
+
+### Case 2: we used bacteriological confirmed prevalence risk so pull their reported 
+### counts (if available) or we need participant counts. 
+### 55 total surveys; 36 reported case counts; 15 estimated; 4 missing 
+cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.bacteriological.tb.male) ~ 
+                                           n.bacteriological.tb.female + n.bacteriological.tb.male, 
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.bacteriological.tb.male) ~
+                                           adj.prev100k.bacteriological.tb.male * n.participants.male +
+                                           adj.prev100k.bacteriological.tb.female * n.participants.female, 
+                                       !is.na(n.participants.male)  & !is.na(prev100k.bacteriological.tb.male) ~
+                                           prev100k.bacteriological.tb.male * n.participants.male +
+                                           prev100k.bacteriological.tb.female * n.participants.female
+    )) %>% 
+    # select(sex.analysis.indicator, 
+    #        n.bacteriological.tb.female, 
+    #        n.bacteriological.tb.male, 
+    #        adj.prev100k.bacteriological.tb.female,
+    #        adj.prev100k.bacteriological.tb.male,
+    #        prev100k.bacteriological.tb.female, 
+    #        prev100k.bacteriological.tb.male,
+    #        n.participants.female, 
+    #        n.participants.male, 
+    #        diagnosedCases) %>% View() 
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> cases2
+
+
+cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.bacteriological.tb.male) ~ 
+                                           n.bacteriological.tb.male, 
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.bacteriological.tb.male) ~
+                                           adj.prev100k.bacteriological.tb.male * n.participants.male, 
+                                       !is.na(n.participants.male)  & !is.na(prev100k.bacteriological.tb.male) ~
+                                           prev100k.bacteriological.tb.male * n.participants.male 
+                                           
+    )) %>% 
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> maleCases2
+
+### Case 2: we used smear positive  prevalence risk so pull their reported counts  
+### (if available) or we need participant counts. 
+### 9 total surveys; 8 reported case counts; 1 estimated; no missings
+cleanSexDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
+                                                    "prev100k.ci.smear.positive.tb",
+                                                    "prev100k.smear.positive.tb")) %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
+                                           n.smear.positive.tb.female + n.smear.positive.tb.male, 
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
+                                           adj.prev100k.smear.positive.tb.male * n.participants.male +
+                                           adj.prev100k.smear.positive.tb.female * n.participants.female, 
+                                       !is.na(n.participants.male)  & !is.na(prev100k.smear.positive.tb.male) ~
+                                           prev100k.smear.positive.tb.male * n.participants.male +
+                                           prev100k.smear.positive.tb.female * n.participants.female
+    )) %>% 
+    # select(sex.analysis.indicator,
+    #        n.smear.positive.tb.female,
+    #        n.smear.positive.tb.male,
+    #        adj.prev100k.smear.positive.tb.female,
+    #        adj.prev100k.smear.positive.tb.male,
+    #        prev100k.smear.positive.tb.female,
+    #        prev100k.smear.positive.tb.male,
+    #        n.participants.female,
+    #        n.participants.male,
+    #        diagnosedCases) %>% View()
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> cases3
+
+
+cleanSexDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
+                                                    "prev100k.ci.smear.positive.tb",
+                                                    "prev100k.smear.positive.tb")) %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
+                                           n.smear.positive.tb.male, 
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
+                                           adj.prev100k.smear.positive.tb.male * n.participants.male,
+                                       !is.na(n.participants.male)  & !is.na(prev100k.smear.positive.tb.male) ~
+                                           prev100k.smear.positive.tb.male * n.participants.male,
+    )) %>% 
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> maleCases3
+
+### Total TB cases diagnosed (approximately)
+sum(cases1, cases2, cases3)
+
+### Total TB cases diagnosed among men(approximately)
+sum(maleCases1, maleCases2, maleCases3)
+
+### Percentage male 
+sum(maleCases1, maleCases2, maleCases3) / sum(cases1, cases2, cases3) *100
+
 bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=WHO.region)
 bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
 table(bactModelDF$natRep)
@@ -296,13 +437,15 @@ Model specification
 mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1|study.country) + (1|id),
                        data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept),
+                               prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
                        iter = 4000)
+
+bayes_R2(mainEffectMod)
 ```
 
 Summarize and check 
@@ -316,7 +459,8 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 nd <- bactModelDF %>%
-      select(study.country, LogOdds_Female) %>%
+      select(study.country) %>%
+      unique() %>% 
       mutate(logOR_se=1)
 
 mainEffectModEst <- add_epred_draws(object = mainEffectMod,
@@ -329,7 +473,12 @@ mainEffectModEst <- add_epred_draws(object = mainEffectMod,
 
 Main estimate
 ```{r}
-mainEffectModEst %>% ungroup %>% mean_qi(mfRatio) %>% 
+### Posterior mean with 95% credible interval
+mainEffectModEst %>% ungroup() %>% mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+mainEffectModEst %>% ungroup() %>% median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### output for contribution table
@@ -345,8 +494,8 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                                  newdata=bactModelDF,
                                  re_formula = ~ 1  + (1|study.country) + (1|id), 
                                  allow_new_levels = TRUE) %>% 
-                    mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
+                      mutate(mfRatio = exp(.epred),
+                             type="Posterior mean and 95% credible interval") 
 ```
 
 # Model 2: Effect by world region model
@@ -377,8 +526,9 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 ndRegion <- bactModelDF %>%
-      select(WHO.region, LogOdds_Female) %>%
-      mutate(logOR_se=1)
+            select(WHO.region) %>%
+            unique() %>%
+            mutate(logOR_se=1)
 
 regionEffectModEst <- add_epred_draws(object = regionEffectMod,
                                  newdata=ndRegion,
@@ -698,7 +848,7 @@ timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
 
 ### Also run this model with only those studies in the horton review
 timeEffectHortMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + year_z + (1 + year_z | study.country) + (1 | id),
+                           1 + year_z  + (1 + year_z | study.country) + (1 | id),
                        data = bactModelDF %>% filter(publication.year < 2017,
                                                      id != 17, id!=72),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -723,8 +873,8 @@ Prediction
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
 ndTime <- bactModelDF %>%
-    select(logOR_se) %>%
-    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1))
+          select(logOR_se) %>%
+            crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1))
 
 timeEffectModEst <- add_epred_draws(object = timeEffectMod,
                                  newdata=na.omit(ndTime),
@@ -762,6 +912,8 @@ timeEffectHortModEst %>%
     select(Year, mfRatio, .lower, .upper)
 
 bayes_R2(timeEffectMod)
+bayes_R2(timeEffectHortMod)
+
 
 timeEffectModEst 
 
@@ -949,6 +1101,7 @@ data.frame(WHO.region = startYr$WHO.region,
 
 
 ```
+
 # Sub group analysis
 
 ## National surveys
@@ -989,10 +1142,11 @@ plot(natEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndNat <- bactModelDF %>%
-         filter(natRep == "Yes") %>%
-         select(study.country, LogOdds_Female) %>%
+ndNat <- data.frame("natRep" == "Yes") %>% 
+                    crossing(unique(bactModelDF$study.country)) %>% 
          mutate(logOR_se=1)
+
+colnames(ndNat)[1:2] <- c("natRep", "study.country")
 
 natEffectModEst <- add_epred_draws(object = natEffectMod,
                                  newdata=ndNat,
@@ -1000,10 +1154,11 @@ natEffectModEst <- add_epred_draws(object = natEffectMod,
                            mutate(mfRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval") 
 
-ndSubnat <- bactModelDF %>%
-         filter(natRep == "No") %>%
-         select(study.country, LogOdds_Female) %>%
+ndNat <- data.frame("natRep" == "No") %>% 
+                    crossing(unique(bactModelDF$study.country)) %>% 
          mutate(logOR_se=1)
+
+colnames(ndNat)[1:2] <- c("natRep", "study.country")
 
 subnatEffectModEst <- add_epred_draws(object = subNatEffectMod,
                                  newdata=ndSubnat,
@@ -1014,15 +1169,27 @@ subnatEffectModEst <- add_epred_draws(object = subNatEffectMod,
 
 Main estimate - National surveys
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 natEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+natEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - subnational surveys
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 subnatEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper)  %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+subnatEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper)  %>% round(digits=2)
 ```
 
@@ -1065,10 +1232,17 @@ plot(lowBiasEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndLowBias <- bactModelDF %>%
-         filter(bias == "Low") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+ndLowBias <- data.frame("bias" == "Low") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+            mutate(logOR_se=1)
+
+colnames(ndLowBias)[1:2] <- c("bias", "study.country")
+
+ndNotLowBias <- data.frame("bias" == "Not low") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+            mutate(logOR_se=1)
+
+colnames(ndNotLowBias)[1:2] <- c("bias", "study.country")
 
 ndNotLowBias <- bactModelDF %>%
          filter(bias == "Not low") %>%
@@ -1090,17 +1264,31 @@ notLowBiasEffectModEst <- add_epred_draws(object = notLowBiasEffectMod,
 
 Main estimate - low risk of bias
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 lowBiasEffectModEst %>% 
     ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+lowBiasEffectModEst %>% 
+    ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - not low risk of bias
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 notLowBiasEffectModEst %>% 
     ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+notLowBiasEffectModEst %>% 
+    ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
@@ -1169,15 +1357,27 @@ sympNoEffectModEst <- add_epred_draws(object = sympNoEffectMod,
 
 Main estimate - used symptom screening
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 sympYesEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+sympYesEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - did not use symptom screening
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 sympNoEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+sympNoEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
@@ -1206,7 +1406,6 @@ sympReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        chains = 4,
                        cores = 4,
                        iter = 4000)
-
 ```
 
 Summarize and check 
@@ -1219,10 +1418,17 @@ plot(sympReqYesEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndSympReqYes <- bactModelDF %>%
-         filter(symptomsRequired == "Yes") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+ndSympReqYes <- data.frame("symptomsRequired" == "Yes") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+                mutate(logOR_se=1)
+
+colnames(ndSympReqYes)[1:2] <- c("symptomsRequired", "study.country")
+
+ndSympReqNo <- data.frame("symptomsRequired" == "No") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+                mutate(logOR_se=1)
+
+colnames(ndSympReqNo)[1:2] <- c("symptomsRequired", "study.country")
 
 ndSympReqNo <- bactModelDF %>%
          filter(symptomsRequired == "No") %>%
@@ -1244,15 +1450,27 @@ sympReqNoEffectModEst <-  add_epred_draws(object = sympReqNoEffectMod,
 
 Main estimate - required symptoms reported
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval
 sympReqYesEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval
+sympReqYesEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - did not require symptoms reported
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval
 sympReqNoEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval
+sympReqNoEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
@@ -1281,7 +1499,6 @@ xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        chains = 4,
                        cores = 4,
                        iter = 4000)
-
 ```
 
 Summarize and check 
@@ -1294,15 +1511,17 @@ plot(xpCltReqYesEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndxpCltReqYes <- bactModelDF %>%
-         filter(XpertCultRequired == "Yes") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+ndxpCltReqYes <- data.frame("XpertCultRequired" == "Yes") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+                  mutate(logOR_se=1)
 
-ndxpCltReqNo <- bactModelDF %>%
-         filter(XpertCultRequired == "No") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+colnames(ndxpCltReqYes)[1:2] <- c("XpertCultRequired", "study.country")
+
+ndxpCltReqNo <- data.frame("XpertCultRequired" == "No") %>% 
+                        crossing(unique(bactModelDF$study.country)) %>% 
+                  mutate(logOR_se=1)
+
+colnames(ndxpCltReqNo)[1:2] <- c("XpertCultRequired", "study.country")
 
 xpCltReqYesEffectModEst <- add_epred_draws(object = xpCltReqYesEffectMod,
                                  newdata=ndxpCltReqYes,
@@ -1319,15 +1538,27 @@ xpCltReqNoEffectModEst <-  add_epred_draws(object = xpCltReqNoEffectMod,
 
 Main estimate - required xpert or culture
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval
 xpCltReqYesEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval
+xpCltReqYesEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - did not require xpert or culture
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval
 xpCltReqNoEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval
+xpCltReqNoEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
@@ -1408,27 +1639,27 @@ Prediction
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 bangladeshNd <-  bactModelDF %>%
                  filter(study.country == "Bangladesh") %>%
-                 select(study.country, LogOdds_Female) %>%
+                 select(study.country) %>%
                  mutate(logOR_se=1)
 
 chinaNd <- bactModelDF %>%
                  filter(study.country == "China") %>%
-                 select(study.country, LogOdds_Female) %>%
+                 select(study.country) %>%
                  mutate(logOR_se=1)
 
 indiaNd <- bactModelDF %>%
                  filter(study.country == "India") %>%
-                 select(study.country, LogOdds_Female) %>%
+                 select(study.country) %>%
                  mutate(logOR_se=1)
 
 vietnamNd <- bactModelDF %>%
                  filter(study.country == "Vietnam") %>%
-                 select(study.country, LogOdds_Female) %>%
+                 select(study.country) %>%
                  mutate(logOR_se=1)
 
 ethiopiaNd <- bactModelDF %>%
                  filter(study.country == "Ethiopia") %>%
-                 select(study.country, LogOdds_Female) %>%
+                 select(study.country) %>%
                  mutate(logOR_se=1)
 
 BangladeshEffectModEst <- add_epred_draws(object = BangladeshEffectMod,
@@ -1464,34 +1695,64 @@ IndiaEffectModEst <- add_epred_draws(object = IndiaEffectMod,
 
 Main estimate - Bangladesh
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval 
 BangladeshEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval 
+BangladeshEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - China
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval 
 ChinaEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval 
+ChinaEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - Vietnam
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval 
 VietnamEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior medin with 95% credible interval 
+VietnamEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - Ethiopia
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval 
 EthiopiaEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval 
+EthiopiaEffectModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 Main estimate - India
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+# Posterior mean with 95% credible interval 
+IndiaEffectModEst %>% ungroup() %>%
+    mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+# Posterior median with 95% credible interval 
 IndiaEffectModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
@@ -1630,8 +1891,14 @@ year20_24ModEst <- add_epred_draws(object = year20_24Mod,
 
 Main estimate - 2000-2004
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 year00_04ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+year00_04ModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
@@ -1645,6 +1912,7 @@ bactModelDF %>% filter(study.end.year < 2005,
 
 Main estimate - 2005-2009
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 year05_09ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
@@ -1661,6 +1929,7 @@ bactModelDF %>% filter(study.end.year < 2010,
 
 Main estimate - 2010-2014
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 year10_14ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
@@ -1677,6 +1946,7 @@ bactModelDF %>% filter(study.end.year < 2015,
 
 Main estimate - 2015-2019
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 year15_19ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
@@ -1693,6 +1963,7 @@ bactModelDF %>% filter(study.end.year < 2020,
 
 Main estimate - 2020-2024
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean with 95% credible interval
 year20_24ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
@@ -1900,7 +2171,8 @@ newBactModelDF[which(newBactModelDF$id == 51), 23:33] <- newBactModelDF[which(ne
 
 newBactModelDF[which(newBactModelDF$id == 97), 23:33] <- newBactModelDF[which(newBactModelDF$id == 98), 23:33]
 
-newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- (covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]
+newBactModelDF <- as.data.frame(newBactModelDF)
+newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- as.vector(unlist((covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]))
 ```
 
 Model specification (HIV prevalence univariate)
@@ -1911,8 +2183,8 @@ hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                           (1 | study.country) + (1 | id),
                       data = newBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 10), class = b) +
-                          prior(exponential(2), class = sd),
+                              prior(normal(0, 10), class = b) +
+                              prior(exponential(2), class = sd),
                       family = gaussian(),
                       control = list(adapt_delta = 0.99),
                       chains = 4,
@@ -2376,6 +2648,12 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                        study.start.year, 
                        study.end.year, 
                        publication.year,
+                       study.quality.summary,
+                       screening.tests,
+                       bacteriological.tb.definition, 
+                       xpert.samples, xpert.used, other.xpert.samples,
+                       culture.samples, culture.used, other.culture.samples,
+                       participants.sputum.collected,
                        ends_with("male"), ends_with("sex"),
                        sex.smr.analysis.indicator) %>%
     
@@ -2443,16 +2721,58 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                                             log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
                                         sex.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
                                             log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
-                                mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
-                                       year_z = ifelse(is.na(study.end.year), 
-                                                       (publication.year - meanLag) - 
-                                                           round(mean((publication.year - meanLag), na.rm=TRUE)),
-                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE))
-                                                       ),
+                                mutate(natRep = ifelse(is.na(study.geography), 
+                                                       NA, 
+                                                       ifelse(study.geography == "Nationally representative", 
+                                                       "Yes", "No")),
+
+                                       year_z = ifelse(!is.na(study.end.year), 
+                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+                                                       (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       
+                                       symptomScreen = ifelse(is.na(screening.tests), 
+                                                                    NA, 
+                                                                    ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No")),
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected) | grepl("unknown", 
+                                                                                                              participants.sputum.collected,ignore.case=TRUE), 
+                                                                       NA, 
+                                                                       ifelse(!grepl("x-ray|all participants|other",
+                                                                        participants.sputum.collected,ignore.case=TRUE),
+                                                                 "Yes", "No")),
+
+                                       XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
+                                                                  NA, ifelse(!grepl("smear|micros|field|NTP", 
+                                                                              bacteriological.tb.definition,
+                                                                              ignore.case=TRUE), 
+                                                                  "Yes", 
+                                                                   "No")),
+                                       ### Fix those that were missed with the above attempt 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(26989,26928,26920,26918,26892,26861,26857), 
+                                                                  "Yes", XpertCultRequired), 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(28002), 
+                                                                  "No", XpertCultRequired),
+                                       #### if we used the culture positive count, then xpert culture was requried
+                                       XpertCultRequired = ifelse(grepl("culture", sex.smr.analysis.indicator), 
+                                                                  "Yes", XpertCultRequired),
+                                       #### if we used the smear positive prevs, then xpert culture was not requried
+                                       XpertCultRequired = ifelse(grepl("smear", sex.smr.analysis.indicator), 
+                                                                  "No", XpertCultRequired),
+                                       XpertCultUsed = ifelse((grepl("Yes", xpert.used) & 
+                                                                 (grepl("All samples", xpert.samples) |
+                                                                  !grepl("mear|NAAT", other.xpert.samples))) |
+                                                                  (grepl("Yes", culture.used) & 
+                                                                  grepl("All samples|Subset", culture.samples) & 
+                                                                  !grepl("HIV", other.culture.samples)), 
+                                                                 "Yes", "No"),
                                        WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
 
 smrModelDF <- cleanSexSmrDF %>%
-    select(id, WHO.region, study.country, Sex, year_z, natRep, LogOdds, LogOddsStandardError, 
+    select(id,covidence.id, WHO.region, study.country, Sex, year_z, natRep, 
+           symptomsRequired, XpertCultRequired, XpertCultUsed, 
+           LogOdds, LogOddsStandardError, 
            n.participants.male, n.participants.female) %>%
     pivot_wider(names_from = Sex,
                 values_from = c(LogOdds, LogOddsStandardError),
@@ -2476,7 +2796,80 @@ print(paste(sum(!is.na(cleanSexSmrDF0$n.participants.female)), "studies report p
             sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE), "participants"))
 
 print(paste0(round(sum(cleanSexSmrDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexSmrDF0$n.participants.female, cleanSexSmrDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
+
+### How many persons diagnosed with bacteriologically-confirmed TB 
+### Case 1: we used the reported count so simply sum 
+### 27 total surveys; no missing 
+cleanSexSmrDF %>% filter(sex.smr.analysis.indicator == "n.smear.positive.tb") %>% 
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = n.smear.positive.tb.male + n.smear.positive.tb.female) %>% 
+    select(diagnosedCases) %>% sum() -> smrCases1
+
+## Among males only
+cleanSexSmrDF %>% filter(sex.smr.analysis.indicator == "n.smear.positive.tb") %>% 
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = n.smear.positive.tb.male) %>% 
+    select(diagnosedCases) %>% sum() -> smrMaleCases1
+
+### Case 2: we used smear positive prevalence risk so pull their reported 
+### counts (if available) or we need participant counts. 
+### 37 total surveys; 27 reported case counts; 10 estimated; 0 missing 
+cleanSexSmrDF %>% filter(sex.smr.analysis.indicator != "n.smear.positive.tb") %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~
+                                           n.smear.positive.tb.male + n.smear.positive.tb.female,
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
+                                           adj.prev100k.smear.positive.tb.male * n.participants.male +
+                                           adj.prev100k.smear.positive.tb.female * n.participants.female,
+                                       !is.na(n.participants.male)  & !is.na(prev100k.smear.positive.tb.male) ~
+                                           prev100k.smear.positive.tb.male * n.participants.male +
+                                           prev100k.smear.positive.tb.female * n.participants.female
+    )) %>%
+#     select(sex.smr.analysis.indicator,
+#            n.smear.positive.tb.female,
+#            n.smear.positive.tb.male,
+#            adj.prev100k.smear.positive.tb.female,
+#            adj.prev100k.smear.positive.tb.male,
+#            prev100k.ci.smear.positive.tb.female,
+#            prev100k.ci.smear.positive.tb.male,
+#            prev100k.smear.positive.tb.female,
+#            prev100k.smear.positive.tb.male,
+#            n.participants.female,
+#            n.participants.male,
+#            diagnosedCases) %>% View()
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> smrCases2
+
+## Among males only
+cleanSexSmrDF %>% filter(sex.smr.analysis.indicator != "n.smear.positive.tb") %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+    mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
+                                           n.smear.positive.tb.male, 
+                                       !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
+                                           adj.prev100k.smear.positive.tb.male * n.participants.male,
+                                       !is.na(n.participants.male)  & !is.na(prev100k.smear.positive.tb.male) ~
+                                           prev100k.smear.positive.tb.male * n.participants.male
+                                           
+    )) %>% 
+    select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> smrMaleCases2
+
+### Total TB cases diagnosed (approximately)
+sum(cases1, cases2)
+
+### Total TB cases diagnosed among men(approximately)
+sum(maleCases1, maleCases2)
+
+### Percentage male 
+sum(maleCases1, maleCases2) / sum(cases1, cases2) *100
+
+
+### How many with culture positive TB 
+cleanSexDF %>% filter(!is.na(n.culture.positive.tb.male)) %>%
+    select(!Sex:LogOddsStandardError) %>% distinct() %>% 
+    # select(n.culture.positive.tb.male, n.culture.positive.tb.female) %>% 
+    # View()
+    nrow()
 ```
+
 More descriptives 
 
 ```{r}
