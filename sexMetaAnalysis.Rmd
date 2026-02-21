@@ -2996,3 +2996,99 @@ empirical_smr_prev <- smrModelDF %>%
           plot.title = element_text(size=36))
     
 ```
+
+# Some comparisons between smear-positive and bacteriologically-confirmed TB 
+
+```{r, warning = FALSE, message=FALSE}
+### Reviewer noted that while some of the WHO regions had extremely similar MF ratios for smr vs. bc, others had larger differences. Is there any reason we can see in the data to explain this? 
+
+### Small difference: South East Asia Region
+### Relatively large difference: Africa Region
+
+### Is there a difference in the percentage of smear positive used as bacteriologically positive between the two regions? 
+### South East Asia Region
+nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", grepl("smear", sex.analysis.indicator))) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Africa Region
+nrow(bactModelDF %>% filter(WHO.region == "Africa region", grepl("smear", sex.analysis.indicator))) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Consider effect sizes in a moment 
+
+### Do we see differences in symptoms required? 
+## South East Asia Region
+nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", symptomsRequired == "Yes")) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region", symptomsRequired == "Yes")) / 
+    nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Africa Region
+nrow(bactModelDF %>% filter(WHO.region == "Africa region",  symptomsRequired == "Yes")) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+nrow(smrModelDF %>% filter(WHO.region == "Africa region",  symptomsRequired == "Yes")) / 
+    nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Do we see differences in symptoms required? 
+## South East Asia Region
+nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", XpertCultRequired == "Yes")) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Africa Region
+nrow(bactModelDF %>% filter(WHO.region == "Africa region",  XpertCultRequired == "Yes")) / 
+    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+
+### Some difference -- what about effect sizes?
+bactModelDF %>% 
+    filter(WHO.region == "South-East Asia region", XpertCultRequired == "Yes") %>% 
+    mutate(MFRatio = exp(logOR)) %>% 
+    select(MFRatio) %>% mean()
+
+bactModelDF %>% 
+    filter(WHO.region == "South-East Asia region", XpertCultRequired == "No") %>% 
+    mutate(MFRatio = exp(logOR)) %>% 
+    select(MFRatio) %>% mean()
+
+bactModelDF %>% 
+    filter(WHO.region == "Africa region", XpertCultRequired == "Yes") %>% 
+    mutate(MFRatio = exp(logOR)) %>% 
+    select(MFRatio) %>% mean()
+
+bactModelDF %>% 
+    filter(WHO.region == "Africa region", XpertCultRequired == "No") %>% 
+    mutate(MFRatio = exp(logOR)) %>% 
+    select(MFRatio) %>% mean()
+
+
+### What if we compare only among the surveys that report both the smear and bacteriologically confirmed TB 
+reportBothModelDF <- bactModelDF %>% 
+                     filter(covidence.id %in% smrModelDF$covidence.id)
+
+regionEffectRptBothMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1  + (1|WHO.region) + (1|id),
+                       data = reportBothModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+ndBothRegion <- reportBothModelDF %>%
+                select(WHO.region) %>%
+                unique() %>%
+                mutate(logOR_se=1)
+
+regionBothEffectModEst <- add_epred_draws(object = regionEffectRptBothMod,
+                                          newdata=ndBothRegion,
+                                          re_formula = ~ 1 + (1|WHO.region),
+                                          allow_new_levels = FALSE) %>% 
+                          mutate(mfRatio = exp(.epred),
+                                 type="Posterior mean and 95% credible interval") 
+
+regionBothEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio) 
+
+```
