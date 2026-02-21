@@ -12,6 +12,10 @@ header-includes:
 
 This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multivariate multilevel model on the studies that report sex stratified prevalence results. This model aims to estimate sex stratified prevalence adjusted for geographic factors. 
 
+## A warning
+
+This script contains nearly 100 brms model calls; it takes a long time to run in full! 
+
 # Setup
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
@@ -467,12 +471,25 @@ nd <- bactModelDF %>%
       unique() %>% 
       mutate(logOR_se=1)
 
+### Adds draws from the expectation of the posterior predictive distribution
 mainEffectModEst <- add_epred_draws(object = mainEffectMod,
                                  newdata=nd,
                                  re_formula = ~ 1, 
                                  allow_new_levels = TRUE) %>% 
                     mutate(mfRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval") 
+
+### We are interested in plotting the posterior distribution of random effects
+### variance, so we will start a dataframe here and fill it for each model. 
+randEffVar <- mainEffectMod %>% 
+              spread_draws(sd_id__Intercept,
+                           sd_study.country__Intercept) %>%
+              rename("Survey (crossed with country)" = sd_id__Intercept, 
+                     "Country" = sd_study.country__Intercept) %>% 
+              pivot_longer(cols = c("Country", "Survey (crossed with country)"), 
+                           names_to = "RandEff", values_to = "Variance") %>%
+              mutate("Model" = "Main effect")
+
 ```
 
 Main estimate
@@ -540,6 +557,23 @@ regionEffectModEst <- add_epred_draws(object = regionEffectMod,
                                  allow_new_levels = TRUE) %>% 
                        mutate(mfRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval") 
+
+### Add random effects variance from region model to the dataframe
+randEffVar <- rbind(randEffVar, 
+                    regionEffectMod %>% 
+                    spread_draws(sd_id__Intercept,
+                                 sd_WHO.region__Intercept) %>%
+                    rename("Survey (crossed with region)" = sd_id__Intercept, 
+                           "WHO region" = sd_WHO.region__Intercept) %>% 
+                    pivot_longer(cols = c("WHO region", "Survey (crossed with region)"), names_to = "RandEff", values_to = "Variance") %>%
+                    mutate("Model" = "Region random effect")
+)
+
+## Convert random effects to a factor
+randEffVar$RandEff <- factor(randEffVar$RandEff,
+                              levels=c("Survey (crossed with country)",
+                                       "Survey (crossed with region)", 
+                                        "Country", "WHO region"))
 ```
 
 Main estimate
@@ -831,6 +865,28 @@ finalForestPlot <- p_left + forestRatio+ p_right + plot_layout(design = layout)
 # finalForestPlot
 # Save
 # ggsave(plot = finalForestPlot, "output/SEX/mfFigure2.png", height = 24, width=16, units = "in")
+```
+
+## Plot posterior of random effects variance
+```{r, warning = FALSE, message=FALSE}
+ggplot() + geom_density(data=randEffVar, 
+                     aes(x=Variance, fill=Model), alpha = .5, color = NA, 
+                     ) + 
+    facet_wrap(facets = vars(RandEff)) + 
+    theme_minimal() + 
+    theme(legend.position = "bottom") + 
+    xlab("SD on logOR scale") + 
+    ggtitle("Posterior heterogeneity across Bayesian meta-analytic models")
+
+randEffVar %>% group_by(Model, RandEff) %>% mean_qi() %>% 
+    mutate("Mean" = round(Variance,2), 
+           "95% Credible interval" = paste(round(.lower,2), "-", round(.upper,2))) %>%
+    select(! c(Variance, .lower, .upper, .width, .point, .interval)) %>% 
+    left_join(randEffVar %>% group_by(Model, RandEff) %>% median_qi() %>% 
+              mutate("Median" = round(Variance,2))) %>% 
+    rename("Random effect" = RandEff) %>%
+    select(Model, `Random effect`, Mean, Median, `95% Credible interval`)
+
 ```
 
 ## Model 3: Effect over time 
@@ -1133,7 +1189,7 @@ summary(timeEffectRegionMod)
 summary(timeEffectRegionModAlt)
 ```
 
-## Sub group analysis
+## Subgroup analysis
 
 ### Model 6-7: National and subnational surveys
 
@@ -2097,6 +2153,7 @@ bactModelDF %>% filter(id ==20 | id ==75 |
 ```
 
 ## Covariate analysis of male-to-female prevalence ratio
+
 ### Setup and read in external data covariate data  
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ##############################################################################|
