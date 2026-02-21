@@ -8,9 +8,11 @@ header-includes:
   - \pagenumbering{gobble}
 ---
 
-ABOUT THIS SCRIPT
+# About this script 
 
 This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multivariate multilevel model on the studies that report sex stratified prevalence results. This model aims to estimate sex stratified prevalence adjusted for geographic factors. 
+
+# Setup
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 
@@ -67,6 +69,8 @@ print(paste(sum(!is.na(cleanSexDF0$n.participants.female)), "studies report sex-
 ```{r, warning = FALSE, message=FALSE}
 table(cleanSexDF0$study.quality.summary)
 ```
+# Bacteriologically-confirmed TB analysis 
+## Format data for modeling 
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 
@@ -291,7 +295,7 @@ bactModelDF <- cleanSexDF %>%
 
 ```
 
-Descriptive output for survey subgroups explored below
+## Additional descriptive output
 
 ```{r}
 table(bactModelDF$WHO.region)
@@ -430,7 +434,7 @@ bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.pa
 
 ```
 
-# Model 1: Main effect model
+## Model 1: Main effect model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -498,7 +502,7 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                              type="Posterior mean and 95% credible interval") 
 ```
 
-# Model 2: Effect by world region model
+## Model 2: Effect by world region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -584,7 +588,7 @@ myPalNew <- c("black", "deepskyblue")
     ggsave(plot1, filename=here("output/SEX/UnionPosterPlot.png"), width = 20, height=24, units = "in", dpi=600)
     
 ```
-
+## Manuscript figure 3: Forest plot
 Bring estimates from regional model together to make a forest plot for the manuscript.
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.width = 30, fig.height = 50}
@@ -829,7 +833,7 @@ finalForestPlot <- p_left + forestRatio+ p_right + plot_layout(design = layout)
 # ggsave(plot = finalForestPlot, "output/SEX/mfFigure2.png", height = 24, width=16, units = "in")
 ```
 
-# Model 3: Effect over time 
+## Model 3: Effect over time 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -918,7 +922,7 @@ bayes_R2(timeEffectHortMod)
 timeEffectModEst 
 
 ```
-
+### Manuscript figure 4A: M:F ratio over time
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
     y <- timeEffectModEst  %>%
@@ -1002,7 +1006,7 @@ yFull <- rbind(
 ```
 
 
-# Model 4: Region effect over time 
+## Model 4: Region effect over time 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1066,6 +1070,7 @@ data.frame(WHO.region = startYr$WHO.region,
     
 ```
 
+### Manuscript figure 4B: M:F ratio over time by region
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
     
@@ -1102,7 +1107,7 @@ data.frame(WHO.region = startYr$WHO.region,
 
 ```
 
-# Model 5: Alternative time model 
+## Model 5: Alternative time model 
 Check the time models without the five surveys that did not report survey end year. 
 
 Model specification
@@ -1128,9 +1133,9 @@ summary(timeEffectRegionMod)
 summary(timeEffectRegionModAlt)
 ```
 
-# Sub group analysis
+## Sub group analysis
 
-## National surveys
+### Model 6-7: National and subnational surveys
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1219,7 +1224,7 @@ subnatEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper)  %>% round(digits=2)
 ```
 
-## Study quality (Low vs. not low)
+###Model 8-9: Study quality (low vs. not low)
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1319,7 +1324,7 @@ notLowBiasEffectModEst %>%
 ```
 
 
-## Symptom screen used vs. no symptom screen used
+### Model 10-11: Symptom screen used vs. not used
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1407,7 +1412,7 @@ sympNoEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Reported symptoms required for sputum collection vs. symptoms not required
+### Model 12-13: Symptoms required vs. not required for sputum collection
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1500,7 +1505,8 @@ sympReqNoEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
+### Model 14-15: Required Xpert or culture vs. not
+Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1588,7 +1594,7 @@ xpCltReqNoEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Country specific estimates
+### Model 16-20: Country specific estimates
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1794,8 +1800,8 @@ bactModelDF %>% filter(study.country %in% c("Bangladesh", "China", "Ethiopia",
                           malePerc=sum(n.participants.male, na.rm=TRUE)/n.total.participants*100)
 ```
 
+### Model 21-25: Five study-end-year bands 
 
-## Five year bands 
 ```{r, warning = FALSE, message=FALSE}
 
 year00_04Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -2001,7 +2007,7 @@ summarize(participants = sum(n.participants.male, n.participants.female, na.rm=T
 bactModelDF %>% filter(study.end.year > 2019) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
-# Horton vs not horton review 
+### Model 26-27: Included in Horton review vs. not
 ```{r, warning = FALSE, message=FALSE}
 hortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2090,9 +2096,8 @@ bactModelDF %>% filter(id ==20 | id ==75 |
                             is.na(publication.year)) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
-# Multivariate analysis of male-to-female prevalence ratio
-
-Setup and read in external data sources 
+## Covariate analysis of male-to-female prevalence ratio
+### Setup and read in external data covariate data  
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ##############################################################################|
 #### External covariates  #####################################################
@@ -2201,6 +2206,7 @@ newBactModelDF <- as.data.frame(newBactModelDF)
 newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- as.vector(unlist((covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]))
 ```
 
+### Covariate correlation assessment
 Estimate the correlation between the covariate data using a BRMS multivariate model with fixed intercepts and sigmas. Approach inspired by this post 
 https://solomonkurz.netlify.app/blog/2019-02-16-bayesian-correlations-let-s-talk-options/
 
@@ -2256,7 +2262,9 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
 
 ```
 
-Model specification (HIV prevalence univariate)
+### Model 28: HIV prevalence univariate model
+
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -2282,7 +2290,9 @@ round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,4])),2)
 ```
 
-Model specification (GDI; univariate)
+### Model 29: Gender disparity index univariate model 
+
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -2309,7 +2319,9 @@ round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,4])),2)
 ```
 
-Model specification diabetes
+### Model 30: Diabetes univariate model
+
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -2337,7 +2349,9 @@ round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,4])),2)
 ```
 
-Model specification BMI
+### Model 31: Low BMI univariate model
+
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -2354,7 +2368,6 @@ lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                               iter = 4000)
 ```
 
-
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 summary(lowBMIMod)
 
@@ -2366,7 +2379,9 @@ round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,4])),2)
 ```
 
-Model specification Smoking
+### Model 32: Smoking univariate model
+
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -2394,8 +2409,9 @@ round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,4])),2)
 ```
 
+### Model 33: Alcohol use disorder univariate model
+
 Model specification 
-ALCOHOL USE DISORDER PREVALENCE MODEL UNIVARIATE
 
 ```{r, warning = FALSE, message=FALSE}
 alcoholUsePrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -2423,8 +2439,9 @@ round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,3])),2)
 round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,4])),2)
 ```
 
+### Model 34: Multi-variable covariate analysis
 
-Model specification (multivariate)
+Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
 
@@ -2464,9 +2481,9 @@ plot(multiMod)
 stanplot(multiMod)
 ```
 
-# Replicate the covariate analysis by world region
+## Covariate analysis by world region
 
-## Univariate
+### Model 35-75: Univariable covariate analysis by world region
 
 ```{r, warning = FALSE, message=FALSE}
 regCoVList <- list()
@@ -2486,19 +2503,6 @@ for (i in 1:length(model.regions)){
                        chains = 4,
                        cores = 4,
                        iter = 4000)
-    
-    # regionTBIncMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-    #                             1 + TB.incidence + 
-    #                             (1 | study.country) + (1 | id),
-    #                    data = newBactModelDF %>% filter(WHO.region == region),
-    #                    prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-    #                        prior(normal(0, 10), class = b) +
-    #                        prior(exponential(2), class = sd),
-    #                    family = gaussian(),
-    #                    control = list(adapt_delta = 0.99),
-    #                    chains = 4,
-    #                    cores = 4,
-    #                    iter = 4000)
     
     regionHivMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                             1 + HIV.AIDS + 
@@ -2641,21 +2645,22 @@ for (i in 1:length(model.regions)){
 }
 ```
 
-### Africa region (univariate)
+#### Africa region (Univariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regCoVList[["Africa region"]]
 ```
 
-### South-East Asia region (univariate)
+####South-East Asia region (Univariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regCoVList[["South-East Asia region"]]
 ```
 
-### Western Pacific region (univariate)
+#### Western Pacific region (Univariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regCoVList[["Western Pacific region"]]
 ```
 
+### Models 76-80: Multivariable covariate analysis by world region
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regMultiList <- list()
@@ -2691,17 +2696,17 @@ for (i in 1:length(model.regions)){
 }
 ```
 
-### Africa region (multivariate)
+#### Africa region (multivariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regMultiList[["Africa region"]]
 ```
 
-### South-East Asia region (multivariate)
+#### South-East Asia region (multivariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regMultiList[["South-East Asia region"]]
 ```
 
-### Western Pacific region (multivarate)
+#### Western Pacific region (multivariable)
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 regMultiList[["Western Pacific region"]]
 ```
@@ -2864,7 +2869,7 @@ smrModelDF <- cleanSexSmrDF %>%
     ) 
 ```
 
-# Smear positive descriptive statistics
+## Smear positive descriptive statistics
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
 
@@ -2951,7 +2956,7 @@ cleanSexDF %>% filter(!is.na(n.culture.positive.tb.male)) %>%
     nrow()
 ```
 
-More descriptives 
+## More descriptives 
 
 ```{r}
 table(smrModelDF$WHO.region)
@@ -2959,7 +2964,7 @@ smrModelDF %>% reframe(Participants = sum(n.participants.female + n.participants
 smrModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
 ```
 
-# Model X: Smear positive main effect 
+## Model 81: Smear positive main effect 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -3002,7 +3007,7 @@ Main estimate
 mainEffectSmrModEst %>% ungroup %>% mean_qi(mfRatio) %>% select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-# Model 2: Smear positive effect by world region model
+## Model 82: Smear positive effect by world region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -3044,7 +3049,7 @@ Main estimate
 ```{r}
 regionEffectSmrModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
 ```
-
+## Forest plot 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 ### Get the empirical values 
 empirical_smr_prev <- smrModelDF %>%
@@ -3142,7 +3147,10 @@ bactModelDF %>%
     mutate(MFRatio = exp(logOR)) %>% 
     select(MFRatio) %>% mean()
 
+```
 
+## Model 83: Bacteriologically-confirmed by region using only surveys that also report smear positive
+```{r, warning = FALSE, message=FALSE}
 ### What if we compare only among the surveys that report both the smear and bacteriologically confirmed TB 
 reportBothModelDF <- bactModelDF %>% 
                      filter(covidence.id %in% smrModelDF$covidence.id)
@@ -3176,7 +3184,7 @@ regionBothEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
 
 # Bacteriologically positive TB sensitivity analyses
 
-Symptoms required included as covariate in main model
+## Model 84: Symptoms required included as covariate in main model
 
 ```{r, warning = FALSE, message=FALSE}
 sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -3221,7 +3229,7 @@ bayes_R2(sympReqMainMod)
 
 ```
 
-Xpert or culture required for diagnosis 
+## Model 85: Xpert or culture required for diagnosis 
 
 ```{r, warning = FALSE, message=FALSE}
 xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -3255,7 +3263,7 @@ ndXperCultModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-Xpert or culture used for diagnosis 
+## Model 86: Xpert or culture used for diagnosis 
 
 ```{r, warning = FALSE, message=FALSE}
 xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -3289,7 +3297,7 @@ ndXperCultUseModEst %>% ungroup() %>%
     select(mfRatio) %>% round(digits=2)
 ```
 
-Country and regional nested random effects 
+## Model 87: Country and regional nested random effects 
 
 ```{r, warning = FALSE, message=FALSE}
 cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
