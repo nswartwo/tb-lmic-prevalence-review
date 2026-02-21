@@ -1102,6 +1102,32 @@ data.frame(WHO.region = startYr$WHO.region,
 
 ```
 
+# Model 5: Alternative time model 
+Check the time models without the five surveys that did not report survey end year. 
+
+Model specification
+```{r, warning = FALSE, message=FALSE}
+timeEffectRegionModAlt <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                              1 + year_z * WHO.region + (1 + year_z | study.country) + (1 | id), 
+                       data = bactModelDF %>% 
+                              filter(!covidence.id %in% 
+                                    as.vector(cleanSexDF0 %>% 
+                                    filter(is.na(study.end.year)) %>% 
+                                    select(covidence.id))),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 10), class = b) +
+                           prior(exponential(2), class = sd) +
+                           prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+summary(timeEffectRegionMod)
+summary(timeEffectRegionModAlt)
+```
+
 # Sub group analysis
 
 ## National surveys
