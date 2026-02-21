@@ -3092,3 +3092,157 @@ regionBothEffectModEst <- add_epred_draws(object = regionEffectRptBothMod,
 regionBothEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio) 
 
 ```
+
+# Bacteriologically positive TB sensitivity analyses
+
+Symptoms required included as covariate in main model
+
+```{r, warning = FALSE, message=FALSE}
+sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + symptomsRequired + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept),
+                               prior(student_t(7, 0, 1.5), class = b) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+ndsympReq <- crossing(unique(bactModelDF$study.country), 
+                      unique(na.omit(bactModelDF$symptomsRequired))) %>%
+    # 
+    # bactModelDF %>%
+    #             select(study.country, LogOdds_Female, symptomsRequired) %>%
+                mutate(logOR_se=1)
+
+colnames(ndsympReq) <- c("study.country", "symptomsRequired", "logOR_se")
+
+sympReqModEst <- add_epred_draws(object = sympReqMainMod,
+                                 newdata=ndsympReq,
+                                 re_formula = NA) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+sympReqModEst %>% ungroup() %>%
+    # filter(symptomsRequired == "No") %>%
+    mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+sympReqModEst %>% ungroup() %>%
+    # filter(symptomsRequired == "No") %>%
+    median_qi(mfRatio) %>% 
+    select(mfRatio) %>% round(digits=2)
+
+bayes_R2(sympReqMainMod)
+
+```
+
+Xpert or culture required for diagnosis 
+
+```{r, warning = FALSE, message=FALSE}
+xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                           1 + XpertCultRequired + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+ndXperCult <- bactModelDF %>%
+                select(study.country, LogOdds_Female, XpertCultRequired) %>%
+                mutate(logOR_se=1)
+
+ndXperCultModEst <- add_epred_draws(object = xpCltReqMainMod,
+                                 newdata=ndXperCult,
+                                 re_formula = NA) %>%
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+ndXperCultModEst %>% ungroup() %>%
+    mean_qi(mfRatio) %>%
+    select(mfRatio) %>% round(digits=2)
+
+ndXperCultModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>%
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+```
+
+Xpert or culture used for diagnosis 
+
+```{r, warning = FALSE, message=FALSE}
+xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                           1 + XpertCultUsed + (1 | study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+ndXperCultUse <- bactModelDF %>%
+                 select(study.country, LogOdds_Female, XpertCultUsed) %>%
+                 mutate(logOR_se=1)
+
+ndXperCultUseModEst <- add_epred_draws(object = xpCltUseMainMod,
+                                 newdata=ndXperCultUse,
+                                 re_formula = NA) %>%
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+ndXperCultUseModEst %>% ungroup() %>%
+    mean_qi(mfRatio) %>%
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+ndXperCultUseModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>%
+    select(mfRatio) %>% round(digits=2)
+```
+
+Country and regional nested random effects 
+
+```{r, warning = FALSE, message=FALSE}
+cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 +  (1 | WHO.region/study.country) + (1 | id),
+                       data = bactModelDF,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept),
+                               prior(student_t(7, 0, 1.5), class = b) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 4000)
+
+
+ndcntryRegReq <- bactModelDF %>% 
+                 select(study.country, WHO.region) %>%
+                 mutate(logOR_se=1)
+
+
+cntryRegMainModEst <- add_epred_draws(object = cntryRegMainMod,
+                                 newdata=ndcntryRegReq,
+                                 re_formula = NA) %>% 
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+cntryRegMainModEst %>% ungroup() %>%
+    mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+cntryRegMainModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
+    select(mfRatio) %>% round(digits=2)
+
+bayes_R2(cntryRegMainMod)
+```
+
