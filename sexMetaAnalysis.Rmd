@@ -2175,6 +2175,61 @@ newBactModelDF <- as.data.frame(newBactModelDF)
 newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- as.vector(unlist((covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]))
 ```
 
+Estimate the correlation between the covariate data using a BRMS multivariate model with fixed intercepts and sigmas. Approach inspired by this post 
+https://solomonkurz.netlify.app/blog/2019-02-16-bayesian-correlations-let-s-talk-options/
+
+```{r, warning = FALSE, message=FALSE}
+### Rename the columns so they present well in plot
+### Use "Z" as a space delimiter as model run will strip "_" or "." 
+formatBactModelDF <- newBactModelDF %>% 
+                     rename("StudyZendZyear" = year_z, 
+                            "AlcoholZuseZdisorder" = alcohol.use.disorder, 
+                            "TypeZ2ZDiabetesZMellitus" = type2.diabetes.mellitus, 
+                            "LowZBMI" = bmi, 
+                            "HIVZAIDS" = HIV.AIDS, 
+                            "GenderZdevelopmentZindex" = GDI, 
+                            "Smoking" = smoking)
+
+covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
+                                   `GenderZdevelopmentZindex`,
+                                   `HIVZAIDS`, 
+                                   `LowZBMI`, 
+                                   `Smoking`, 
+                                   `TypeZ2ZDiabetesZMellitus`, 
+                                   `StudyZendZyear`) ~ 0,
+                         sigma ~ 0) + 
+                         set_rescor(TRUE), 
+                         data    = formatBactModelDF,
+                         prior   = prior(lkj(2), class = rescor),
+                         family  = gaussian(),
+                         control = list(adapt_delta = 0.99),
+                         chains  = 4,
+                         cores   = 4,
+                         iter    = 4000)
+
+# summary(covCorrMod)
+
+    as_draws_df(covCorrMod) %>% 
+    select(starts_with("rescor")) %>% 
+    gather(label, rho) %>% 
+    select(rho, label) %>% 
+    mutate(label = gsub("Z", " ", gsub("__", " with ", gsub("rescor__", "", label)))) %>% 
+    ggplot(aes(x = rho, y = label)) +
+    stat_halfeye(.width = .95, size = 5/4) + theme_minimal() + 
+    ylab("") + 
+    ggtitle("Estimated correlation of covariates") + 
+    expand_limits(x=c(-1,1))
+
+    as_draws_df(covCorrMod) %>% 
+    select(starts_with("rescor")) %>% 
+    gather(label, rho) %>% 
+    select(rho, label) %>% 
+    mutate(label = gsub("Z", " ", gsub("__", " with ", gsub("rescor__", "", label)))) %>% 
+    group_by(label) %>% 
+    mean_qi(rho)
+
+```
+
 Model specification (HIV prevalence univariate)
 
 ```{r, warning = FALSE, message=FALSE}
