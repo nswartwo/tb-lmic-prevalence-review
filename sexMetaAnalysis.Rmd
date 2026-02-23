@@ -228,10 +228,15 @@ cleanSexDF <-  cleanSexDF0 %>%
                                                        NA, 
                                                        ifelse(study.geography == "Nationally representative", 
                                                        "Yes", "No")),
+                                       ## preserve the extracted study end year
+                                       study.end.year.ext = study.end.year, 
+                                       ## update missing study end year to be publication year - mean lag
+                                       study.end.year = ifelse(!is.na(study.end.year), 
+                                                               study.end.year.ext, 
+                                                               publication.year - meanLag),
+                                       ## Mean center year for temporal analysis
+                                       year_z = study.end.year - round(mean(study.end.year, na.rm=TRUE)),
 
-                                       year_z = ifelse(!is.na(study.end.year), 
-                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE)),
-                                                       (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
                                        bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
                                        
                                        symptomScreen = ifelse(is.na(screening.tests), 
