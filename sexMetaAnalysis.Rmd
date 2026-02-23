@@ -961,9 +961,16 @@ timeEffectModEst %>%
     select(Year, mfRatio, .lower, .upper) %>% round(digits = 2)
 
 ### output for contribution table
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
-exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
+timeEffectMod %>% 
+    spread_draws(b_year_z) %>%
+    mean_qi() %>% 
+    mutate(Mean = round(exp(b_year_z), 2), 
+           "95% credible interval" = paste(round(exp(.lower),2), "-", round(exp(.upper),2))) %>%
+    select(Mean, `95% credible interval`)
+
+# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
+# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
+# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
 
 timeEffectHortModEst %>%
     group_by(year_z) %>%
@@ -1026,6 +1033,11 @@ timeEffectModEst
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 minYr <- min(timeEffectModEst$year_z)
 maxYr <- max(timeEffectModEst$year_z)
+
+timeEffectMod %>% spread_draws(Intercept, 
+                               b_year_z) %>% 
+mutate("annual change" = exp(Intercept + minYr*b_year_z) - exp(Intercept + (minYr + 1)*b_year_z) / exp(Intercept + minYr*b_year_z) *100) %>% 
+    mean_qi()
 
 startYr <- timeEffectModEst %>% filter(year_z == minYr) %>% select(mfRatio) %>% ungroup()
 endYr <- timeEffectModEst %>% filter(year_z == maxYr) %>% select(mfRatio)%>% ungroup()
@@ -2544,7 +2556,7 @@ stanplot(multiMod)
 
 ```{r, warning = FALSE, message=FALSE}
 regCoVList <- list()
-model.regions <- unique(na.omit(bactModelDF$WHO.region))[c(-1,-5)]
+model.regions <- unique(na.omit(bactModelDF$WHO.region))
 
 for (i in 1:length(model.regions)){
     region <- model.regions[i]
@@ -2771,6 +2783,7 @@ regMultiList[["Western Pacific region"]]
 
 # Smear positive analysis 
 
+## Format data for modeling
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 cleanSexSmrDF0 <- smrPosIndicator("sex") %>% filter(sex.smr.analysis.indicator !="none")
 
