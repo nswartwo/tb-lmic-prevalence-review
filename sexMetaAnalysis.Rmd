@@ -1036,20 +1036,46 @@ timeEffectModEst
     scale_size_continuous(range = c(3,11))
 ```
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+### Estimated average annual percentage change (EAPC)
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
 minYr <- min(timeEffectModEst$year_z)
 maxYr <- max(timeEffectModEst$year_z)
 
-timeEffectMod %>% spread_draws(Intercept, 
-                               b_year_z) %>% 
-mutate("annual change" = exp(Intercept + minYr*b_year_z) - exp(Intercept + (minYr + 1)*b_year_z) / exp(Intercept + minYr*b_year_z) *100) %>% 
+eapcDF <- timeEffectMod %>% spread_draws(Intercept, 
+                                         b_year_z) %>% 
+    mutate("minYrEst"  = exp(Intercept + minYr * b_year_z),
+           "minYr1Est" = exp(Intercept + (minYr + 1) * b_year_z),
+           "maxYrEst"  = exp(Intercept + maxYr * b_year_z),
+           "difference" =  minYr1Est - minYrEst,
+           "annual change" = difference / minYrEst * 100, 
+           "Positive" = ifelse(`annual change` > 0, "Yes", "No")) 
+eapcDF %>%
+    select(`annual change`) %>%
     mean_qi()
- 
-startYr <- timeEffectModEst %>% filter(year_z == minYr) %>% select(mfRatio) %>% ungroup()
-endYr <- timeEffectModEst %>% filter(year_z == maxYr) %>% select(mfRatio)%>% ungroup()
 
-data.frame( mfRatio = ((endYr[,"mfRatio"] - startYr[,"mfRatio"])/startYr[,"mfRatio"])/length(minYr:maxYr)*100) %>%
-mean_qi(mfRatio) 
+eapcDF %>%
+    select(`annual change`) %>%
+    median_qi()
+```
+
+### Probability of direction
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+## Calculate the percentage of the posterior that is positive 
+eapcDF %>% filter(Positive == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
+
+ggplot() + geom_point(data=eapcDF, 
+                      aes(x=1:nrow(eapcDF), 
+                          y=`annual change`,
+                          color = Positive), alpha = .5) +
+    theme_minimal(base_size = 18) + 
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(), 
+          legend.position = "bottom") + 
+    ggtitle("Posterior distribution of estimated annual percentage change")
+
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
@@ -1141,6 +1167,100 @@ data.frame(WHO.region = startYr$WHO.region,
           mfRatio = ((endYr[,"mfRatio"] - startYr[,"mfRatio"])/startYr[,"mfRatio"])/length(minYr:maxYr)*100) %>%
           group_by(WHO.region) %>%
           mean_qi(mfRatio)
+
+```
+
+### Estimated average annual percentage change (EAPC)
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+model.regions <- unique(na.omit(bactModelDF$WHO.region))
+
+
+minYr <- min(timeEffectRegionModEst$year_z)
+maxYr <- max(timeEffectRegionModEst$year_z)
+
+eapcRegDF <- timeEffectRegionMod %>% 
+    spread_draws(Intercept, 
+                 b_year_z, 
+                 b_WHO.regionAmericasregion,
+                 `b_year_z:WHO.regionAmericasregion`,
+                 b_WHO.regionEasternMediterraneanregion, 
+                 `b_year_z:WHO.regionEasternMediterraneanregion`,
+                 b_WHO.regionSouthMEastAsiaregion, 
+                 `b_year_z:WHO.regionSouthMEastAsiaregion`, 
+                 b_WHO.regionWesternPacificregion, 
+                 `b_year_z:WHO.regionWesternPacificregion`
+    ) %>% 
+    mutate("eapcAfrica" = (exp(Intercept + ((minYr + 1) * b_year_z)) - 
+                               exp(Intercept + (minYr * b_year_z))) / 
+               exp(Intercept + (minYr * b_year_z)) * 100, 
+           "PositiveAfrica" = ifelse(eapcAfrica > 0, "Yes", "No"),
+           
+           "eapcAmericas" = (exp(Intercept + b_WHO.regionAmericasregion + 
+                                     (minYr + 1) * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) - 
+                                 exp(Intercept + b_WHO.regionAmericasregion + 
+                                         minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`))) / 
+               exp(Intercept + b_WHO.regionAmericasregion + 
+                       minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) * 100, 
+           "PositiveAmericas" = ifelse(eapcAmericas > 0, "Yes", "No"),
+           
+           "eapcEasternMediterranean" = (exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+                                                 (minYr + 1) * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) - 
+                                             exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+                                                     minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`))) / 
+               exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+                       minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) * 100, 
+           "PositiveEasternMediterranean" = ifelse(eapcEasternMediterranean > 0, "Yes", "No"),
+           
+           
+           "eapcSouthMEastAsia" = (exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+                                           (minYr + 1) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) - 
+                                       exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+                                               (minYr) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`))) / 
+               exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+                       minYr * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) * 100, 
+           "PositiveSouthMEastAsia" = ifelse(eapcSouthMEastAsia > 0, "Yes", "No"),
+           
+           
+           "eapcWesternPacific" = (exp(Intercept + b_WHO.regionWesternPacificregion + 
+                                           (minYr + 1) * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) - 
+                                       exp(Intercept + b_WHO.regionWesternPacificregion + 
+                                               minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`))) / 
+               exp(Intercept + b_WHO.regionWesternPacificregion + 
+                       minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) * 100, 
+           "PositiveWesternPacific" = ifelse(eapcWesternPacific > 0, "Yes", "No"),
+    ) 
+
+eapcRegDF %>% 
+    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
+    mean_qi() %>% t()
+
+eapcRegDF %>% 
+    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
+    median_qi() %>% 
+    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>% 
+    t()
+
+```
+
+### Probability of direction
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+## Calculate the percentage of the posterior that is positive 
+
+eapcRegDF %>% filter(PositiveAfrica == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
+
+eapcRegDF %>% filter(PositiveAmericas == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
+
+eapcRegDF %>% filter(PositiveEasternMediterranean == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
+
+eapcRegDF %>% filter(PositiveSouthMEastAsia == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
+
+eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>% 
+    nrow() / eapcDF %>% nrow() *100
 
 ```
 
