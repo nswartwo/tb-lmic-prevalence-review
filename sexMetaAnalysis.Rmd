@@ -902,9 +902,9 @@ timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + year_z + (1 + year_z | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd) +
-                           prior(lkj(4), class=cor),
+                               prior(normal(0, 10), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(lkj(4), class=cor),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
@@ -939,7 +939,8 @@ Prediction
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
 ndTime <- bactModelDF %>%
           select(logOR_se) %>%
-            crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), max(cleanSexDF$year_z, na.rm = TRUE), 1))
+            crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
+                                  max(cleanSexDF$year_z, na.rm = TRUE), 1))
 
 timeEffectModEst <- add_epred_draws(object = timeEffectMod,
                                  newdata=na.omit(ndTime),
@@ -1043,12 +1044,12 @@ timeEffectMod %>% spread_draws(Intercept,
                                b_year_z) %>% 
 mutate("annual change" = exp(Intercept + minYr*b_year_z) - exp(Intercept + (minYr + 1)*b_year_z) / exp(Intercept + minYr*b_year_z) *100) %>% 
     mean_qi()
-
+ 
 startYr <- timeEffectModEst %>% filter(year_z == minYr) %>% select(mfRatio) %>% ungroup()
 endYr <- timeEffectModEst %>% filter(year_z == maxYr) %>% select(mfRatio)%>% ungroup()
 
 data.frame( mfRatio = ((endYr[,"mfRatio"] - startYr[,"mfRatio"])/startYr[,"mfRatio"])/length(minYr:maxYr)*100) %>%
-          mean_qi(mfRatio) 
+mean_qi(mfRatio) 
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
@@ -1136,11 +1137,11 @@ maxYr <- max(timeEffectRegionModEst$year_z)
 
 startYr <- timeEffectRegionModEst %>% filter(year_z == minYr) %>% select(mfRatio) %>% ungroup()
 endYr <- timeEffectRegionModEst %>% filter(year_z == maxYr) %>% select(mfRatio)%>% ungroup()
-data.frame(WHO.region = startYr$WHO.region, 
+data.frame(WHO.region = startYr$WHO.region,
           mfRatio = ((endYr[,"mfRatio"] - startYr[,"mfRatio"])/startYr[,"mfRatio"])/length(minYr:maxYr)*100) %>%
-          group_by(WHO.region) %>% 
-          mean_qi(mfRatio) 
-    
+          group_by(WHO.region) %>%
+          mean_qi(mfRatio)
+
 ```
 
 ### Manuscript figure 4B: M:F ratio over time by region
@@ -2177,41 +2178,44 @@ bactModelDF %>% filter(id ==20 | id ==75 |
 #### External covariates  #####################################################
 ##############################################################################|
 
-covariates <- read.csv(file=here("data/covariates_1990-2021.csv")) %>% 
+covariates<- read.csv(file=here("data/covariates_1994-2023.csv")) %>% 
     dplyr::rename(study.country = location_name) %>%
     filter(
-           sex_name != "Both", 
-           metric_name == "Rate") %>% 
+           sex_name != "Both",
+           metric_name == "Rate", 
+           measure_name == "Prevalence") %>% 
     select(study.country, year, sex_name, cause_name, val) %>% 
     pivot_wider(names_from = c(sex_name, cause_name), 
                 values_from = val) %>% 
     mutate(alcohol.use.disorder = 
                scale(`Male_Alcohol use disorders` - `Female_Alcohol use disorders`), 
-           diabetes.mellitus = 
-               scale(`Male_Diabetes mellitus` - `Female_Diabetes mellitus`), 
-           type1.diabetes.mellitus = 
-               scale(`Male_Diabetes mellitus type 1` - `Female_Diabetes mellitus type 1`), 
+           # diabetes.mellitus = 
+           #     scale(`Male_Diabetes mellitus` - `Female_Diabetes mellitus`), 
+           # type1.diabetes.mellitus = 
+           #     scale(`Male_Diabetes mellitus type 1` - `Female_Diabetes mellitus type 1`), 
            type2.diabetes.mellitus = 
                scale(`Male_Diabetes mellitus type 2` - `Female_Diabetes mellitus type 2`), 
-           nutritional.deficiencies = 
-               scale(`Male_Nutritional deficiencies` - `Female_Nutritional deficiencies`), 
+           # nutritional.deficiencies = 
+           #     scale(`Male_Nutritional deficiencies` - `Female_Nutritional deficiencies`), 
            HIV.AIDS = 
                scale(`Male_HIV/AIDS` - `Female_HIV/AIDS`), 
-           TB.incidence = 
-               scale(Male_Tuberculosis - Female_Tuberculosis)
+           # TB.incidence = 
+           #     scale(Male_Tuberculosis - Female_Tuberculosis)
            ) %>% 
     select(study.country, 
            year, 
            alcohol.use.disorder, 
-           diabetes.mellitus, 
-           type1.diabetes.mellitus, 
+           # diabetes.mellitus, 
+           # type1.diabetes.mellitus, 
            type2.diabetes.mellitus,
-           nutritional.deficiencies, 
+           # nutritional.deficiencies, 
            HIV.AIDS, 
-           TB.incidence) %>% 
+           # TB.incidence
+           ) %>% 
     rename(study.end.year = year)
 
 ### BMI data
+#### NEEDS TO BE UPDATED 
 bmi <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_ADULT_UNDERWEIGHT_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
@@ -2229,6 +2233,7 @@ bmi$bmi <- scale(bmi$bmi)
 
 
 ### Smoking data 
+#### NEEDS TO BE UPDATED 
 smoking.prevalence <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_SMOKING_PREV_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
@@ -2245,39 +2250,49 @@ smoking.prevalence <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_SMOKI
 smoking.prevalence$smoking <- scale(smoking.prevalence$smoking)
 
 ### Gender development index 
-GDI <- read_csv(here("data/GenderDevelopmentIndex.csv"))[,1:2] %>% 
-    mutate(GDI = scale(as.numeric(Value)), 
-           GDI.unscaled = as.numeric(Value)) %>% select(!Value) %>%
-    rename(study.country = Country)
+GDI <- read_csv(here("data/GenderDevelopmentIndex.csv"))[,-c(2,5)] %>%
+       mutate(GDI.unscaled = as.numeric(`Gender Development Index`),
+              GDI = scale(GDI.unscaled)) %>% 
+       select(!`Gender Development Index`) %>%
+       rename(study.country = Entity, 
+              study.end.year = Year)
+
 ### Rename several countries 
-GDI[which(GDI$study.country == "Eswatini (Kingdom of)"), "study.country"] <- "Eswatini"
-GDI[which(GDI$study.country == "Tanzania (United Republic of)"), "study.country"] <- "Tanzania"
+# GDI[which(GDI$study.country == "Eswatini (Kingdom of)"), "study.country"] <- "Eswatini"
+# GDI[which(GDI$study.country == "Tanzania (United Republic of)"), "study.country"] <- "Tanzania"
 
 ### Covariates updated 
 covariates <- full_join(covariates, smoking.prevalence)
 covariates <- full_join(covariates, bmi)
-covariates[which(covariates$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
 
-covariates <- full_join(covariates, GDI)
+# covariates <- full_join(covariates, GDI, by=c("study.country", "study.end.year"))
     
 ### Rename several countries 
+covariates[which(covariates$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
 covariates[which(covariates$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
 covariates[which(covariates$study.country == "Lao People's Democratic Republic"), "study.country"] <- "Laos"
 covariates[which(covariates$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
-newBactModelDF <- left_join(bactModelDF, covariates)
+### For Cambodia 2024, we need to use 2023 values so temporarily set its' study end year to 2023
+newBactModelDF0 <- bactModelDF
+newBactModelDF0[which(bactModelDF$id ==1), "study.end.year"] <- 2023
 
-### manually adjust some rows that have missing data 
-newBactModelDF[which(newBactModelDF$id == 21), 23:33] <- newBactModelDF[which(newBactModelDF$id == 20), 23:33]
+### For Mynamar 1994 and 2010, we need to use 2015 values so temporarily set its' study end year to 2015
+newBactModelDF0[which(bactModelDF$id ==46), "study.end.year"] <- 
+newBactModelDF0[which(bactModelDF$id ==47), "study.end.year"] <- 2015
 
-newBactModelDF[which(newBactModelDF$id == 58), 23:33] <- newBactModelDF[which(newBactModelDF$id == 57), 23:33]
+newBactModelDF <- left_join(newBactModelDF0, covariates)
 
-newBactModelDF[which(newBactModelDF$id == 51), 23:33] <- newBactModelDF[which(newBactModelDF$id == 34), 23:33]
-
-newBactModelDF[which(newBactModelDF$id == 97), 23:33] <- newBactModelDF[which(newBactModelDF$id == 98), 23:33]
+### Add GDI
+newBactModelDF <- left_join(newBactModelDF, GDI)
 
 newBactModelDF <- as.data.frame(newBactModelDF)
-newBactModelDF[which(newBactModelDF$id == 38), 23:33] <- as.vector(unlist((covariates %>% filter(study.end.year==2011, study.country == "Kenya"))[-c(1,2)]))
+
+### Reset the study end year for Cambodia 2024
+newBactModelDF[which(bactModelDF$id ==1), "study.end.year"] <- 2024
+### Reset the study end year for Myanmar 1994, 2010
+newBactModelDF[which(bactModelDF$id ==46), "study.end.year"] <- 1994
+newBactModelDF[which(bactModelDF$id ==47), "study.end.year"] <- 2010
 ```
 
 ### Covariate correlation assessment
@@ -3501,7 +3516,6 @@ regionMultiDefMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                 CrI = paste(round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,3])),4), 
                           ",",
                     round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,4])),4)))
-    
     regMultiDefList[[region]] <- x 
 
 # regionMultiDefMod %>% epred_draws(Intercept, 
@@ -3540,6 +3554,7 @@ loo_compare(regMultLOO, regMultDefLOO)
 regMultiList[["South-East Asia region"]]
 
 regMultiDefList[["South-East Asia region"]]
+
 ```
 
 #### Western Pacific region (multivariable)
