@@ -2292,6 +2292,8 @@ bactModelDF %>% filter(id ==20 | id ==75 |
 
 ## Covariate analysis of male-to-female prevalence ratio
 
+Because covariates are measured at the national-level, this analysis will be restricted to the nationally-representative surveys. 
+
 ### Setup and read in external data covariate data  
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ##############################################################################|
@@ -2423,6 +2425,7 @@ https://solomonkurz.netlify.app/blog/2019-02-16-bayesian-correlations-let-s-talk
 ### Rename the columns so they present well in plot
 ### Use "Z" as a space delimiter as model run will strip "_" or "." 
 formatBactModelDF <- newBactModelDF %>% 
+                     filter(natRep == "Yes") %>%
                      rename("StudyZendZyear" = year_z, 
                             "AlcoholZuseZdisorder" = alcohol.use.disorder, 
                             "TypeZ2ZDiabetesZMellitus" = type2.diabetes.mellitus, 
@@ -2479,7 +2482,8 @@ Model specification
 hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                           1 + HIV.AIDS +
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF,
+                      data = newBactModelDF %>% 
+                             filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                               prior(normal(0, 10), class = b) +
                               prior(exponential(2), class = sd),
@@ -2506,7 +2510,8 @@ Model specification
 ```{r, warning = FALSE, message=FALSE}
 gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + GDI + (1 | study.country) + (1 | id),
-                       data = newBactModelDF,
+                       data = newBactModelDF  %>% 
+                              filter(natRep == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 10), class = b) +
                            prior(exponential(2), class = sd),
@@ -2536,7 +2541,8 @@ Model specification
 diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                                   1 +  type2.diabetes.mellitus +
                                   (1 | study.country) + (1 | id),
-                              data = newBactModelDF,
+                              data = newBactModelDF  %>% 
+                                     filter(natRep == "Yes"),
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 10), class = b) +
                                   prior(exponential(2), class = sd),
@@ -2566,7 +2572,8 @@ Model specification
 lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                                   1 +  bmi +
                                   (1 | study.country) + (1 | id),
-                              data = newBactModelDF,
+                              data = newBactModelDF  %>% 
+                                     filter(natRep == "Yes"),
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 10), class = b) +
                                   prior(exponential(2), class = sd),
@@ -2596,7 +2603,8 @@ Model specification
 smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                                    1 +  smoking +
                                    (1 | study.country) + (1 | id),
-                               data = newBactModelDF,
+                               data = newBactModelDF %>% 
+                                      filter(natRep == "Yes"),
                                prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                    prior(normal(0, 10), class = b) +
                                    prior(exponential(2), class = sd),
@@ -2626,7 +2634,8 @@ Model specification
 alcoholUsePrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                             1 +  alcohol.use.disorder +
                             (1 | study.country) + (1 | id),
-                        data = newBactModelDF,
+                        data = newBactModelDF  %>% 
+                              filter(natRep == "Yes"),
                         prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                             prior(normal(0, 10), class = b) +
                             prior(exponential(2), class = sd),
@@ -2659,7 +2668,8 @@ multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF,
+                      data = newBactModelDF  %>% 
+                              filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 10), class = b) +
                           prior(exponential(2), class = sd),
@@ -3315,16 +3325,16 @@ bayes_R2(cntryRegMainMod)
 ```
 
 
-## Model 42: Covariate analysis with only national surveys
+## Model 42: Covariate analysis with only all surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
-multiNatMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiAllSurvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF %>% filter(natRep == "Yes"),
+                      data = newBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 10), class = b) +
                           prior(exponential(2), class = sd),
@@ -3332,29 +3342,30 @@ multiNatMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000, ### For moment matching loo
+                      iter = 4000, 
+                      ### For moment matching loo
                       save_all_pars = TRUE)
 
-summary(multiNatMod)
+summary(multiAllSurvMod)
 
 ### output for contribution table
-coefs <- data.frame(parameter = rownames(summary(multiNatMod)[["fixed"]]),
-                PE = round(exp(as.numeric(summary(multiNatMod)[["fixed"]][,1])),2), 
-                CrI = paste(round(exp(as.numeric(summary(multiNatMod)[["fixed"]][,3])),2), 
+coefsAllSurv <- data.frame(parameter = rownames(summary(multiAllSurvMod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(multiAllSurvMod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(multiAllSurvMod)[["fixed"]][,3])),2), 
                           ",",
-                    round(exp(as.numeric(summary(multiNatMod)[["fixed"]][,4])),2)))
+                    round(exp(as.numeric(summary(multiAllSurvMod)[["fixed"]][,4])),2)))
 
-print(coefs)
+print(coefsAllSurv)
 
-bayes_R2(multiMod)
+bayes_R2(multiAllSurvMod)
 
 ```
 
-## Model 43: Covariate analysis with restricted priors
+## Model 43: Covariate analysis with restricted prior (N(0,1))
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
-multiRPMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiN1Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
@@ -3370,21 +3381,21 @@ multiRPMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       iter = 4000, ### For moment matching loo
                       save_all_pars = TRUE)
 
-summary(multiRPMod)
+summary(multiN1Mod)
 
 ### output for contribution table
-coefsNat1 <- data.frame(parameter = rownames(summary(multiRPMod)[["fixed"]]),
-                PE = round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,1])),2), 
-                CrI = paste(round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,3])),2), 
+coefsN1 <- data.frame(parameter = rownames(summary(multiN1Mod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,3])),2), 
                           ",",
-                    round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,4])),2)))
+                    round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,4])),2)))
 
-print(coefsNat1)
+print(coefsN1)
 
-bayes_R2(multiRPMod)
+bayes_R2(multiN1Mod)
 ```
 
-## Model 44: Covariate analysis with restricted priors
+## Model 44: Covariate analysis with restricted prior (Cauchy(0,1.25))
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
@@ -3433,9 +3444,9 @@ multiCauchyMod %>%
 ## Each of these had a Pareto k sampling issues so use moment matching
 looCauch <- loo(multiCauchyMod, moment_match = TRUE)
 looCauch
-looN1 <- loo(multiRPMod, moment_match = TRUE)
+looN1 <- loo(multiN1Mod, moment_match = TRUE)
 looN1
-looN10 <- loo(multiNatMod, moment_match = TRUE)
+looN10 <- loo(multiMod, moment_match = TRUE)
 looN10
 
 loo_compare(looCauch, looN1, looN10)
@@ -3448,13 +3459,13 @@ multiCauchyMod %>%
     pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
     mutate(Model = "Only national surveys\ncauchy(0, 1.25)"), 
 
-multiRPMod %>%
+multiN1Mod %>%
         spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
                      b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
         pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
         mutate(Model = "Only national surveys\nnormal (0,1)"), 
 
-multiNatMod %>%
+multiMod %>%
     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
     pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
