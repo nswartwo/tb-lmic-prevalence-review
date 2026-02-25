@@ -489,9 +489,9 @@ mainEffectModEst <- add_epred_draws(object = mainEffectMod,
 randEffVar <- mainEffectMod %>% 
               spread_draws(sd_id__Intercept,
                            sd_study.country__Intercept) %>%
-              rename("Survey (crossed with country)" = sd_id__Intercept, 
+              rename("Survey within country" = sd_id__Intercept, 
                      "Country" = sd_study.country__Intercept) %>% 
-              pivot_longer(cols = c("Country", "Survey (crossed with country)"), 
+              pivot_longer(cols = c("Country", "Survey within country"), 
                            names_to = "RandEff", values_to = "Variance") %>%
               mutate("Model" = "Main effect")
 
@@ -568,16 +568,16 @@ randEffVar <- rbind(randEffVar,
                     regionEffectMod %>% 
                     spread_draws(sd_id__Intercept,
                                  sd_WHO.region__Intercept) %>%
-                    rename("Survey (crossed with region)" = sd_id__Intercept, 
+                    rename("Survey within region" = sd_id__Intercept, 
                            "WHO region" = sd_WHO.region__Intercept) %>% 
-                    pivot_longer(cols = c("WHO region", "Survey (crossed with region)"), names_to = "RandEff", values_to = "Variance") %>%
+                    pivot_longer(cols = c("WHO region", "Survey within region"), names_to = "RandEff", values_to = "Variance") %>%
                     mutate("Model" = "Region random effect")
 )
 
 ## Convert random effects to a factor
 randEffVar$RandEff <- factor(randEffVar$RandEff,
-                              levels=c("Survey (crossed with country)",
-                                       "Survey (crossed with region)", 
+                              levels=c("Survey within country",
+                                       "Survey within region", 
                                         "Country", "WHO region"))
 ```
 
@@ -2880,7 +2880,7 @@ for (i in 1:length(model.regions)){
     
     regionMultiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                                 1 + year_z + GDI +
-                                alcohol.use.disorder + diabetes.mellitus + 
+                                alcohol.use.disorder + type2.diabetes.mellitus + 
                                 bmi + HIV.AIDS + 
                                 smoking + 
                                   (1 | study.country) + (1 | id),
@@ -3545,6 +3545,121 @@ cntryRegMainModEst %>% ungroup() %>%
 bayes_R2(cntryRegMainMod)
 ```
 
+## Model 90: Multi-variable covariate model with more regularizing prior
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+regMultiDefList <- list()
+
+for (region in model.regions){
+    # region <- unique(model.regions)[3]
+    print(region)
+    
+    regionMultiDefMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                                       1 + year_z + GDI +
+                                       alcohol.use.disorder + type2.diabetes.mellitus + 
+                                       bmi + HIV.AIDS + 
+                                       smoking + 
+                                       (1 | study.country) + (1 | id),
+                                   data = newBactModelDF %>% 
+                                          filter(WHO.region == region),
+                                   prior(student_t(7, 0, 1.5), class = Intercept) +
+                                   prior(normal(0, 1), class = b) +
+                                   prior(exponential(2), class = sd),
+                                   family = gaussian(),
+                                   control = list(adapt_delta = 0.99),
+                                   chains = 4,
+                                   cores = 4,
+                                   iter = 4000)
+    
+    x <- data.frame(parameter = rownames(summary(regionMultiDefMod)[["fixed"]]),
+                    PE = round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,1])),4), 
+                    CrI = paste(round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,3])),4), 
+                                ",",
+                                round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,4])),4)))
+    
+    regMultiDefList[[region]] <- x 
+    
+    # regionMultiDefMod %>% epred_draws(Intercept, 
+    #                                   b_year_z,
+    #                                   b_GDI, 
+    #                                   b_alcohol.use.disorder, 
+    #                                   b_diabetes.mellitus, 
+    #                                   b_bmi, 
+    #                                   b_HIV.AIDS, 
+    #                                   b.smoking)
+    # 
+    #     x <- data.frame(parameter = rownames(summary(regionMultiMod)[["fixed"]]),
+    #                 PE = round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,1])),4),
+    #                 CrI = paste(round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,3])),4),
+    #                           ",",
+    #                     round(exp(as.numeric(summary(regionMultiMod)[["fixed"]][,4])),4)))
+    # 
+    #     regMultiDefList[[region]] <- x
+    
+}
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+regMultiRpNatList <- list()
+
+for (region in model.regions[1:3]){
+    # region <- unique(model.regions)[3]
+    print(region)
+    
+    regMultiRpNatMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                                       1 + year_z + GDI +
+                                       alcohol.use.disorder + type2.diabetes.mellitus + 
+                                       bmi + HIV.AIDS + 
+                                       smoking + 
+                                       (1 | study.country) + (1 | id),
+                                   data = newBactModelDF %>% 
+                                          filter(WHO.region == region, 
+                                                 natRep == "Yes"),
+                                   prior(student_t(7, 0, 1.5), class = Intercept) +
+                                   prior(normal(0, 1), class = b) +
+                                   prior(exponential(2), class = sd),
+                                   family = gaussian(),
+                                   control = list(adapt_delta = 0.99),
+                                   chains = 4,
+                                   cores = 4,
+                                   iter = 4000)
+    
+    x <- data.frame(parameter = rownames(summary(regionMultiDefMod)[["fixed"]]),
+                    PE = round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,1])),4), 
+                    CrI = paste(round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,3])),4), 
+                                ",",
+                                round(exp(as.numeric(summary(regionMultiDefMod)[["fixed"]][,4])),4)))
+    
+    regMultiRpNatList[[region]] <- x 
+    
+}
+```
+
+
+#### Africa region (multivariable)
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+regMultiList[["Africa region"]]
+regMultiDefList[["Africa region"]]
+regMultiRpNatList[["Africa region"]]
+```
+
+#### South-East Asia region (multivariable)
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+regMultiList[["South-East Asia region"]]
+
+regMultiDefList[["South-East Asia region"]]
+regMultiRpNatList[["South-East Asia region"]]
+
+```
+
+#### Western Pacific region (multivariable)
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+regMultiList[["Western Pacific region"]]
+regMultiDefList[["Western Pacific region"]]
+regMultiRpNatList[["Western Pacific region"]]
+```
+
+
 ## Model 91: Covariate analysis with only national surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -3576,5 +3691,39 @@ coefs <- data.frame(parameter = rownames(summary(multiNatMod)[["fixed"]]),
 print(coefs)
 
 bayes_R2(multiMod)
+
+```
+
+## Model 91: Covariate analysis with restricted priors
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+multiRPMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                          1 + year_z + GDI +
+                          alcohol.use.disorder + type2.diabetes.mellitus + 
+                          bmi + HIV.AIDS + smoking + 
+                          (1 | study.country) + (1 | id),
+                      data = newBactModelDF %>% filter(natRep == "Yes"),
+                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                          prior(normal(0, 1), class = b) +
+                          prior(exponential(2), class = sd),
+                      family = gaussian(),
+                      control = list(adapt_delta = 0.99),
+                      chains = 4,
+                      cores = 4,
+                      iter = 4000)
+
+summary(multiRPMod)
+
+### output for contribution table
+coefsNat1 <- data.frame(parameter = rownames(summary(multiRPMod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,3])),2), 
+                          ",",
+                    round(exp(as.numeric(summary(multiRPMod)[["fixed"]][,4])),2)))
+
+print(coefsNat1)
+
+bayes_R2(multiRPMod)
 
 ```
