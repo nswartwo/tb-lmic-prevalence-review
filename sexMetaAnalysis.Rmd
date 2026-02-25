@@ -2667,7 +2667,9 @@ multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000)
+                      iter = 4000,
+                      ### For moment matching loo
+                      save_all_pars = TRUE)
 ```
 
 Summarize and check 
@@ -2943,7 +2945,7 @@ smrModelDF %>% reframe(Participants = sum(n.participants.female + n.participants
 smrModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
 ```
 
-## Model 81: Smear positive main effect 
+## Model 35: Smear positive main effect 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -2951,8 +2953,7 @@ mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1  + (1 | study.country) + (1|id),
                        data = smrModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           # prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
+                                     prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
@@ -2986,7 +2987,7 @@ Main estimate
 mainEffectSmrModEst %>% ungroup %>% mean_qi(mfRatio) %>% select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Model 82: Smear positive effect by world region model
+## Model 36: Smear positive effect by world region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -2994,8 +2995,7 @@ regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1  + (1|WHO.region) + (1|id),
                        data = smrModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           # prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
+                                prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
@@ -3128,7 +3128,7 @@ bactModelDF %>%
 
 ```
 
-## Model 83: Bacteriologically-confirmed by region using only surveys that also report smear positive
+## Model 37: Bacteriologically-confirmed by region using only surveys that also report smear positive
 ```{r, warning = FALSE, message=FALSE}
 ### What if we compare only among the surveys that report both the smear and bacteriologically confirmed TB 
 reportBothModelDF <- bactModelDF %>% 
@@ -3163,7 +3163,7 @@ regionBothEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
 
 # Bacteriologically positive TB sensitivity analyses
 
-## Model 84: Symptoms required included as covariate in main model
+## Model 38: Symptoms required included as covariate in main model
 
 ```{r, warning = FALSE, message=FALSE}
 sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -3208,7 +3208,7 @@ bayes_R2(sympReqMainMod)
 
 ```
 
-## Model 85: Xpert or culture required for diagnosis 
+## Model 39: Xpert or culture required for diagnosis 
 
 ```{r, warning = FALSE, message=FALSE}
 xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -3242,7 +3242,7 @@ ndXperCultModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Model 86: Xpert or culture used for diagnosis 
+## Model 40: Xpert or culture used for diagnosis 
 
 ```{r, warning = FALSE, message=FALSE}
 xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
@@ -3276,7 +3276,7 @@ ndXperCultUseModEst %>% ungroup() %>%
     select(mfRatio) %>% round(digits=2)
 ```
 
-## Model 87: Country and regional nested random effects 
+## Model 41: Country and regional nested random effects 
 
 ```{r, warning = FALSE, message=FALSE}
 cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -3315,7 +3315,7 @@ bayes_R2(cntryRegMainMod)
 ```
 
 
-## Model 91: Covariate analysis with only national surveys
+## Model 42: Covariate analysis with only national surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
@@ -3332,7 +3332,8 @@ multiNatMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000)
+                      iter = 4000, ### For moment matching loo
+                      save_all_pars = TRUE)
 
 summary(multiNatMod)
 
@@ -3349,7 +3350,7 @@ bayes_R2(multiMod)
 
 ```
 
-## Model 91: Covariate analysis with restricted priors
+## Model 43: Covariate analysis with restricted priors
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
@@ -3366,7 +3367,8 @@ multiRPMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000)
+                      iter = 4000, ### For moment matching loo
+                      save_all_pars = TRUE)
 
 summary(multiRPMod)
 
@@ -3380,5 +3382,86 @@ coefsNat1 <- data.frame(parameter = rownames(summary(multiRPMod)[["fixed"]]),
 print(coefsNat1)
 
 bayes_R2(multiRPMod)
+```
+
+## Model 44: Covariate analysis with restricted priors
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+multiCauchyMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                          1 + year_z + GDI +
+                          alcohol.use.disorder + type2.diabetes.mellitus + 
+                          bmi + HIV.AIDS + smoking + 
+                          (1 | study.country) + (1 | id),
+                      data = newBactModelDF %>% filter(natRep == "Yes"),
+                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                          prior(cauchy(0,1.25), class = b) +
+                          prior(exponential(2), class = sd),
+                      family = gaussian(),
+                      control = list(adapt_delta = 0.99),
+                      chains = 4,
+                      cores = 4,
+                      iter = 4000, 
+                      ### For moment matching loo
+                      save_all_pars = TRUE)
+
+summary(multiCauchyMod)
+
+### output for contribution table
+coefsNatCauch <- data.frame(parameter = rownames(summary(multiCauchyMod)[["fixed"]]),
+                PE = round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,1])),2), 
+                CrI = paste(round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,3])),2), 
+                          ",",
+                    round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,4])),2)))
+
+print(coefsNatCauch)
+
+bayes_R2(coefsNatCauch)
+
+
+multiCauchyMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% mean_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>% round(digits = 2) %>% exp() %>% t()
+
+
+```
+
+### Model comparison 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+## Each of these had a Pareto k sampling issues so use moment matching
+looCauch <- loo(multiCauchyMod, moment_match = TRUE)
+looCauch
+looN1 <- loo(multiRPMod, moment_match = TRUE)
+looN1
+looN10 <- loo(multiNatMod, moment_match = TRUE)
+looN10
+
+loo_compare(looCauch, looN1, looN10)
+
+allModelDraws <- 
+    rbind(
+multiCauchyMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+    pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+    mutate(Model = "Only national surveys\ncauchy(0, 1.25)"), 
+
+multiRPMod %>%
+        spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                     b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+        pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+        mutate(Model = "Only national surveys\nnormal (0,1)"), 
+
+multiNatMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+    pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+    mutate(Model = "Only national surveys\nnormal (0,10)")
+)
+
+allModelDraws %>% select(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% group_by(Model) %>% mean_qi()
 
 ```
