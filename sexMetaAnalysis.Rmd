@@ -3606,3 +3606,25 @@ allModelDraws %>% select(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder,
                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% group_by(Model) %>% mean_qi()
 
 ```
+
+## Key trace and density plots
+```{r}
+pdf(here("output/SEX/traceplots.pdf"), 
+    width = 8.5, height = 5.5
+    )  
+
+plot(mainEffectMod,   nvariables = 4)
+plot(regionEffectMod,  nvariables = 4)
+plot(timeEffectMod,  
+     nvariables = 4,  ask = FALSE)
+plot(timeEffectRegionMod,  
+     nvariables = 4,  ask = FALSE)
+plot(multiMod,  
+     nvariables = 4, ask = FALSE)
+
+plot(mainEffectSmrMod,  nvariables = 4)
+
+plot(regionEffectSmrMod,  nvariables = 4)
+
+dev.off()
+```
