@@ -46,6 +46,9 @@ source(here("code/bacterialPositiveIndicator.R"))
 source(here("code/smearPositiveIndicator.R"))
 source(here("code/varianceComponentModel.R"))
 
+### Set seed 
+set.seed(500)
+
 ##############################################################################|
 ##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
 cleanSexDF0 <- readRDS("data/sex-stratified-clean-data.rds")
@@ -290,7 +293,7 @@ bactModelDF <- cleanSexDF %>%
            XpertCultRequired,  XpertCultUsed,
            LogOdds, LogOddsStandardError, sex.analysis.indicator, 
            n.participants.male, n.participants.female, 
-           publication.year, study.end.year) %>%
+           publication.year, study.end.year, study.end.year.ext) %>%
     pivot_wider(names_from = Sex,
                 values_from = c(LogOdds, LogOddsStandardError),
                 names_sep = "_") %>%
@@ -456,7 +459,7 @@ mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 bayes_R2(mainEffectMod)
 ```
@@ -508,9 +511,11 @@ mainEffectModEst %>% ungroup() %>% median_qi(mfRatio) %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### output for contribution table
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][1]))
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][3]))
-exp(as.numeric(summary(mainEffectMod)[["fixed"]][4]))
+mainEffectMod %>% spread_draws(Intercept) %>% 
+select(Intercept) %>% exp() %>% median_qi()
+
+mainEffectMod %>% spread_draws(Intercept) %>% 
+select(Intercept) %>% exp() %>% mean_qi()
 ```
 
 Survey-level effects
@@ -519,7 +524,7 @@ Survey-level effects
 surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
                                  newdata=bactModelDF,
                                  re_formula = ~ 1  + (1|study.country) + (1|id), 
-                                 allow_new_levels = TRUE) %>% 
+                                 allow_new_levels = FALSE) %>% 
                       mutate(mfRatio = exp(.epred),
                              type="Posterior mean and 95% credible interval") 
 ```
@@ -529,16 +534,15 @@ surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
 Model specification
 ```{r, warning = FALSE, message=FALSE}
 regionEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1  + (1|WHO.region) + (1|id),
+                              1  + (1|WHO.region) + (1|id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           # prior(normal(0, 10), class = b) +
-                           prior(exponential(2), class = sd),
+                               prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
@@ -878,7 +882,7 @@ ggplot() + geom_density(data=randEffVar,
                      aes(x=Variance, fill=Model), alpha = .5, color = NA, 
                      ) + 
     facet_wrap(facets = vars(RandEff)) + 
-    theme_minimal() + 
+    theme_minimal(base_size = 18) + 
     theme(legend.position = "bottom") + 
     xlab("SD on logOR scale") + 
     ggtitle("Posterior heterogeneity across Bayesian meta-analytic models")
@@ -902,14 +906,14 @@ timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + year_z + (1 + year_z | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                               prior(normal(0, 10), class = b) +
+                               prior(normal(0, 1), class = b) +
                                prior(exponential(2), class = sd) +
                                prior(lkj(4), class=cor),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ### Also run this model with only those studies in the horton review
 timeEffectHortMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
@@ -917,14 +921,14 @@ timeEffectHortMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        data = bactModelDF %>% filter(publication.year < 2017,
                                                      id != 17, id!=72),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
+                           prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd) +
                            prior(lkj(4), class=cor),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
@@ -974,21 +978,13 @@ timeEffectMod %>%
            "95% credible interval" = paste(round(exp(.lower),2), "-", round(exp(.upper),2))) %>%
     select(Mean, `95% credible interval`)
 
-# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,1]))
-# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,3]))
-# exp(as.numeric(summary(timeEffectMod)[["fixed"]][2,4]))
-
-timeEffectHortModEst %>%
-    group_by(year_z) %>%
-    mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
-    select(Year, mfRatio, .lower, .upper)
+# timeEffectHortModEst %>%
+#     group_by(year_z) %>%
+#     mean_qi(mfRatio) %>%
+#     mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+#     select(Year, mfRatio, .lower, .upper)
 
 bayes_R2(timeEffectMod)
-bayes_R2(timeEffectHortMod)
-
-
-timeEffectModEst 
 
 ```
 ### Manuscript figure 4A: M:F ratio over time
@@ -1111,17 +1107,17 @@ yFull <- rbind(
 Model specification
 ```{r, warning = FALSE, message=FALSE}
 timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                              1 + year_z * WHO.region + (1 + year_z | study.country) + (1 | id), 
+                           1 + year_z + (1 + year_z | WHO.region) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
+                           prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd) +
                            prior(lkj(4), class=cor),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
@@ -1306,25 +1302,48 @@ Check the time models without the five surveys that did not report survey end ye
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
-timeEffectRegionModAlt <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                              1 + year_z * WHO.region + (1 + year_z | study.country) + (1 | id), 
+timeEffectModAlt <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + year_z + (1 + year_z | study.country) + (1 | id),
                        data = bactModelDF %>% 
-                              filter(!covidence.id %in% 
-                                    as.vector(cleanSexDF0 %>% 
-                                    filter(is.na(study.end.year)) %>% 
-                                    select(covidence.id))),
+                              filter(!is.na(study.end.year.ext)),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
+                           prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd) +
                            prior(lkj(4), class=cor),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
-summary(timeEffectRegionMod)
-summary(timeEffectRegionModAlt)
+summary(timeEffectMod)
+summary(timeEffectModAlt)
+
+# loo(timeEffectMod)
+# loo(timeEffectModAlt)
+
+```
+### Estimated average annual percentage change (EAPC)
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+minYr <- min(timeEffectModEst$year_z)
+maxYr <- max(timeEffectModEst$year_z)
+
+eapcAltDF <- timeEffectModAlt %>% spread_draws(Intercept, 
+                                         b_year_z) %>% 
+    mutate("minYrEst"  = exp(Intercept + minYr * b_year_z),
+           "minYr1Est" = exp(Intercept + (minYr + 1) * b_year_z),
+           "maxYrEst"  = exp(Intercept + maxYr * b_year_z),
+           "difference" =  minYr1Est - minYrEst,
+           "annual change" = difference / minYrEst * 100, 
+           "Positive" = ifelse(`annual change` > 0, "Yes", "No")) 
+eapcAltDF %>%
+    select(`annual change`) %>%
+    mean_qi()
+
+eapcAltDF %>%
+    select(`annual change`) %>%
+    median_qi()
 ```
 
 ## Subgroup analysis
@@ -1342,7 +1361,7 @@ natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 subNatEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -1353,7 +1372,7 @@ subNatEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ```
 
@@ -1361,6 +1380,8 @@ Summarize and check
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(natEffectMod)
+
+summary(subNatEffectMod)
 plot(natEffectMod)
 ```
 
@@ -1379,7 +1400,7 @@ natEffectModEst <- add_epred_draws(object = natEffectMod,
                            mutate(mfRatio = exp(.epred),
                            type="Posterior mean and 95% credible interval") 
 
-ndNat <- data.frame("natRep" == "No") %>% 
+ndSubnat <- data.frame("natRep" == "No") %>% 
                     crossing(unique(bactModelDF$study.country)) %>% 
          mutate(logOR_se=1)
 
@@ -1432,7 +1453,7 @@ lowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 notLowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -1443,7 +1464,7 @@ notLowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ```
 
@@ -1451,6 +1472,9 @@ Summarize and check
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(lowBiasEffectMod)
+summary(notLowBiasEffectMod)
+
+
 plot(lowBiasEffectMod)
 ```
 
@@ -1517,96 +1541,7 @@ notLowBiasEffectModEst %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-
-### Model 10-11: Symptom screen used vs. not used
-
-Model specification
-```{r, warning = FALSE, message=FALSE}
-
-sympYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(symptomScreen == "Yes"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-sympNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(symptomScreen == "No"),
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 4000)
-
-```
-
-Summarize and check 
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-summary(sympYesEffectMod)
-plot(sympYesEffectMod)
-```
-
-Prediction
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndSympYes <- bactModelDF %>%
-         filter(symptomScreen == "Yes") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
-
-ndSympNo <- bactModelDF %>%
-         filter(symptomScreen == "No") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
-
-sympYesEffectModEst <- add_epred_draws(object = sympYesEffectMod,
-                                 newdata=ndSympYes,
-                                 re_formula = NA) %>% 
-                           mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-
-sympNoEffectModEst <- add_epred_draws(object = sympNoEffectMod,
-                                 newdata=ndSympNo,
-                                 re_formula = NA) %>% 
-                           mutate(mfRatio = exp(.epred),
-                           type="Posterior mean and 95% credible interval") 
-```
-
-Main estimate - used symptom screening
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-### Posterior mean with 95% credible interval
-sympYesEffectModEst %>% ungroup() %>%
-    mean_qi(mfRatio) %>% 
-    select(mfRatio, .lower, .upper) %>% round(digits=2)
-
-### Posterior median with 95% credible interval
-sympYesEffectModEst %>% ungroup() %>%
-    median_qi(mfRatio) %>% 
-    select(mfRatio, .lower, .upper) %>% round(digits=2)
-```
-
-Main estimate - did not use symptom screening
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-### Posterior mean with 95% credible interval
-sympNoEffectModEst %>% ungroup() %>%
-    mean_qi(mfRatio) %>% 
-    select(mfRatio, .lower, .upper) %>% round(digits=2)
-
-### Posterior median with 95% credible interval
-sympNoEffectModEst %>% ungroup() %>%
-    median_qi(mfRatio) %>% 
-    select(mfRatio, .lower, .upper) %>% round(digits=2)
-```
-
-### Model 12-13: Symptoms required vs. not required for sputum collection
+### Model 10-11: Symptoms required vs. not required for sputum collection
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1619,7 +1554,7 @@ sympReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 sympReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -1630,13 +1565,15 @@ sympReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(sympReqYesEffectMod)
+
+2
 plot(sympReqYesEffectMod)
 ```
 
@@ -1699,7 +1636,7 @@ sympReqNoEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-### Model 14-15: Required Xpert or culture vs. not
+### Model 13-14: Required Xpert or culture vs. not
 Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
 
 Model specification
@@ -1713,7 +1650,7 @@ xpCltReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -1724,13 +1661,16 @@ xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(xpCltReqYesEffectMod)
+
+summary(xpCltReqNoEffectMod)
+
 plot(xpCltReqYesEffectMod)
 ```
 
@@ -1788,7 +1728,7 @@ xpCltReqNoEffectModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-### Model 16-20: Country specific estimates
+### Model 14-18: Country specific estimates
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -1802,7 +1742,7 @@ BangladeshEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ChinaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1 | id),
@@ -1813,7 +1753,7 @@ ChinaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 VietnamEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1  + (1 | id),
@@ -1824,7 +1764,7 @@ VietnamEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 EthiopiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | id),
@@ -1835,7 +1775,7 @@ EthiopiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 IndiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | id),
@@ -1846,7 +1786,7 @@ IndiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ```
 
@@ -1855,9 +1795,9 @@ Summarize and check
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(BangladeshEffectMod)
 summary(ChinaEffectMod)
-summary(VietnamEffectMod)
 summary(EthiopiaEffectMod)
 summary(IndiaEffectMod)
+summary(VietnamEffectMod)
 ```
 
 Prediction
@@ -1994,7 +1934,7 @@ bactModelDF %>% filter(study.country %in% c("Bangladesh", "China", "Ethiopia",
                           malePerc=sum(n.participants.male, na.rm=TRUE)/n.total.participants*100)
 ```
 
-### Model 21-25: Five study-end-year bands 
+### Model 19-23: Five study-end-year bands 
 
 ```{r, warning = FALSE, message=FALSE}
 
@@ -2008,7 +1948,7 @@ year00_04Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 year05_09Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2020,7 +1960,7 @@ year05_09Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 year10_14Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2032,7 +1972,7 @@ year10_14Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 year15_19Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2044,7 +1984,7 @@ year15_19Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 year20_24Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2055,7 +1995,16 @@ year20_24Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(year00_04Mod)
+summary(year05_09Mod)
+summary(year10_14Mod)
+summary(year15_19Mod)
+summary(year20_24Mod)
+
 ```
 
 Prediction
@@ -2143,6 +2092,11 @@ year05_09ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
+### Posterior mean with 95% credible interval
+year05_09ModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
 ### 
 dim(bactModelDF %>% filter(study.end.year < 2010,
                                   study.end.year > 2004))[1]
@@ -2158,6 +2112,11 @@ Main estimate - 2010-2014
 ### Posterior mean with 95% credible interval
 year10_14ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+year10_14ModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
@@ -2177,6 +2136,11 @@ year15_19ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
+### Posterior median with 95% credible interval
+year15_19ModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
 ### 
 dim(bactModelDF %>% filter(study.end.year < 2020, 
                                   study.end.year > 2014))[1]
@@ -2192,6 +2156,11 @@ Main estimate - 2020-2024
 ### Posterior mean with 95% credible interval
 year20_24ModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+year20_24ModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
@@ -2213,7 +2182,7 @@ hortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 postHortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
@@ -2226,8 +2195,14 @@ postHortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+summary(hortonMod)
+summary(postHortonMod)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2235,6 +2210,7 @@ ndHorton <- bactModelDF %>% filter(publication.year < 2017,
                             id != 17, id!=72) %>%
          select(study.country, LogOdds_Female) %>%
          mutate(logOR_se=1)
+
 ndPostHorton <- bactModelDF %>% filter(id ==17 | id ==72 | 
                                                     publication.year > 2016 | 
                                                     is.na(publication.year)) %>%
@@ -2257,8 +2233,14 @@ postHortonModEst <- add_epred_draws(object = postHortonMod,
 
 Main estimate - Horton
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
+### Posterior mean
 hortonModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median
+hortonModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
@@ -2275,6 +2257,10 @@ Main estimate - post Horton
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 postHortonModEst %>% ungroup() %>%
     mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+postHortonModEst %>% ungroup() %>%
+    median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
@@ -2449,7 +2435,7 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
                          control = list(adapt_delta = 0.99),
                          chains  = 4,
                          cores   = 4,
-                         iter    = 4000)
+                         iter    = 5000)
 
 # summary(covCorrMod)
 
@@ -2457,9 +2443,9 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
     select(starts_with("rescor")) %>% 
     gather(label, rho) %>% 
     select(rho, label) %>% 
-    mutate(label = gsub("Z", " ", gsub("__", " with ", gsub("rescor__", "", label)))) %>% 
+    mutate(label = gsub("Z", " ", gsub("__", " with\n", gsub("rescor__", "", label)))) %>% 
     ggplot(aes(x = rho, y = label)) +
-    stat_halfeye(.width = .95, size = 5/4) + theme_minimal() + 
+    stat_halfeye(.width = .95, size = 5/4) + theme_minimal(base_size = 16) + 
     ylab("") + 
     ggtitle("Estimated correlation of covariates") + 
     expand_limits(x=c(-1,1))
@@ -2470,37 +2456,51 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
     select(rho, label) %>% 
     mutate(label = gsub("Z", " ", gsub("__", " with ", gsub("rescor__", "", label)))) %>% 
     group_by(label) %>% 
-    mean_qi(rho)
+    mean_qi(rho) %>% View()
 
 ```
 
-### Model 28: HIV prevalence univariate model
+### Model 28: Study end year univariate model 
+Note this is different from model 3 above as it is only fit to nationally-representative surveys 
 
 Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
-hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
-                          1 + HIV.AIDS +
+timeMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + study.end.year + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF %>% 
-                             filter(natRep == "Yes"),
-                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                              prior(normal(0, 10), class = b) +
-                              prior(exponential(2), class = sd),
-                      family = gaussian(),
-                      control = list(adapt_delta = 0.99),
-                      chains = 4,
-                      cores = 4,
-                      iter = 4000)
+                       data = newBactModelDF  %>% 
+                              filter(natRep == "Yes"),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                           prior(normal(0, 1), class = b) +
+                           prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 5000)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-bayes_R2(hivPrevMod)
+summary(timeMod)
 
-### output for contribution table 
-round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,4])),2)
+bayes_R2(timeMod)
+
+### output for contribution table
+
+timeMod %>% spread_draws(b_study.end.year) %>% mutate(study.end.year = exp(b_study.end.year)) %>% 
+    select(study.end.year) %>% 
+    mean_qi() %>% 
+    select(study.end.year, .lower, .upper) %>% round(2)
+
+timeMod %>% spread_draws(b_study.end.year) %>% mutate(study.end.year = exp(b_study.end.year)) %>% 
+    select(study.end.year) %>% 
+    median_qi() %>% 
+    select(study.end.year) %>% round(2)
+
+# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 29: Gender disparity index univariate model 
@@ -2513,13 +2513,13 @@ gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        data = newBactModelDF  %>% 
                               filter(natRep == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                           prior(normal(0, 10), class = b) +
+                           prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2528,105 +2528,22 @@ summary(gdiMod)
 bayes_R2(gdiMod)
 
 ### output for contribution table
-round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,4])),2)
+
+gdiMod %>% spread_draws(b_GDI) %>% mutate(GDI = exp(b_GDI)) %>% 
+    select(GDI) %>% 
+    mean_qi() %>% 
+    select(GDI, .lower, .upper) %>% round(2)
+
+gdiMod %>% spread_draws(b_GDI) %>% mutate(GDI = exp(b_GDI)) %>% 
+    select(GDI) %>% 
+    median_qi() %>% 
+    select(GDI) %>% round(2)
+# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,4])),2)
 ```
 
-### Model 30: Diabetes univariate model
-
-Model specification 
-
-```{r, warning = FALSE, message=FALSE}
-diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
-                                  1 +  type2.diabetes.mellitus +
-                                  (1 | study.country) + (1 | id),
-                              data = newBactModelDF  %>% 
-                                     filter(natRep == "Yes"),
-                              prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                                  prior(normal(0, 10), class = b) +
-                                  prior(exponential(2), class = sd),
-                              family = gaussian(),
-                              control = list(adapt_delta = 0.99),
-                              chains = 4,
-                              cores = 4,
-                              iter = 4000)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(diabetesPrevMod)
-
-bayes_R2(diabetesPrevMod)
-
-### output for contribution table
-round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,4])),2)
-```
-
-### Model 31: Low BMI univariate model
-
-Model specification 
-
-```{r, warning = FALSE, message=FALSE}
-lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
-                                  1 +  bmi +
-                                  (1 | study.country) + (1 | id),
-                              data = newBactModelDF  %>% 
-                                     filter(natRep == "Yes"),
-                              prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                                  prior(normal(0, 10), class = b) +
-                                  prior(exponential(2), class = sd),
-                              family = gaussian(),
-                              control = list(adapt_delta = 0.99),
-                              chains = 4,
-                              cores = 4,
-                              iter = 4000)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(lowBMIMod)
-
-bayes_R2(lowBMIMod)
-
-### output for contribution table
-round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,4])),2)
-```
-
-### Model 32: Smoking univariate model
-
-Model specification 
-
-```{r, warning = FALSE, message=FALSE}
-smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
-                                   1 +  smoking +
-                                   (1 | study.country) + (1 | id),
-                               data = newBactModelDF %>% 
-                                      filter(natRep == "Yes"),
-                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                                   prior(normal(0, 10), class = b) +
-                                   prior(exponential(2), class = sd),
-                               family = gaussian(),
-                               control = list(adapt_delta = 0.99),
-                               chains = 4,
-                               cores = 4,
-                               iter = 4000)
-```
-
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
-summary(smokingPrevMod)
-
-bayes_R2(smokingPrevMod)
-
-### output for contribution table
-round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,4])),2)
-```
-
-### Model 33: Alcohol use disorder univariate model
+### Model 30: Alcohol use disorder univariate model
 
 Model specification 
 
@@ -2637,13 +2554,13 @@ alcoholUsePrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                         data = newBactModelDF  %>% 
                               filter(natRep == "Yes"),
                         prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                            prior(normal(0, 10), class = b) +
+                            prior(normal(0, 1), class = b) +
                             prior(exponential(2), class = sd),
                         family = gaussian(),
                         control = list(adapt_delta = 0.99),
                         chains = 4,
                         cores = 4,
-                        iter = 4000)
+                        iter = 5000)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2652,12 +2569,191 @@ summary(alcoholUsePrevMod)
 bayes_R2(alcoholUsePrevMod)
 
 ### output for contribution table
-round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,1])),2)
-round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,3])),2)
-round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,4])),2)
+# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,4])),2)
+
+alcoholUsePrevMod %>% spread_draws(b_alcohol.use.disorder) %>% 
+    mutate(alcohol.use.disorder = exp(b_alcohol.use.disorder)) %>% 
+    select(alcohol.use.disorder) %>% 
+    mean_qi() %>% 
+    select(alcohol.use.disorder, .lower, .upper) %>% round(2)
+
+alcoholUsePrevMod %>% spread_draws(b_alcohol.use.disorder) %>% 
+    mutate(alcohol.use.disorder = exp(b_alcohol.use.disorder)) %>% 
+    select(alcohol.use.disorder) %>% 
+    median_qi() %>% 
+    select(alcohol.use.disorder) %>% round(2)
 ```
 
-### Model 34: Multi-variable covariate analysis
+### Model 31: Diabetes univariate model
+
+Model specification 
+
+```{r, warning = FALSE, message=FALSE}
+diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                                  1 +  type2.diabetes.mellitus +
+                                  (1 | study.country) + (1 | id),
+                              data = newBactModelDF  %>% 
+                                     filter(natRep == "Yes"),
+                              prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                                  prior(normal(0, 1), class = b) +
+                                  prior(exponential(2), class = sd),
+                              family = gaussian(),
+                              control = list(adapt_delta = 0.99),
+                              chains = 4,
+                              cores = 4,
+                              iter = 5000)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(diabetesPrevMod)
+
+bayes_R2(diabetesPrevMod)
+
+### output for contribution table
+# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,4])),2)
+diabetesPrevMod %>% spread_draws(b_type2.diabetes.mellitus) %>% 
+    mutate(type2.diabetes.mellitus = exp(b_type2.diabetes.mellitus)) %>% 
+    select(type2.diabetes.mellitus) %>% 
+    mean_qi() %>% 
+    select(type2.diabetes.mellitus, .lower, .upper) %>% round(2)
+
+diabetesPrevMod %>% spread_draws(b_type2.diabetes.mellitus) %>% 
+    mutate(type2.diabetes.mellitus = exp(b_type2.diabetes.mellitus)) %>% 
+    select(type2.diabetes.mellitus) %>% 
+    median_qi() %>% 
+    select(type2.diabetes.mellitus) %>% round(2)
+```
+
+
+### Model 32: HIV prevalence univariate model
+
+Model specification 
+
+```{r, warning = FALSE, message=FALSE}
+hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                          1 + HIV.AIDS +
+                          (1 | study.country) + (1 | id),
+                      data = newBactModelDF %>% 
+                             filter(natRep == "Yes"),
+                      prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                              prior(normal(0, 1), class = b) +
+                              prior(exponential(2), class = sd),
+                      family = gaussian(),
+                      control = list(adapt_delta = 0.99),
+                      chains = 4,
+                      cores = 4,
+                      iter = 5000)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(hivPrevMod)
+bayes_R2(hivPrevMod)
+
+### output for contribution table 
+# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,4])),2)
+hivPrevMod %>% spread_draws(b_HIV.AIDS) %>% mutate(HIV.AIDS = exp(b_HIV.AIDS)) %>% 
+    select(HIV.AIDS) %>% 
+    mean_qi() %>% 
+    select(HIV.AIDS, .lower, .upper) %>% round(2)
+
+hivPrevMod %>% spread_draws(b_HIV.AIDS) %>% mutate(HIV.AIDS = exp(b_HIV.AIDS)) %>% 
+    select(HIV.AIDS) %>% 
+    median_qi() %>% 
+    select(HIV.AIDS) %>% round(2)
+```
+
+### Model 33: Smoking univariate model
+
+Model specification 
+
+```{r, warning = FALSE, message=FALSE}
+smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                                   1 +  smoking +
+                                   (1 | study.country) + (1 | id),
+                               data = newBactModelDF %>% 
+                                      filter(natRep == "Yes"),
+                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                                   prior(normal(0, 1), class = b) +
+                                   prior(exponential(2), class = sd),
+                               family = gaussian(),
+                               control = list(adapt_delta = 0.99),
+                               chains = 4,
+                               cores = 4,
+                               iter = 5000)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(smokingPrevMod)
+
+bayes_R2(smokingPrevMod)
+
+### output for contribution table
+# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,4])),2)
+
+smokingPrevMod %>% spread_draws(b_smoking) %>% 
+    mutate(smoking = exp(b_smoking)) %>% 
+    select(smoking) %>% 
+    mean_qi() %>% 
+    select(smoking, .lower, .upper) %>% round(2)
+
+smokingPrevMod %>% spread_draws(b_smoking) %>% 
+    mutate(smoking = exp(b_smoking)) %>% 
+    select(smoking) %>% 
+    median_qi() %>% 
+    select(smoking) %>% round(2)
+```
+
+### Model 34: Underweight [Low BMI] univariate model
+
+Model specification 
+
+```{r, warning = FALSE, message=FALSE}
+lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+                                  1 +  bmi +
+                                  (1 | study.country) + (1 | id),
+                              data = newBactModelDF  %>% 
+                                     filter(natRep == "Yes"),
+                              prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                                  prior(normal(0, 1), class = b) +
+                                  prior(exponential(2), class = sd),
+                              family = gaussian(),
+                              control = list(adapt_delta = 0.99),
+                              chains = 4,
+                              cores = 4,
+                              iter = 5000)
+```
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(lowBMIMod)
+
+bayes_R2(lowBMIMod)
+
+### output for contribution table
+# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,1])),2)
+# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,3])),2)
+# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,4])),2)
+lowBMIMod %>% spread_draws(b_bmi) %>% 
+    mutate(bmi = exp(b_bmi)) %>% 
+    select(bmi) %>% 
+    mean_qi() %>% 
+    select(bmi, .lower, .upper) %>% round(2)
+
+lowBMIMod %>% spread_draws(b_bmi) %>% 
+    mutate(bmi = exp(b_bmi)) %>% 
+    select(bmi) %>% 
+    median_qi() %>% 
+    select(bmi) %>% round(2)
+```
+
+### Model 35: Multi-variable covariate analysis
 
 Model specification 
 
@@ -2671,13 +2767,13 @@ multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       data = newBactModelDF  %>% 
                               filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 10), class = b) +
+                          prior(normal(0, 1), class = b) +
                           prior(exponential(2), class = sd),
                       family = gaussian(),
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000,
+                      iter = 5000,
                       ### For moment matching loo
                       save_all_pars = TRUE)
 ```
@@ -2688,13 +2784,26 @@ Summarize and check
 summary(multiMod)
 
 ### output for contribution table
-x <- data.frame(parameter = rownames(summary(multiMod)[["fixed"]]),
-                PE = round(exp(as.numeric(summary(multiMod)[["fixed"]][,1])),2), 
-                CrI = paste(round(exp(as.numeric(summary(multiMod)[["fixed"]][,3])),2), 
-                          ",",
-                    round(exp(as.numeric(summary(multiMod)[["fixed"]][,4])),2)))
+# x <- data.frame(parameter = rownames(summary(multiMod)[["fixed"]]),
+#                 PE = round(exp(as.numeric(summary(multiMod)[["fixed"]][,1])),2), 
+#                 CrI = paste(round(exp(as.numeric(summary(multiMod)[["fixed"]][,3])),2), 
+#                           ",",
+#                     round(exp(as.numeric(summary(multiMod)[["fixed"]][,4])),2)))
 
 print(x)
+
+multiMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% mean_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>%
+    exp() %>% round(digits = 2) %>% t()
+
+multiMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% median_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>%
+                select(! (contains("upper") | contains("lower"))) %>%
+    exp() %>% round(digits = 2) %>% t()
 
 bayes_R2(multiMod)
 plot(multiMod)
@@ -2955,7 +3064,7 @@ smrModelDF %>% reframe(Participants = sum(n.participants.female + n.participants
 smrModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
 ```
 
-## Model 35: Smear positive main effect 
+## Model 36: Smear positive main effect 
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -2968,7 +3077,7 @@ mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
@@ -2997,7 +3106,7 @@ Main estimate
 mainEffectSmrModEst %>% ungroup %>% mean_qi(mfRatio) %>% select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
-## Model 36: Smear positive effect by world region model
+## Model 37: Smear positive effect by world region model
 
 Model specification
 ```{r, warning = FALSE, message=FALSE}
@@ -3010,7 +3119,7 @@ regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 ```
 
 Summarize and check 
@@ -3153,7 +3262,7 @@ regionEffectRptBothMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 ndBothRegion <- reportBothModelDF %>%
                 select(WHO.region) %>%
@@ -3180,13 +3289,13 @@ sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + symptomsRequired + (1 | study.country) + (1 | id),
                        data = bactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept),
-                               prior(student_t(7, 0, 1.5), class = b) +
+                               prior(normal(0,1), class = b) +
                                prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 
 ndsympReq <- crossing(unique(bactModelDF$study.country), 
@@ -3224,13 +3333,14 @@ bayes_R2(sympReqMainMod)
 xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + XpertCultRequired + (1 | study.country) + (1 | id),
                        data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +                               prior(normal(0,1), class = b) +
+
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 
 ndXperCult <- bactModelDF %>%
@@ -3258,13 +3368,14 @@ ndXperCultModEst %>% ungroup() %>%
 xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                            1 + XpertCultUsed + (1 | study.country) + (1 | id),
                        data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +                               prior(normal(0,1), class = b) +
+
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 
 ndXperCultUse <- bactModelDF %>%
@@ -3299,7 +3410,7 @@ cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 4000)
+                       iter = 5000)
 
 
 ndcntryRegReq <- bactModelDF %>% 
@@ -3325,7 +3436,7 @@ bayes_R2(cntryRegMainMod)
 ```
 
 
-## Model 42: Covariate analysis with only all surveys
+## Model 42: Covariate analysis with all surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
@@ -3336,13 +3447,13 @@ multiAllSurvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                           (1 | study.country) + (1 | id),
                       data = newBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 10), class = b) +
+                          prior(normal(0, 1), class = b) +
                           prior(exponential(2), class = sd),
                       family = gaussian(),
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000, 
+                      iter = 5000, 
                       ### For moment matching loo
                       save_all_pars = TRUE)
 
@@ -3361,38 +3472,50 @@ bayes_R2(multiAllSurvMod)
 
 ```
 
-## Model 43: Covariate analysis with restricted prior (N(0,1))
+## Model 43: Covariate analysis with less restrictive prior (N(0,10))
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 
-multiN1Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiN10Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
                       data = newBactModelDF %>% filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                          prior(normal(0, 1), class = b) +
+                          prior(normal(0, 10), class = b) +
                           prior(exponential(2), class = sd),
                       family = gaussian(),
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000, ### For moment matching loo
+                      iter = 5000, ### For moment matching loo
                       save_all_pars = TRUE)
 
-summary(multiN1Mod)
+summary(multiN10Mod)
 
 ### output for contribution table
-coefsN1 <- data.frame(parameter = rownames(summary(multiN1Mod)[["fixed"]]),
-                PE = round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,1])),2), 
-                CrI = paste(round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,3])),2), 
-                          ",",
-                    round(exp(as.numeric(summary(multiN1Mod)[["fixed"]][,4])),2)))
+# coefsN10 <- data.frame(parameter = rownames(summary(multiN10Mod)[["fixed"]]),
+#                 PE = round(exp(as.numeric(summary(multiN10Mod)[["fixed"]][,1])),2), 
+#                 CrI = paste(round(exp(as.numeric(summary(multiN10Mod)[["fixed"]][,3])),2), 
+#                           ",",
+#                     round(exp(as.numeric(summary(multiN10Mod)[["fixed"]][,4])),2)))
+# 
+# print(coefsN10)
 
-print(coefsN1)
+multiCauchyMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% mean_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>% exp() %>% round(digits = 2) %>% t()
 
-bayes_R2(multiN1Mod)
+multiCauchyMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% median_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>% 
+    select(! (contains("lower") | contains("upper"))) %>%
+    exp() %>% round(digits = 2) %>% t()
+
+bayes_R2(multiN10Mod)
 ```
 
 ## Model 44: Covariate analysis with restricted prior (Cauchy(0,1.25))
@@ -3412,7 +3535,7 @@ multiCauchyMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 4000, 
+                      iter = 5000, 
                       ### For moment matching loo
                       save_all_pars = TRUE)
 
@@ -3433,13 +3556,20 @@ bayes_R2(coefsNatCauch)
 multiCauchyMod %>%
     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% mean_qi() %>% 
-                select(b_Intercept:b_smoking.upper) %>% round(digits = 2) %>% exp() %>% t()
+                select(b_Intercept:b_smoking.upper) %>% exp() %>% round(digits = 2) %>% t()
+
+multiCauchyMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% median_qi() %>% 
+                select(b_Intercept:b_smoking.upper) %>% 
+    select(! (contains("lower") | contains("upper"))) %>%
+    exp() %>% round(digits = 2) %>% t()
 
 
 ```
 
 ### Model comparison 
-
+#### Different covariate mdoels 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ## Each of these had a Pareto k sampling issues so use moment matching
 looCauch <- loo(multiCauchyMod, moment_match = TRUE)
