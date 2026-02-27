@@ -602,6 +602,8 @@ empirical_prev <- bactModelDF %>%
         natRep = natRep,
         bias = bias,
         symptomScreen = symptomScreen, 
+        XpertCultRequired = XpertCultRequired, 
+        XpertCultUsed = XpertCultUsed,
         p_female_empirical = plogis(LogOdds_Female),
         p_male_empirical = plogis(LogOdds_Male),
         or_empirical = p_male_empirical / p_female_empirical,
@@ -1292,7 +1294,7 @@ eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>%
 
 ### Combine both panels and save for publication submission
 # fig4 <- (fig4A + fig4B) + plot_layout(nrow=2)
-# ggsave(fig4, file=here("output/SEX/sex-figure4.png"), height=15, width=10, dpi = 300)
+# ggsave(fig4, file=here("output/SEX/sex-figure4.png"), height=25, width=20, dpi = 300)
 
 
 ```
@@ -2758,7 +2760,6 @@ lowBMIMod %>% spread_draws(b_bmi) %>%
 Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
-
 multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
@@ -2809,6 +2810,48 @@ bayes_R2(multiMod)
 plot(multiMod)
 
 stanplot(multiMod)
+```
+
+#### Country-level estimates 
+
+```{r}
+ndMulti <- newBactModelDF %>%
+           select(study.country, year_z, GDI, 
+                  type2.diabetes.mellitus, alcohol.use.disorder, 
+                  bmi, HIV.AIDS, smoking) %>%
+           na.omit() %>%
+           unique() %>% 
+           mutate(logOR_se=1)
+
+### Adds draws from the expectation of the posterior predictive distribution
+multiModEst <- add_epred_draws(object = multiMod,
+                                 newdata=ndMulti,
+                                 re_formula = ~ 1 + (1|study.country), 
+                                 allow_new_levels = TRUE) %>% 
+                    mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval") 
+
+### Posterior mean
+multiMean <- multiModEst %>% ungroup() %>%
+    group_by(study.country) %>%
+    mean_qi(mfRatio) %>% 
+    mutate(Mean=round(mfRatio,2), 
+           Interval = paste(round(.lower,2), "-", round(.upper,2))) %>%
+    select(study.country, Mean, Interval) 
+
+### Posterior median
+multiMedian <- multiModEst %>% ungroup() %>%
+        group_by(study.country) %>%
+    median_qi(mfRatio)  %>% 
+    mutate(Median=round(mfRatio,2)) %>% 
+    select(Median)
+
+multiCountryEsts <- data.frame(study.country = multiMean$study.country, 
+                               "Posterior mean" = multiMean$Mean,
+                               "Posterior median" = multiMedian$Median,
+                               "95% credible interval" = multiMean$Interval)
+
+write.csv(multiCountryEsts, here("output/SEX/multivariableModelCountryEstimates.csv"))
 ```
 
 # Smear positive analysis 
@@ -3297,6 +3340,7 @@ sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        cores = 4,
                        iter = 5000)
 
+summary(sympReqMainMod)
 
 ndsympReq <- crossing(unique(bactModelDF$study.country), 
                       unique(na.omit(bactModelDF$symptomsRequired))) %>%
@@ -3435,6 +3479,340 @@ cntryRegMainModEst %>% ungroup() %>%
 bayes_R2(cntryRegMainMod)
 ```
 
+## Model 42: Effect over time with "Xpert or Culture Required" as a covariate
+
+Model specification
+```{r, warning = FALSE, message=FALSE}
+timeEffectXpertReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + XpertCultRequired*year_z + 
+                          (1 + XpertCultRequired*year_z | study.country) + 
+                          (1 | id),
+                       data = bactModelDF, 
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 5000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectXpertReqMod)
+plot(timeEffectXpertReqMod)
+```
+
+Prediction
+
+```{r, warning = FALSE, message=FALSE, echo=FALSE}
+ndXpertReqTime <- bactModelDF %>%
+                  select(logOR_se) %>%
+                  crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+                           XpertCultRequired = c("Yes", "No")) %>%
+                  mutate(logOR_se = 1)
+
+timeEffectXpertReqModEst <- add_epred_draws(object = timeEffectXpertReqMod,
+                                 newdata=ndXpertReqTime,
+                                 re_formula = ~ 1 + year_z*XpertCultRequired,
+                                 allow_new_levels = TRUE) %>%
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+
+```
+
+Main estimate
+```{r}
+yXpertReq <- timeEffectXpertReqModEst %>%
+             filter(XpertCultRequired == "Yes") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+
+yXpertNoReq <- timeEffectXpertReqModEst %>%
+             filter(XpertCultRequired == "No") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+```
+
+### Plot comparison of time trends
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+
+ggplot() +
+    geom_lineribbon(data=yXpertReq, 
+                    .width = 0.95, alpha = 0.25, fill="salmon", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_lineribbon(data=yXpertNoReq, 
+                    .width = 0.95, alpha = 0.25, fill="springgreen4", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_point(data = empirical_prev %>% 
+                      filter(XpertCultRequired == "Yes") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "salmon") +
+    
+        geom_point(data = empirical_prev %>% 
+                      filter(XpertCultRequired == "No") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "springgreen4") +
+    
+    expand_limits(y=0) +
+    labs(y = "Male-to-female odds ratio",
+         x = "Year") +
+    theme_minimal(base_size = 20)  + 
+    scale_size_continuous(range = c(1,10), guide = "none") + 
+    ggtitle("Male-to-female TB prevalence ratio over time\nXpert/Culture required (pink) vs. Xpert/Culture not required (green)")
+```
+
+## Model 43: Effect over time with "Xpert or Culture Used" as a covariate
+
+Model specification
+```{r, warning = FALSE, message=FALSE}
+timeEffectXpertUsedMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + XpertCultUsed*year_z + 
+                          (1 + year_z | study.country) + 
+                          (1 | id),
+                       data = bactModelDF, 
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 5000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectXpertUsedMod)
+plot(timeEffectXpertUsedMod)
+```
+
+Prediction
+
+```{r, warning = FALSE, message=FALSE, echo=FALSE}
+ndXpertUsedTime <- bactModelDF %>%
+                  select(logOR_se) %>%
+                  crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+                           XpertCultUsed = c("Yes", "No")) %>%
+                  mutate(logOR_se = 1)
+
+timeEffectXpertUsedModEst <- add_epred_draws(object = timeEffectXpertUsedMod,
+                                 newdata=ndXpertUsedTime,
+                                 re_formula = ~ 1 + year_z*XpertCultUsed,
+                                 allow_new_levels = TRUE) %>%
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+
+```
+
+Main estimate
+```{r}
+yXpertUsed <- timeEffectXpertUsedModEst %>%
+             filter(XpertCultUsed == "Yes") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+
+yXpertNoUsed <- timeEffectXpertUsedModEst %>%
+             filter(XpertCultUsed == "No") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+```
+
+### Plot comparison of time trends
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+
+ggplot() +
+    geom_lineribbon(data=yXpertUsed, 
+                    .width = 0.95, alpha = 0.25, fill="orange", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_lineribbon(data=yXpertNoUsed, 
+                    .width = 0.95, alpha = 0.25, fill="dodgerblue4", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_point(data = empirical_prev %>% 
+                      filter(XpertCultUsed == "Yes") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "orange") +
+    
+        geom_point(data = empirical_prev %>% 
+                      filter(XpertCultUsed == "No") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "dodgerblue4") +
+    
+    expand_limits(y=0) +
+    labs(y = "Male-to-female odds ratio",
+         x = "Year") +
+    theme_minimal(base_size = 20)  + 
+    scale_size_continuous(range = c(1,10), guide = "none") + 
+    ggtitle("Male-to-female TB prevalence ratio over time\nXpert/Culture used (orange) vs. Xpert/Culture not used (blue)")
+```
+### Estimated average annual percentage change (EAPC)
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+minYr <- min(timeEffectXpertUsedModEst$year_z)
+maxYr <- max(timeEffectXpertUsedModEst$year_z)
+
+eapcXpUseDF <- timeEffectXpertUsedMod %>% 
+    spread_draws(Intercept, 
+                 b_XpertCultUsedYes,
+                 b_year_z, 
+                 `b_XpertCultUsedYes:year_z`,
+    ) %>% 
+    mutate("eapcXpertYes" = (exp(Intercept + 
+                                b_XpertCultUsedYes + 
+                                ((minYr + 1) * (b_year_z + `b_XpertCultUsedYes:year_z`))) - 
+                             exp(Intercept + 
+                                b_XpertCultUsedYes + 
+                                (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))) / 
+                            exp(Intercept + 
+                                b_XpertCultUsedYes + 
+                                (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))  * 100, 
+           "PositiveXpertYes" = ifelse(eapcXpertYes > 0, "Yes", "No"),
+           "eapcXpertNo" =  (exp(Intercept + 
+                                ((minYr + 1) * b_year_z)) - 
+                             exp(Intercept + 
+                                (minYr * b_year_z))) / 
+                            exp(Intercept + 
+                                (minYr * b_year_z))  * 100,
+           "PositiveXpertNo" = ifelse(eapcXpertNo > 0, "Yes", "No"),
+) 
+
+eapcXpUseDF %>%
+    select(`eapcXpertYes`) %>%
+    mean_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertYes`) %>%
+    median_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertNo`) %>%
+    mean_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertNo`) %>%
+    median_qi()
+```
+
+## Model 42: Effect over time with "Symptoms Required" as a covariate
+
+Model specification
+```{r, warning = FALSE, message=FALSE}
+timeEffectSympReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+                           1 + symptomsRequired*year_z + 
+                          (1 + symptomsRequired*year_z | study.country) + 
+                          (1 | id),
+                       data = bactModelDF, 
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(lkj(4), class=cor),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 5000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(timeEffectSympReqMod)
+plot(timeEffectSympReqMod)
+```
+
+Prediction
+
+```{r, warning = FALSE, message=FALSE, echo=FALSE}
+ndSympReqTime <- bactModelDF %>%
+                    select(logOR_se) %>%
+                    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+                                       symptomsRequired = c("Yes", "No")) %>%
+                  mutate(logOR_se = 1)
+
+timeEffectSympReqModEst <- add_epred_draws(object = timeEffectSympReqMod,
+                             newdata=ndSympReqTime,
+                                 re_formula = ~ 1 + year_z*symptomsRequired,
+                                 allow_new_levels = TRUE) %>%
+                           mutate(mfRatio = exp(.epred),
+                           type="Posterior mean and 95% credible interval")
+
+
+```
+
+Main estimate
+```{r}
+ySympReq <-  timeEffectSympReqModEst %>%
+             filter(symptomsRequired == "Yes") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+
+ySympNoReq <- timeEffectSympReqModEst %>%
+             filter(symptomsRequired == "No") %>%
+             group_by(year_z) %>%
+             mean_qi(mfRatio) %>%
+             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+                            Mean = round(mfRatio, 2) )
+```
+
+### Plot comparison of time trends
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+
+ggplot() +
+    geom_lineribbon(data=yXpertReq, 
+                    .width = 0.95, alpha = 0.25, fill="goldenrod3", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_lineribbon(data=yXpertNoReq, 
+                    .width = 0.95, alpha = 0.25, fill="purple", 
+                    aes(x = Year, y = mfRatio, ymin = .lower, ymax = .upper)) +
+    
+    geom_point(data = empirical_prev %>% 
+                      filter(XpertCultRequired == "Yes") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "goldenrod3") +
+    
+        geom_point(data = empirical_prev %>% 
+                      filter(XpertCultRequired == "No") %>%
+                       rename("Study standard error" = logOR_se),
+               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               colour = "purple") +
+    
+    expand_limits(y=0) +
+    labs(y = "Male-to-female odds ratio",
+         x = "Year") +
+    theme_minimal(base_size = 20)  + 
+    scale_size_continuous(range = c(1,10), guide = "none") + 
+    ggtitle("Male-to-female TB prevalence ratio over time\nSymptoms required (gold) vs. symptoms not required (purple)")
+```
 
 ## Model 42: Covariate analysis with all surveys
 
