@@ -317,6 +317,47 @@ cleanRuralityDF <-  cleanRuralityDF0 %>%
                                            "n.culture.positive.tb" ~ n.culture.positive.tb.rural/n.participants.rural,
                                        rurality.analysis.indicator == 
                                            "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.rural)) %>%
+    
+        #### Create a confidence interval for those without 
+    #### these are using the wilson method with continuity correction
+    #### cannot seem to get case_when to work so this is going to be verbose bc deadline
+    rowwise() %>%
+    mutate(calc.ci.lower.urban = ifelse(rurality.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.urban, n.participants.urban))$conf.int[1],
+                                       ifelse(rurality.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.urban, n.participants.urban))$conf.int[1],
+                                          ifelse(rurality.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.urban, n.participants.urban))$conf.int[1],
+                                                ifelse(rurality.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.urban*n.participants.urban, n.participants.urban))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.urban = ifelse(rurality.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.urban, n.participants.urban))$conf.int[2],
+                                       ifelse(rurality.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.urban, n.participants.urban))$conf.int[2],
+                                          ifelse(rurality.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.urban, n.participants.urban))$conf.int[2],
+                                                ifelse(rurality.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.urban*n.participants.urban, n.participants.urban))$conf.int[2], 
+                                              NA)))),
+           calc.ci.lower.rural = ifelse(rurality.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.rural, n.participants.rural))$conf.int[1],
+                                       ifelse(rurality.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.rural, n.participants.rural))$conf.int[1],
+                                          ifelse(rurality.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.rural, n.participants.rural))$conf.int[1],
+                                                ifelse(rurality.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.rural*n.participants.rural, n.participants.rural))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.rural = ifelse(rurality.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.rural, n.participants.rural))$conf.int[2],
+                                       ifelse(rurality.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.rural, n.participants.rural))$conf.int[2],
+                                          ifelse(rurality.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.rural, n.participants.rural))$conf.int[2],
+                                                ifelse(rurality.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.rural*n.participants.rural, n.participants.rural))$conf.int[2], 
+                                              NA))))) %>%
     pivot_longer(cols = c(tempPrevRural,tempPrevUrban), 
                  names_to = "Rurality", 
                  values_to = "Adjusted Prevalence", 
@@ -354,7 +395,7 @@ cleanRuralityDF <-  cleanRuralityDF0 %>%
   
            "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
            "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
-           "LogOddsStandardError" = case_when(rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+           "LogOddsStandardError0" = case_when(rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
                                                   Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.urban/
                                                                            (1-adj.prev100k.ci.upper.bacteriological.tb.urban)) -
                                                                        log(adj.prev100k.ci.lower.bacteriological.tb.urban/
@@ -399,7 +440,55 @@ cleanRuralityDF <-  cleanRuralityDF0 %>%
                                             log(1/(n.participants.urban*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
                                         rurality.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
                                                                       "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
-                                            log(1/(n.participants.rural*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                            log(1/(n.participants.rural*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2),
+                      "LogOddsStandardError" = case_when(rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.urban/
+                                                                           (1-adj.prev100k.ci.upper.bacteriological.tb.urban)) -
+                                                                       log(adj.prev100k.ci.lower.bacteriological.tb.urban/
+                                                                               (1-adj.prev100k.ci.lower.bacteriological.tb.urban))) /3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Rurality == "Rural" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.rural/
+                                                                             (1-adj.prev100k.ci.upper.bacteriological.tb.rural)) -
+                                                                         log(adj.prev100k.ci.lower.bacteriological.tb.rural /
+                                                                                 (1-adj.prev100k.ci.lower.bacteriological.tb.rural))) /3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Urban" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.urban/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.urban /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                              rurality.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Rurality == "Rural" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.rural/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.rural /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.rural)))/3.92,
+                                              rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Rurality == "Urban" ~ (log(prev100k.ci.upper.bacteriological.tb.urban/
+                                                                     (1-prev100k.ci.upper.bacteriological.tb.urban)) -
+                                                                 log(prev100k.ci.lower.bacteriological.tb.urban/
+                                                                     (1-prev100k.ci.lower.bacteriological.tb.urban))) /3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Rurality == "Rural" ~ (log(prev100k.ci.upper.bacteriological.tb.rural/
+                                                                        (1-prev100k.ci.upper.bacteriological.tb.rural)) -
+                                                                    log(prev100k.ci.lower.bacteriological.tb.rural /
+                                                                        (1-prev100k.ci.lower.bacteriological.tb.rural))) /3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Urban" ~ (log(prev100k.ci.upper.smear.positive.tb.urban/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.urban)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.urban /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.urban)))/3.92,
+                                                 rurality.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Rurality == "Rural" ~ (log(prev100k.ci.upper.smear.positive.tb.rural/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.rural)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.rural /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.rural)))/3.92, 
+                                            rurality.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Urban" ~ 
+                                            (log(calc.ci.upper.urban/(1-calc.ci.upper.urban)) - log(calc.ci.lower.urban/(1-calc.ci.lower.urban)))/3.92,
+                                            # log(1/(n.participants.urban*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        rurality.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Rurality == "Rural" ~ 
+                                            (log(calc.ci.upper.rural/(1-calc.ci.upper.rural)) - log(calc.ci.lower.rural/(1-calc.ci.lower.rural)))/3.92)
+           ) %>% 
                                 mutate(natRep = ifelse(study.geography == "Nationally representative", "Yes", "No"),
                                        study.start.year = as.integer(study.start.year),
                                        study.end.year = as.integer(study.end.year),
@@ -431,9 +520,9 @@ varAdj <- varianceAdjust("rurality")
 
 ```{r}
 cleanRuralityDF <- cleanRuralityDF %>%
-    select(covidence.id, id, WHO.region, study.country, Rurality, year, natRep, bias, symptomScreen, `Adjusted Prevalence`, LogOdds, LogOddsStandardError, rurality.analysis.indicator) %>%
+    select(covidence.id, id, WHO.region, study.country, Rurality, year, natRep, bias, symptomScreen, `Adjusted Prevalence`, LogOdds, LogOddsStandardError,LogOddsStandardError0, rurality.analysis.indicator) %>%
     pivot_wider(names_from = Rurality,
-                values_from = c(`Adjusted Prevalence`, LogOdds, LogOddsStandardError),
+                values_from = c(`Adjusted Prevalence`, LogOdds, LogOddsStandardError, LogOddsStandardError0),
                 names_sep = "_") %>%
     mutate(
         logOR = LogOdds_Urban - LogOdds_Rural,
@@ -442,7 +531,14 @@ cleanRuralityDF <- cleanRuralityDF %>%
                                      unadj_logOR_se,
                                      ifelse(grepl("smear", rurality.analysis.indicator),
                                          sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
-                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))), 
+        unadj_logOR_se0 = sqrt(LogOddsStandardError0_Urban^2 + LogOddsStandardError0_Rural^2), 
+        logOR_se0 = ifelse(grepl("adj", rurality.analysis.indicator), 
+                                     unadj_logOR_se0,
+                                     ifelse(grepl("smear", rurality.analysis.indicator),
+                                         sqrt(`unadj_logOR_se0`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logOR_se0`^2 + varAdj["Bact Variance Median"])))
+        )
 ```
 
 ### Covariates
@@ -791,7 +887,7 @@ mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                        prior(exponential(2), class = sd),
                        family = gaussian(),
-                       backend = "cmdstanr",
+                       # backend = "cmdstanr",
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
