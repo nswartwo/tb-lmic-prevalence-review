@@ -2,7 +2,7 @@
 title: "Sex Stratified Relationships of Tuberculosis Prevalence and Notification in Low- and Middle-income Countries: A Systematic Review and Meta-analysis" 
 date: "`r Sys.Date()`"
 output: rmarkdown::pdf_document
-classoption: landscape
+classoption: portrait
 geometry: margin=.5cm
 header-includes:
   - \pagenumbering{gobble}
@@ -44,37 +44,37 @@ myPal <- c("black", "violet")
 
 source(here("code/bacterialPositiveIndicator.R"))
 source(here("code/smearPositiveIndicator.R"))
-source(here("code/varianceComponentModel.R"))
+source(here("code/varianceComponentModelPR.R"))
 
 ### Set seed 
 set.seed(500)
 
 ##############################################################################|
 ##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
-cleanSexDF0 <- readRDS("data/sex-stratified-clean-data.rds")
+cleanSexPRDF0 <- readRDS("data/sex-stratified-clean-data.rds")
 ### Calculate mean publication lag 
-meanLag <- round(mean(cleanSexDF0$publication.year - cleanSexDF0$study.end.year, na.rm=TRUE))
+meanLag <- round(mean(cleanSexPRDF0$publication.year - cleanSexPRDF0$study.end.year, na.rm=TRUE))
 ```
 
 # Descriptive statistics
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
 
-print(paste(dim(cleanSexDF0)[1], "unique surveys with sex-stratified bacteriological positive TB"))
+print(paste(dim(cleanSexPRDF0)[1], "unique surveys with sex-stratified bacteriological positive TB"))
 
-# sort(unique(cleanSexDF0$title.extracted))
-print(paste(length(unique(cleanSexDF0$title.extracted))-1, "unique publications"))
+# sort(unique(cleanSexPRDF0$title.extracted))
+print(paste(length(unique(cleanSexPRDF0$title.extracted))-1, "unique publications"))
 
-print(paste(sum(!is.na(cleanSexDF0$n.participants.sex.total)), "studies report participant numbers totaling", 
-            sum(cleanSexDF0$n.participants.sex.total, na.rm = TRUE), "participants"))
+print(paste(sum(!is.na(cleanSexPRDF0$n.participants.sex.total)), "studies report participant numbers totaling", 
+            sum(cleanSexPRDF0$n.participants.sex.total, na.rm = TRUE), "participants"))
 
-print(paste(sum(!is.na(cleanSexDF0$n.participants.female)), "studies report sex-stratified participant numbers totaling", sum(cleanSexDF0$n.participants.female, cleanSexDF0$n.participants.male, na.rm=TRUE), " and ", round(sum(cleanSexDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexDF0$n.participants.female, cleanSexDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
+print(paste(sum(!is.na(cleanSexPRDF0$n.participants.female)), "studies report sex-stratified participant numbers totaling", sum(cleanSexPRDF0$n.participants.female, cleanSexPRDF0$n.participants.male, na.rm=TRUE), " and ", round(sum(cleanSexPRDF0$n.participants.male, na.rm=TRUE)/sum(cleanSexPRDF0$n.participants.female, cleanSexPRDF0$n.participants.male, na.rm = TRUE)*100, 2), "% of participants were male" ))
 ```
 
 # Risk of bias statistics
 
 ```{r, warning = FALSE, message=FALSE}
-table(cleanSexDF0$study.quality.summary)
+table(cleanSexPRDF0$study.quality.summary)
 ```
 # Bacteriologically-confirmed TB analysis 
 ## Format data for modeling 
@@ -83,7 +83,7 @@ table(cleanSexDF0$study.quality.summary)
 
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
-cleanSexDF <-  cleanSexDF0 %>% 
+cleanSexPRDF <-  cleanSexPRDF0 %>% 
                filter(sex.analysis.indicator != "none") %>% 
                mutate("id" = row_number()) %>% 
     ### Scale all prevalence estimates back to decimals 
@@ -144,89 +144,77 @@ cleanSexDF <-  cleanSexDF0 %>%
                                            "n.culture.positive.tb" ~ n.culture.positive.tb.female/n.participants.female,
                                        sex.analysis.indicator == 
                                            "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
-    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
-                 names_to = "Sex", 
-                 values_to = "Adjusted Prevalence", 
-                 names_prefix = "tempPrev") %>% 
-    mutate("Standard Error" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
-                                            Sex == "Male" ~ (adj.prev100k.ci.upper.bacteriological.tb.male-
+    #### Create a confidence interval for those without 
+    #### these are using the wilson method with continuity correction
+    #### cannot seem to get case_when to work so this is going to be verbose bc deadline
+    rowwise() %>%
+    mutate(calc.ci.lower.male = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.male, n.participants.male))$conf.int[1],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[1],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.male, n.participants.male))$conf.int[1],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.male = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.male, n.participants.male))$conf.int[2],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[2],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.male, n.participants.male))$conf.int[2],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[2], 
+                                              NA)))),
+           calc.ci.lower.female = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.female, n.participants.female))$conf.int[1],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[1],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.female, n.participants.female))$conf.int[1],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.female = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.female, n.participants.female))$conf.int[2],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[2],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.female, n.participants.female))$conf.int[2],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[2], 
+                                              NA))))) %>%
+        ungroup() %>%
+        mutate("stndErrMale" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.bacteriological.tb.male /
                                                                  adj.prev100k.ci.lower.bacteriological.tb.male)/3.92,
-                                        sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
-                                            Sex == "Female" ~ (adj.prev100k.ci.upper.bacteriological.tb.female-
-                                                                   adj.prev100k.ci.lower.bacteriological.tb.female)/3.92,
-                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Male" ~ (adj.prev100k.ci.upper.smear.positive.tb.male-
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.male /
                                                                  adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
-                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Female" ~ (adj.prev100k.ci.upper.smear.positive.tb.female-
-                                                                   adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
-                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
-                                            Sex == "Male" ~ (prev100k.ci.upper.bacteriological.tb.male-
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            log(prev100k.ci.upper.bacteriological.tb.male /
                                                                  prev100k.ci.lower.bacteriological.tb.male)/3.92,
-                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
-                                            Sex == "Female" ~ (prev100k.ci.upper.bacteriological.tb.female-
-                                                                   prev100k.ci.lower.bacteriological.tb.female)/3.92,
-                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Male" ~ (prev100k.ci.upper.smear.positive.tb.male-
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.male /
                                                                  prev100k.ci.lower.smear.positive.tb.male)/3.92,
-                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
-                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
                                         sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
-                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
-                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
-                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
-                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
-                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
-  
-           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
-           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
-           "LogOddsStandardError" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
-                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.male/
-                                                                           (1-adj.prev100k.ci.upper.bacteriological.tb.male)) -
-                                                                       log(adj.prev100k.ci.lower.bacteriological.tb.male/
-                                                                               (1-adj.prev100k.ci.lower.bacteriological.tb.male))) /3.92,
-                                              sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
-                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.female/
-                                                                             (1-adj.prev100k.ci.upper.bacteriological.tb.female)) -
-                                                                         log(adj.prev100k.ci.lower.bacteriological.tb.female /
-                                                                                 (1-adj.prev100k.ci.lower.bacteriological.tb.female))) /3.92,
-                                              sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
-                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.male/
-                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.male)) -
-                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.male /
-                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.male)))/3.92,
-                                              sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
-                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
-                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
-                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.female /
-                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92,
-                                              sex.analysis.indicator == "prev100k.ci.bacteriological.tb" &
-                                                 Sex == "Male" ~ (log(prev100k.ci.upper.bacteriological.tb.male/
-                                                                     (1-prev100k.ci.upper.bacteriological.tb.male)) -
-                                                                 log(prev100k.ci.lower.bacteriological.tb.male/
-                                                                     (1-prev100k.ci.lower.bacteriological.tb.male))) /3.92,
-                                                 sex.analysis.indicator == "prev100k.ci.bacteriological.tb" &
-                                                 Sex == "Female" ~ (log(prev100k.ci.upper.bacteriological.tb.female/
-                                                                        (1-prev100k.ci.upper.bacteriological.tb.female)) -
-                                                                    log(prev100k.ci.lower.bacteriological.tb.female /
-                                                                        (1-prev100k.ci.lower.bacteriological.tb.female))) /3.92,
-                                                 sex.analysis.indicator == "prev100k.ci.smear.positive.tb" &
-                                                     Sex == "Male" ~ (log(prev100k.ci.upper.smear.positive.tb.male/
-                                                                          (1-prev100k.ci.upper.smear.positive.tb.male)) -
-                                                                      log(prev100k.ci.lower.smear.positive.tb.male /
-                                                                          (1-prev100k.ci.lower.smear.positive.tb.male)))/3.92,
-                                                 sex.analysis.indicator == "prev100k.ci.smear.positive.tb" &
-                                                     Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
-                                                                            (1-prev100k.ci.upper.smear.positive.tb.female)) -
-                                                                        log(prev100k.ci.lower.smear.positive.tb.female /
-                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
-                                            sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
-                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
-                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
-                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
-                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
-                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                            log(calc.ci.upper.male / calc.ci.lower.male)/3.92),
+           "stndErrFemale" =  case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.bacteriological.tb.female  /
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.female /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            log(prev100k.ci.upper.bacteriological.tb.female /
+                                                                 prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.female / 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                                        log(calc.ci.upper.female / calc.ci.lower.female)/3.92)) %>% 
                                 mutate(natRep = ifelse(is.na(study.geography), 
                                                        NA, 
                                                        ifelse(study.geography == "Nationally representative", 
@@ -284,40 +272,43 @@ cleanSexDF <-  cleanSexDF0 %>%
 #### Dataset for modeling #####################################################
 ##############################################################################|
 #### Calculate the variance adjustment for non-adjusted studies
-varAdj <- varianceAdjust("sex")
+varAdjPR <- varianceAdjustPR("sex")
 
-bactModelDF <- cleanSexDF %>%
-    select(id, covidence.id, title.extracted, WHO.region, study.country, study.rurality,
-           Sex, year_z, 
+bactModelPRDF <- cleanSexPRDF %>%
+    select(id, covidence.id, title.extracted, 
+           WHO.region, study.country, study.rurality,
+           publication.year, study.end.year.ext,
+           study.end.year, year_z,
            natRep, bias, symptomScreen, symptomsRequired, 
            XpertCultRequired,  XpertCultUsed,
-           LogOdds, LogOddsStandardError, sex.analysis.indicator, 
+           sex.analysis.indicator, 
            n.participants.male, n.participants.female, 
-           publication.year, study.end.year, study.end.year.ext) %>%
-    pivot_wider(names_from = Sex,
-                values_from = c(LogOdds, LogOddsStandardError),
-                names_sep = "_") %>%
-    mutate(logOR = LogOdds_Male - LogOdds_Female,
-           unadj_logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2), 
-           logOR_se = ifelse(grepl("adj", sex.analysis.indicator), 
-                                     unadj_logOR_se,
+           tempPrevMale, tempPrevFemale,
+           stndErrMale, stndErrFemale) %>%
+    # pivot_wider(names_from = Sex,
+    #             values_from = c(LogOdds, LogOddsStandardError),
+    #             names_sep = "_") %>%
+    mutate(logPR = log(tempPrevMale / tempPrevFemale),
+           unadj_logPR_se = sqrt(stndErrMale^2 + stndErrFemale^2), 
+           logPR_se = ifelse(grepl("adj", sex.analysis.indicator), 
+                                     unadj_logPR_se,
                                      ifelse(grepl("smear", sex.analysis.indicator),
-                                         sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
-                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
+                                         sqrt(`unadj_logPR_se`^2 + varAdjPR["Smear Variance Median"]),
+                                         sqrt(`unadj_logPR_se`^2 + varAdjPR["Bact Variance Median"])))
+)
 
 ```
 
 ## Additional descriptive output
 
 ```{r}
-table(bactModelDF$WHO.region)
-
+table(bactModelPRDF$WHO.region)
 
 ### How many persons diagnosed with bacteriologically-confirmed TB 
 ### Case 1: we used the reported count so simply sum 
 ### 38 total surveys; no missing 
-cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+### Total cases 
+cleanSexPRDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
     mutate(diagnosedCases = case_when(sex.analysis.indicator == 
                                           "n.bacteriological.tb" ~ n.bacteriological.tb.male + n.bacteriological.tb.female, 
                                       sex.analysis.indicator == 
@@ -326,8 +317,8 @@ cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>%
                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male + n.smear.positive.tb.female)) %>% 
     select(diagnosedCases) %>% sum() -> cases1
 
-cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+### Male cases 
+cleanSexPRDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>% 
     mutate(diagnosedCases = case_when(sex.analysis.indicator == 
                                           "n.bacteriological.tb" ~ n.bacteriological.tb.male , 
                                       sex.analysis.indicator == 
@@ -339,8 +330,8 @@ cleanSexDF %>% filter(grepl("n.", sex.analysis.indicator, fixed = TRUE)) %>%
 ### Case 2: we used bacteriological confirmed prevalence risk so pull their reported 
 ### counts (if available) or we need participant counts. 
 ### 55 total surveys; 36 reported case counts; 15 estimated; 4 missing 
-cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+### Total cases 
+cleanSexPRDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
     mutate(diagnosedCases = case_when(!is.na(n.bacteriological.tb.male) ~ 
                                            n.bacteriological.tb.female + n.bacteriological.tb.male, 
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.bacteriological.tb.male) ~
@@ -362,9 +353,8 @@ cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicato
     #        diagnosedCases) %>% View() 
     select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> cases2
 
-
-cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
+### Male cases 
+cleanSexPRDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicator, fixed = TRUE)) %>%
     mutate(diagnosedCases = case_when(!is.na(n.bacteriological.tb.male) ~ 
                                            n.bacteriological.tb.male, 
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.bacteriological.tb.male) ~
@@ -375,13 +365,14 @@ cleanSexDF %>% filter(grepl("prev100k.ci.bacteriological", sex.analysis.indicato
     )) %>% 
     select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> maleCases2
 
-### Case 2: we used smear positive  prevalence risk so pull their reported counts  
+### Case 3: we used smear positive  prevalence risk so pull their reported counts  
 ### (if available) or we need participant counts. 
 ### 9 total surveys; 8 reported case counts; 1 estimated; no missings
-cleanSexDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
+
+### Total cases 
+cleanSexPRDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
                                                     "prev100k.ci.smear.positive.tb",
                                                     "prev100k.smear.positive.tb")) %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
                                            n.smear.positive.tb.female + n.smear.positive.tb.male, 
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
@@ -403,11 +394,10 @@ cleanSexDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.posit
     #        diagnosedCases) %>% View()
     select(diagnosedCases) %>% round() %>% sum(na.rm = TRUE) -> cases3
 
-
-cleanSexDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
+### Male cases 
+cleanSexPRDF %>% filter(sex.analysis.indicator %in% c("adj.prev100k.ci.smear.positive.tb", 
                                                     "prev100k.ci.smear.positive.tb",
                                                     "prev100k.smear.positive.tb")) %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
                                            n.smear.positive.tb.male, 
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
@@ -423,45 +413,115 @@ sum(cases1, cases2, cases3)
 ### Total TB cases diagnosed among men(approximately)
 sum(maleCases1, maleCases2, maleCases3)
 
-### Percentage male 
+### Percentage male cases
 sum(maleCases1, maleCases2, maleCases3) / sum(cases1, cases2, cases3) *100
 
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=WHO.region)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=WHO.region)
-table(bactModelDF$natRep)
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=natRep)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=natRep)
-table(bactModelDF$bias)
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=bias)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=bias)
-table(bactModelDF$symptomScreen)
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=symptomScreen)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=symptomScreen)
+### Participants by WHO region
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female, 
+                               n.participants.male, 
+                               na.rm=TRUE), .by=WHO.region)
+### Percentage male prticipants by WHO region
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                            na.rm=TRUE)/
+                         sum(n.participants.female, 
+                             n.participants.male, 
+                             na.rm=TRUE)*100, .by=WHO.region)
 
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=symptomsRequired)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=symptomsRequired)
+### Nationally representative
+table(bactModelPRDF$natRep)
+### Total participants
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female,
+                               n.participants.male, 
+                               na.rm=TRUE), .by=natRep)
+### Percentage male participants
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                           na.rm=TRUE) / 
+                       sum(n.participants.female,
+                           n.participants.male, 
+                           na.rm=TRUE)*100, .by=natRep)
+### Risk of bias 
+### Total participants
+table(bactModelPRDF$bias)
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female,
+                               n.participants.male, 
+                               na.rm=TRUE), .by=bias)
+### Percentage male participants
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                           na.rm=TRUE) / 
+                       sum(n.participants.female,
+                           n.participants.male, 
+                           na.rm=TRUE)*100, .by=bias)
 
-bactModelDF %>% reframe(Participants = sum(n.participants.female + n.participants.male, na.rm=TRUE), .by=XpertCultRequired)
-bactModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.female + n.participants.male, na.rm=TRUE)*100, .by=XpertCultRequired)
+### Symptoms required for sputum collection
+### Total participants
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female,
+                               n.participants.male, 
+                               na.rm=TRUE), .by=symptomsRequired)
+
+### Percentage male participants
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                           na.rm=TRUE) / 
+                       sum(n.participants.female,
+                           n.participants.male, 
+                           na.rm=TRUE)*100, .by=symptomsRequired)
+
+### Xpert or culture required for bacteriologically confirmed diagnosis
+### Total participants
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female,
+                               n.participants.male, 
+                               na.rm=TRUE), .by=XpertCultRequired)
+
+### Percentage male participants
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                           na.rm=TRUE) / 
+                        sum(n.participants.female,
+                            n.participants.male, 
+                            na.rm=TRUE)*100, .by=XpertCultRequired)
+
+### Xpert or culture used for bacteriologically confirmed diagnosis
+### Total participants
+bactModelPRDF %>% 
+    reframe(Participants = sum(n.participants.female,
+                               n.participants.male, 
+                               na.rm=TRUE), .by=XpertCultUsed)
+
+### Percentage male participants
+bactModelPRDF %>% 
+    reframe(PercMale = sum(n.participants.male, 
+                           na.rm=TRUE) / 
+                        sum(n.participants.female,
+                            n.participants.male, 
+                            na.rm=TRUE)*100, .by=XpertCultUsed)
 
 ```
 
 ## Model 1: Main effect model
 
-Model specification
-```{r, warning = FALSE, message=FALSE}
-mainEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1  + (1|study.country) + (1|id),
-                       data = bactModelDF,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept),
-                               prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 5000)
+Pooled estimate of male-to-female ratio of bacteriologically confirmed TB prevalence. Model has study and country random effects.
 
-bayes_R2(mainEffectMod)
+Model specification
+```{r, warning = FALSE, message=FALSE, results="hide"}
+mainEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
+                           1  + (1|study.country) + (1|id),
+                       data    = bactModelPRDF,
+                       prior   = prior(student_t(7, 0, 1.5), class = Intercept),
+                                 prior(exponential(2), class = sd),
+                       family  = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains  = 4,
+                       cores   = 4,
+                       iter    = 115000, thin=3, 
+                       thin    = 3)
 ```
 
 Summarize and check 
@@ -469,15 +529,18 @@ Summarize and check
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(mainEffectMod)
 plot(mainEffectMod)
+
+### Bayes R2
+bayes_R2(mainEffectMod)
 ```
 
 Prediction
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-nd <- bactModelDF %>%
+```{r, warning = FALSE, message=FALSE}
+nd <- bactModelPRDF %>%
       select(study.country) %>%
       unique() %>% 
-      mutate(logOR_se=1)
+      mutate(logPR_se=1)
 
 ### Adds draws from the expectation of the posterior predictive distribution
 mainEffectModEst <- add_epred_draws(object = mainEffectMod,
@@ -489,12 +552,12 @@ mainEffectModEst <- add_epred_draws(object = mainEffectMod,
 
 ### We are interested in plotting the posterior distribution of random effects
 ### variance, so we will start a dataframe here and fill it for each model. 
-randEffVar <- mainEffectMod %>% 
+randEffVar <- mainEffectMod %>%
               spread_draws(sd_id__Intercept,
                            sd_study.country__Intercept) %>%
-              rename("Survey within country" = sd_id__Intercept, 
-                     "Country" = sd_study.country__Intercept) %>% 
-              pivot_longer(cols = c("Country", "Survey within country"), 
+              rename("Survey within country" = sd_id__Intercept,
+                     "Country" = sd_study.country__Intercept) %>%
+              pivot_longer(cols = c("Country", "Survey within country"),
                            names_to = "RandEff", values_to = "Variance") %>%
               mutate("Model" = "Main effect")
 
@@ -509,40 +572,34 @@ mainEffectModEst %>% ungroup() %>% mean_qi(mfRatio) %>%
 ### Posterior median with 95% credible interval
 mainEffectModEst %>% ungroup() %>% median_qi(mfRatio) %>% 
     select(mfRatio, .lower, .upper) %>% round(digits=2)
-
-### output for contribution table
-mainEffectMod %>% spread_draws(Intercept) %>% 
-select(Intercept) %>% exp() %>% median_qi()
-
-mainEffectMod %>% spread_draws(Intercept) %>% 
-select(Intercept) %>% exp() %>% mean_qi()
 ```
 
 Survey-level effects
 
+
 ```{r}
 surveyEffectModEst <- add_epred_draws(object = mainEffectMod,
-                                 newdata=bactModelDF,
+                                 newdata=bactModelPRDF,
                                  re_formula = ~ 1  + (1|study.country) + (1|id), 
                                  allow_new_levels = FALSE) %>% 
-                      mutate(mfRatio = exp(.epred),
+                        mutate(mfRatio = exp(.epred),
                              type="Posterior mean and 95% credible interval") 
 ```
 
 ## Model 2: Effect by world region model
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-regionEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+regionEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                               1  + (1|WHO.region) + (1|id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -555,10 +612,10 @@ plot(regionEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-ndRegion <- bactModelDF %>%
+ndRegion <- bactModelPRDF %>%
             select(WHO.region) %>%
             unique() %>%
-            mutate(logOR_se=1)
+            mutate(logPR_se=1)
 
 regionEffectModEst <- add_epred_draws(object = regionEffectMod,
                                  newdata=ndRegion,
@@ -568,12 +625,12 @@ regionEffectModEst <- add_epred_draws(object = regionEffectMod,
                            type="Posterior mean and 95% credible interval") 
 
 ### Add random effects variance from region model to the dataframe
-randEffVar <- rbind(randEffVar, 
-                    regionEffectMod %>% 
+randEffVar <- rbind(randEffVar,
+                    regionEffectMod %>%
                     spread_draws(sd_id__Intercept,
                                  sd_WHO.region__Intercept) %>%
-                    rename("Survey within region" = sd_id__Intercept, 
-                           "WHO region" = sd_WHO.region__Intercept) %>% 
+                    rename("Survey within region" = sd_id__Intercept,
+                           "WHO region" = sd_WHO.region__Intercept) %>%
                     pivot_longer(cols = c("WHO region", "Survey within region"), names_to = "RandEff", values_to = "Variance") %>%
                     mutate("Model" = "Region random effect")
 )
@@ -587,34 +644,40 @@ randEffVar$RandEff <- factor(randEffVar$RandEff,
 
 Main estimate
 ```{r}
-regionEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio) 
+### Posterior mean with 95% credible interval
+regionEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
+
+### Posterior median with 95% credible interval
+regionEffectModEst %>% group_by(WHO.region) %>% median_qi(mfRatio) %>% 
+    select(mfRatio, .lower, .upper) %>% round(digits=2)
 ```
 
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 24, fig.width = 20}
 ### Get the empirical values 
-empirical_prev <- bactModelDF %>%
+empirical_prev <- bactModelPRDF %>%
     transmute(
         id,
         WHO.region = WHO.region,
         year_z = year_z,
-        logOR_se,
+        logPR_se,
         natRep = natRep,
         bias = bias,
         symptomScreen = symptomScreen, 
         XpertCultRequired = XpertCultRequired, 
         XpertCultUsed = XpertCultUsed,
-        p_female_empirical = plogis(LogOdds_Female),
-        p_male_empirical = plogis(LogOdds_Male),
-        or_empirical = p_male_empirical / p_female_empirical,
-        or_empirical = (p_male_empirical / (1 - p_male_empirical)) / 
-            (p_female_empirical / (1 - p_female_empirical))  # odds ratio
+        p_female_empirical = tempPrevFemale, #plogis(LogOdds_Female),
+        p_male_empirical = tempPrevMale,     #plogis(LogOdds_Male),
+        pr_empirical =p_male_empirical / p_female_empirical
     ) %>% mutate(type = "Survey-specific ratios",
                  type2 = "Survey-specific TB prevalence")
+
 myPalNew <- c("black", "deepskyblue")
-    ggplot() +
+
+ggplot() +
     # geom_hline(aes(yintercept = 1), linetype=2) +
-    geom_point(data = empirical_prev, aes(y=WHO.region, x=or_empirical, color = type2), alpha = 0.5, size=8) +
+    geom_point(data = empirical_prev, aes(y=WHO.region, x=pr_empirical, color = type2), alpha = 0.5, size=8) +
     stat_pointinterval(data=regionEffectModEst, aes(x=mfRatio, y=WHO.region, fill=type), .width = 0.95, size=20) +
     scale_color_manual(values = myPalNew[c(2,1)]) +
     scale_y_discrete(limits=rev, 
@@ -628,9 +691,10 @@ myPalNew <- c("black", "deepskyblue")
               # legend.position = c(.76,.06), 
               legend.background = element_blank(), 
           panel.grid.minor=element_blank(), 
-          plot.title = element_text(size=30)) -> plot1
+          plot.title = element_text(size=30)) -> plot1; plot1
+
     
-    ggsave(plot1, filename=here("output/SEX/UnionPosterPlot.png"), width = 20, height=24, units = "in", dpi=600)
+    # ggsave(plot1, filename=here("output/SEX/UnionPosterPlot.png"), width = 20, height=24, units = "in", dpi=600)
     
 ```
 ## Manuscript figure 3: Forest plot
@@ -639,7 +703,7 @@ Bring estimates from regional model together to make a forest plot for the manus
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.width = 30, fig.height = 50}
 
 # Join survey labels
-names <- cleanSexDF0 %>%
+names <- cleanSexPRDF0 %>%
     mutate(id = row_number()) %>%
     select(id, figure.id.yr)
 
@@ -649,7 +713,7 @@ survey_sum <- surveyEffectModEst %>%
     mean_qi(mfRatio) %>%
     mutate(grouping = "survey") %>%
     left_join(names, by = "id") %>%
-    left_join(bactModelDF %>% select(id, WHO.region), by = "id")
+    left_join(bactModelPRDF %>% select(id, WHO.region), by = "id")
 
 # Regional summaries
 region_sum <- regionEffectModEst %>%
@@ -714,7 +778,7 @@ forestDF_plot <- bind_rows(surveys_only, summaries_only) %>%
 # Prepare empirical data
 empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
     rename(display_label_raw = figure.id.yr) %>%
-    select(display_label_raw, WHO.region, or_empirical) %>%
+    select(display_label_raw, WHO.region, pr_empirical) %>%
     mutate(
         grouping = "survey",
         facet_group = WHO.region,
@@ -728,7 +792,7 @@ empirical_prev_labels <- left_join(empirical_prev, survey_sum) %>%
 forestRatio <- ggplot(forestDF_plot) +
     geom_hline(yintercept = 1, linetype = "dashed", colour = "black") +
     geom_point(data = empirical_prev_labels,
-               aes(x = display_label, y = or_empirical, color=type), alpha=0.5, size = 3) +
+               aes(x = display_label, y = pr_empirical, color=type), alpha=0.5, size = 3) +
     geom_pointinterval(aes(x = display_label, y = mfRatio, 
                            ymin = .lower, ymax = .upper, fill=type),
                        size = 1) +
@@ -755,7 +819,7 @@ forestRatio <- ggplot(forestDF_plot) +
               strip.background = element_blank(),
       legend.position = "bottom", 
         legend.text = element_text(size=16), 
-      legend.title=element_blank()); forestRatio
+      legend.title=element_blank()); #forestRatio
 
 ###############################################################################
 ###############################################################################
@@ -777,7 +841,7 @@ p_right <- forestDF_plot1 %>%
     geom_text(size=4.5, 
         aes(x = 1, label = mfRatio),
         hjust = 0, 
-        fontface = ifelse(forestDF_plot1$figure.id.yr %in% c(unique(cleanSexDF$WHO.region), "Overall"), "bold", "plain")
+        fontface = ifelse(forestDF_plot1$figure.id.yr %in% c(unique(cleanSexPRDF$WHO.region), "Overall"), "bold", "plain")
     ) + theme_void(base_size = 16) +
     theme(
     strip.text.y = element_blank(),
@@ -799,29 +863,29 @@ p_right <- forestDF_plot1 %>%
 ###############################################################################
 ###############################################################################
 ###############################################################################
-tempForParts <- cleanSexDF0 %>% left_join(cleanSexDF %>% select(covidence.id, id))
+tempForParts <- cleanSexPRDF0 %>% left_join(cleanSexPRDF %>% select(covidence.id, id))
 
 forestDF_plot2 <- forestDF_plot %>% left_join(tempForParts %>% 
                                                   select(id, n.participants.female, n.participants.male) , by = "id") 
 #### Add regional participants 
-regionMalePart <- cleanSexDF0 %>% reframe(n.participants.male = sum(n.participants.male, na.rm=TRUE), .by = WHO.region) %>% 
+regionMalePart <- cleanSexPRDF0 %>% reframe(n.participants.male = sum(n.participants.male, na.rm=TRUE), .by = WHO.region) %>% 
     arrange(WHO.region)
-regionFemalePart <- cleanSexDF0 %>% reframe(n.participants.female = sum(n.participants.female, na.rm=TRUE), .by = WHO.region) %>%
+regionFemalePart <- cleanSexPRDF0 %>% reframe(n.participants.female = sum(n.participants.female, na.rm=TRUE), .by = WHO.region) %>%
     arrange(WHO.region)
 
-forestDF_plot2[which(forestDF_plot2$figure.id.yr %in% unique(cleanSexDF$WHO.region)), 
+forestDF_plot2[which(forestDF_plot2$figure.id.yr %in% unique(cleanSexPRDF$WHO.region)), 
                "n.participants.female"] <- regionFemalePart$n.participants.female
 
-forestDF_plot2[which(forestDF_plot2$figure.id.yr %in% unique(cleanSexDF$WHO.region)), 
+forestDF_plot2[which(forestDF_plot2$figure.id.yr %in% unique(cleanSexPRDF$WHO.region)), 
                "n.participants.male"] <- regionMalePart$n.participants.male
 
 
 #### Add overall participants 
 forestDF_plot2[which(forestDF_plot2$figure.id.yr == "Overall"), 
-               "n.participants.female"] <- as.numeric(cleanSexDF0 %>% reframe(n.participants.female = sum(n.participants.female, na.rm=TRUE)) )
+               "n.participants.female"] <- as.numeric(cleanSexPRDF0 %>% reframe(n.participants.female = sum(n.participants.female, na.rm=TRUE)) )
 
 forestDF_plot2[which(forestDF_plot2$figure.id.yr == "Overall"), 
-               "n.participants.male"] <- as.numeric(cleanSexDF0 %>% reframe(n.participants.male = sum(n.participants.male, na.rm=TRUE)) )
+               "n.participants.male"] <- as.numeric(cleanSexPRDF0 %>% reframe(n.participants.male = sum(n.participants.male, na.rm=TRUE)) )
 
 
 ### Add the male ratio  
@@ -840,7 +904,7 @@ p_left <- forestDF_plot2 %>%
     geom_text(size=4.5,
               aes(x = 0, label = maleRatio),
               hjust = 0,
-              fontface = ifelse(forestDF_plot2$figure.id.yr %in% c(unique(cleanSexDF$WHO.region), "Overall"), "bold", "plain")
+              fontface = ifelse(forestDF_plot2$figure.id.yr %in% c(unique(cleanSexPRDF$WHO.region), "Overall"), "bold", "plain")
     ) +
     theme_minimal(base_size = 16) + expand_limits(x=c(0,1))+
     theme(
@@ -863,7 +927,7 @@ p_left <- forestDF_plot2 %>%
         plot.margin = unit(c(.1, .7, 0, .1), "cm"), 
         axis.text.y = ggtext::element_markdown(hjust = 1), 
         axis.title.y=element_blank()
-    ); p_left
+    ); #p_left
 
 
 layout <- c(
@@ -873,20 +937,20 @@ layout <- c(
 )
 # final plot arrangement
 finalForestPlot <- p_left + forestRatio+ p_right + plot_layout(design = layout)
-# finalForestPlot
+finalForestPlot
 # Save
 # ggsave(plot = finalForestPlot, "output/SEX/mfFigure2.png", height = 24, width=16, units = "in")
 ```
 
 ## Plot posterior of random effects variance
-```{r, warning = FALSE, message=FALSE}
+```{r, warning = FALSE, message=FALSE, fig.width = 30, fig.height = 50}
 ggplot() + geom_density(data=randEffVar, 
                      aes(x=Variance, fill=Model), alpha = .5, color = NA, 
                      ) + 
     facet_wrap(facets = vars(RandEff)) + 
     theme_minimal(base_size = 18) + 
     theme(legend.position = "bottom") + 
-    xlab("SD on logOR scale") + 
+    xlab("SD on logPR scale") + 
     ggtitle("Posterior heterogeneity across Bayesian meta-analytic models")
 
 randEffVar %>% group_by(Model, RandEff) %>% mean_qi() %>% 
@@ -903,10 +967,10 @@ randEffVar %>% group_by(Model, RandEff) %>% mean_qi() %>%
 ## Model 3: Effect over time 
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + year_z + (1 + year_z | study.country) + (1 | id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(normal(0, 1), class = b) +
                                prior(exponential(2), class = sd) +
@@ -915,12 +979,12 @@ timeEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ### Also run this model with only those studies in the horton review
-timeEffectHortMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+timeEffectHortMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + year_z  + (1 + year_z | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(publication.year < 2017,
+                       data = bactModelPRDF %>% filter(publication.year < 2017,
                                                      id != 17, id!=72),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
@@ -930,7 +994,7 @@ timeEffectHortMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -943,10 +1007,11 @@ plot(timeEffectMod)
 Prediction
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
-ndTime <- bactModelDF %>%
-          select(logOR_se) %>%
-            crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
-                                  max(cleanSexDF$year_z, na.rm = TRUE), 1))
+ndTime <- bactModelPRDF %>%
+          select(logPR_se) %>%
+            crossing(year_z = seq(min(cleanSexPRDF$year_z, na.rm = TRUE), 
+                                  max(cleanSexPRDF$year_z, na.rm = TRUE), 1)) %>%
+          mutate(logPR_se = 1)
 
 timeEffectModEst <- add_epred_draws(object = timeEffectMod,
                                  newdata=na.omit(ndTime),
@@ -969,7 +1034,7 @@ Main estimate
 timeEffectModEst %>%
     group_by(year_z) %>%
     mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper) %>% round(digits = 2)
 
 ### output for contribution table
@@ -983,7 +1048,7 @@ timeEffectMod %>%
 # timeEffectHortModEst %>%
 #     group_by(year_z) %>%
 #     mean_qi(mfRatio) %>%
-#     mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+#     mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
 #     select(Year, mfRatio, .lower, .upper)
 
 bayes_R2(timeEffectMod)
@@ -995,15 +1060,15 @@ bayes_R2(timeEffectMod)
     y <- timeEffectModEst  %>%
     group_by(year_z) %>%
     mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper) 
 
    # fig4A <-
        ggplot(data = y) +
     geom_lineribbon(.width = 0.95, alpha = 0.25, fill="chocolate4", aes(x = Year,
                y = mfRatio, ymin = .lower, ymax = .upper)) +
-    geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+    geom_point(data = empirical_prev %>% rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "black") +
     expand_limits(y=0) +
     labs(y = "Male-to-female odds ratio",
@@ -1017,14 +1082,14 @@ bayes_R2(timeEffectMod)
     y <- timeEffectModEst  %>%
     group_by(year_z) %>%
     mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper) 
 
     ggplot(data = y) +
     geom_lineribbon(.width = 0.95, alpha = 0.6, fill="navy", aes(x = Year,
                y = mfRatio, ymin = .lower, ymax = .upper), size = 6) +
-    # geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
-    #            aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = `Study standard error`),
+    # geom_point(data = empirical_prev %>% rename("Study standard error" = logPR_se),
+    #            aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = `Study standard error`),
     #            colour = "black") +
     geom_hline(yintercept = 1, linetype = 2, size =3) +
     # expand_limits(y=0) +
@@ -1058,7 +1123,7 @@ eapcDF %>%
 ```
 
 ### Probability of direction
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 ## Calculate the percentage of the posterior that is positive 
 eapcDF %>% filter(Positive == "Yes") %>% 
     nrow() / eapcDF %>% nrow() *100
@@ -1080,7 +1145,7 @@ ggplot() + geom_point(data=eapcDF,
     yHort <- timeEffectHortModEst  %>%
     group_by(year_z) %>%
     mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper)
 
 yFull <- rbind(
@@ -1092,8 +1157,8 @@ yFull <- rbind(
     geom_ribbon(.width = 0.95, alpha = 0.4, aes(x = Year,
                y = mfRatio, ymin = .lower, ymax = .upper, fill=review)) +
     geom_line(aes(x = Year, y = mfRatio, color=review), size=1.5) +
-    geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = `Study standard error`),
+    geom_point(data = empirical_prev %>% rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = `Study standard error`),
                colour = "black") +
     expand_limits(y=0) +
     scale_fill_manual("", values = c("violet", "seagreen2")) + 
@@ -1107,10 +1172,10 @@ yFull <- rbind(
 ## Model 4: Region effect over time 
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
-                           1 + year_z + (1 + year_z | WHO.region) + (1 | id),
-                       data = bactModelDF,
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectRegionMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
+                           1 + year_z*WHO.region + (1 + year_z | WHO.region) + (1 | id),
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd) +
@@ -1119,7 +1184,7 @@ timeEffectRegionMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -1132,11 +1197,11 @@ plot(timeEffectRegionMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
-ndTimeReg <- bactModelDF %>%
-             select(logOR_se, WHO.region) %>%
+ndTimeReg <- bactModelPRDF %>%
+             select(logPR_se, WHO.region) %>%
              distinct() %>%
-             crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE),
-                                   max(cleanSexDF$year_z, na.rm = TRUE), 1))
+             crossing(year_z = seq(min(cleanSexPRDF$year_z, na.rm = TRUE),
+                                   max(cleanSexPRDF$year_z, na.rm = TRUE), 1))
 
 timeEffectRegionModEst <- add_epred_draws(object = timeEffectRegionMod,
                                  newdata=ndTimeReg,
@@ -1151,7 +1216,7 @@ Main estimate (Time and region model)
 timeEffectRegionModEst %>%
     group_by(year_z) %>%
     mean_qi(mfRatio) %>%
-    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE))) %>%
+    mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE))) %>%
     select(Year, mfRatio, .lower, .upper)
 
 
@@ -1171,94 +1236,94 @@ data.frame(WHO.region = startYr$WHO.region,
 ### Estimated average annual percentage change (EAPC)
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-model.regions <- unique(na.omit(bactModelDF$WHO.region))
+model.regions <- unique(na.omit(bactModelPRDF$WHO.region))
 
 
 minYr <- min(timeEffectRegionModEst$year_z)
 maxYr <- max(timeEffectRegionModEst$year_z)
 
-eapcRegDF <- timeEffectRegionMod %>% 
-    spread_draws(Intercept, 
-                 b_year_z, 
-                 b_WHO.regionAmericasregion,
-                 `b_year_z:WHO.regionAmericasregion`,
-                 b_WHO.regionEasternMediterraneanregion, 
-                 `b_year_z:WHO.regionEasternMediterraneanregion`,
-                 b_WHO.regionSouthMEastAsiaregion, 
-                 `b_year_z:WHO.regionSouthMEastAsiaregion`, 
-                 b_WHO.regionWesternPacificregion, 
-                 `b_year_z:WHO.regionWesternPacificregion`
-    ) %>% 
-    mutate("eapcAfrica" = (exp(Intercept + ((minYr + 1) * b_year_z)) - 
-                               exp(Intercept + (minYr * b_year_z))) / 
-               exp(Intercept + (minYr * b_year_z)) * 100, 
-           "PositiveAfrica" = ifelse(eapcAfrica > 0, "Yes", "No"),
-           
-           "eapcAmericas" = (exp(Intercept + b_WHO.regionAmericasregion + 
-                                     (minYr + 1) * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) - 
-                                 exp(Intercept + b_WHO.regionAmericasregion + 
-                                         minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`))) / 
-               exp(Intercept + b_WHO.regionAmericasregion + 
-                       minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) * 100, 
-           "PositiveAmericas" = ifelse(eapcAmericas > 0, "Yes", "No"),
-           
-           "eapcEasternMediterranean" = (exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
-                                                 (minYr + 1) * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) - 
-                                             exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
-                                                     minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`))) / 
-               exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
-                       minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) * 100, 
-           "PositiveEasternMediterranean" = ifelse(eapcEasternMediterranean > 0, "Yes", "No"),
-           
-           
-           "eapcSouthMEastAsia" = (exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
-                                           (minYr + 1) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) - 
-                                       exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
-                                               (minYr) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`))) / 
-               exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
-                       minYr * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) * 100, 
-           "PositiveSouthMEastAsia" = ifelse(eapcSouthMEastAsia > 0, "Yes", "No"),
-           
-           
-           "eapcWesternPacific" = (exp(Intercept + b_WHO.regionWesternPacificregion + 
-                                           (minYr + 1) * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) - 
-                                       exp(Intercept + b_WHO.regionWesternPacificregion + 
-                                               minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`))) / 
-               exp(Intercept + b_WHO.regionWesternPacificregion + 
-                       minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) * 100, 
-           "PositiveWesternPacific" = ifelse(eapcWesternPacific > 0, "Yes", "No"),
-    ) 
-
-eapcRegDF %>% 
-    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
-    mean_qi() %>% t()
-
-eapcRegDF %>% 
-    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
-    median_qi() %>% 
-    select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>% 
-    t()
+# eapcRegDF <- timeEffectRegionMod %>% 
+#     spread_draws(Intercept, 
+#                  b_year_z, 
+#                  b_WHO.regionAmericasregion,
+#                  `b_year_z:WHO.regionAmericasregion`,
+#                  b_WHO.regionEasternMediterraneanregion, 
+#                  `b_year_z:WHO.regionEasternMediterraneanregion`,
+#                  b_WHO.regionSouthMEastAsiaregion, 
+#                  `b_year_z:WHO.regionSouthMEastAsiaregion`, 
+#                  b_WHO.regionWesternPacificregion, 
+#                  `b_year_z:WHO.regionWesternPacificregion`
+#     ) %>% 
+#     mutate("eapcAfrica" = (exp(Intercept + ((minYr + 1) * b_year_z)) - 
+#                                exp(Intercept + (minYr * b_year_z))) / 
+#                exp(Intercept + (minYr * b_year_z)) * 100, 
+#            "PositiveAfrica" = ifelse(eapcAfrica > 0, "Yes", "No"),
+#            
+#            "eapcAmericas" = (exp(Intercept + b_WHO.regionAmericasregion + 
+#                                      (minYr + 1) * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) - 
+#                                  exp(Intercept + b_WHO.regionAmericasregion + 
+#                                          minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`))) / 
+#                exp(Intercept + b_WHO.regionAmericasregion + 
+#                        minYr * (b_year_z + `b_year_z:WHO.regionAmericasregion`)) * 100, 
+#            "PositiveAmericas" = ifelse(eapcAmericas > 0, "Yes", "No"),
+#            
+#            "eapcEasternMediterranean" = (exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+#                                                  (minYr + 1) * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) - 
+#                                              exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+#                                                      minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`))) / 
+#                exp(Intercept + b_WHO.regionEasternMediterraneanregion + 
+#                        minYr * (b_year_z + `b_year_z:WHO.regionEasternMediterraneanregion`)) * 100, 
+#            "PositiveEasternMediterranean" = ifelse(eapcEasternMediterranean > 0, "Yes", "No"),
+#            
+#            
+#            "eapcSouthMEastAsia" = (exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+#                                            (minYr + 1) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) - 
+#                                        exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+#                                                (minYr) * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`))) / 
+#                exp(Intercept + b_WHO.regionSouthMEastAsiaregion + 
+#                        minYr * (b_year_z + `b_year_z:WHO.regionSouthMEastAsiaregion`)) * 100, 
+#            "PositiveSouthMEastAsia" = ifelse(eapcSouthMEastAsia > 0, "Yes", "No"),
+#            
+#            
+#            "eapcWesternPacific" = (exp(Intercept + b_WHO.regionWesternPacificregion + 
+#                                            (minYr + 1) * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) - 
+#                                        exp(Intercept + b_WHO.regionWesternPacificregion + 
+#                                                minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`))) / 
+#                exp(Intercept + b_WHO.regionWesternPacificregion + 
+#                        minYr * (b_year_z + `b_year_z:WHO.regionWesternPacificregion`)) * 100, 
+#            "PositiveWesternPacific" = ifelse(eapcWesternPacific > 0, "Yes", "No"),
+#     ) 
+# 
+# eapcRegDF %>% 
+#     select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
+#     mean_qi() %>% t()
+# 
+# eapcRegDF %>% 
+#     select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>%
+#     median_qi() %>% 
+#     select(eapcAfrica, eapcAmericas, eapcEasternMediterranean, eapcSouthMEastAsia, eapcWesternPacific) %>% 
+#     t()
 
 ```
 
 ### Probability of direction
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ## Calculate the percentage of the posterior that is positive 
-
-eapcRegDF %>% filter(PositiveAfrica == "Yes") %>% 
-    nrow() / eapcDF %>% nrow() *100
-
-eapcRegDF %>% filter(PositiveAmericas == "Yes") %>% 
-    nrow() / eapcDF %>% nrow() *100
-
-eapcRegDF %>% filter(PositiveEasternMediterranean == "Yes") %>% 
-    nrow() / eapcDF %>% nrow() *100
-
-eapcRegDF %>% filter(PositiveSouthMEastAsia == "Yes") %>% 
-    nrow() / eapcDF %>% nrow() *100
-
-eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>% 
-    nrow() / eapcDF %>% nrow() *100
+# 
+# eapcRegDF %>% filter(PositiveAfrica == "Yes") %>% 
+#     nrow() / eapcDF %>% nrow() *100
+# 
+# eapcRegDF %>% filter(PositiveAmericas == "Yes") %>% 
+#     nrow() / eapcDF %>% nrow() *100
+# 
+# eapcRegDF %>% filter(PositiveEasternMediterranean == "Yes") %>% 
+#     nrow() / eapcDF %>% nrow() *100
+# 
+# eapcRegDF %>% filter(PositiveSouthMEastAsia == "Yes") %>% 
+#     nrow() / eapcDF %>% nrow() *100
+# 
+# eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>% 
+#     nrow() / eapcDF %>% nrow() *100
 
 ```
 
@@ -1270,15 +1335,15 @@ eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>%
     timeEffectRegionModEst %>%
     filter(WHO.region !="Americas region",
            WHO.region !="Eastern Mediterranean region") %>%
-    ggplot(aes(x = year_z + round(mean(cleanSexDF$study.end.year, na.rm = TRUE)),
+    ggplot(aes(x = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm = TRUE)),
                y = mfRatio,
                fill = WHO.region,
                color = WHO.region)) +
     stat_lineribbon(aes(color = WHO.region, fill = WHO.region), .width = 0.95, alpha = 0.4, size=1.5) +
-    geom_point(data = empirical_prev %>% rename("Study standard error" = logOR_se) %>% 
+    geom_point(data = empirical_prev %>% rename("Study standard error" = logPR_se) %>% 
                    filter(WHO.region !="Americas region",
                           WHO.region !="Eastern Mediterranean region"),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "black") +
     geom_hline(yintercept = 1, linetype = 2) +
     facet_wrap(~ WHO.region) +
@@ -1303,10 +1368,10 @@ eapcRegDF %>% filter(PositiveWesternPacific == "Yes") %>%
 Check the time models without the five surveys that did not report survey end year. 
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectModAlt <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectModAlt <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + year_z + (1 + year_z | study.country) + (1 | id),
-                       data = bactModelDF %>% 
+                       data = bactModelPRDF %>% 
                               filter(!is.na(study.end.year.ext)),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
@@ -1316,7 +1381,7 @@ timeEffectModAlt <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 summary(timeEffectMod)
 summary(timeEffectModAlt)
@@ -1353,28 +1418,28 @@ eapcAltDF %>%
 ### Model 6-7: National and subnational surveys
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-natEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+natEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(natRep=="Yes"),
+                       data = bactModelPRDF %>% filter(natRep=="Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-subNatEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+subNatEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(natRep=="No"),
+                       data = bactModelPRDF %>% filter(natRep=="No"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ```
 
@@ -1391,8 +1456,8 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ndNat <- data.frame("natRep" == "Yes") %>% 
-                    crossing(unique(bactModelDF$study.country)) %>% 
-         mutate(logOR_se=1)
+                    crossing(unique(bactModelPRDF$study.country)) %>% 
+         mutate(logPR_se=1)
 
 colnames(ndNat)[1:2] <- c("natRep", "study.country")
 
@@ -1403,8 +1468,8 @@ natEffectModEst <- add_epred_draws(object = natEffectMod,
                            type="Posterior mean and 95% credible interval") 
 
 ndSubnat <- data.frame("natRep" == "No") %>% 
-                    crossing(unique(bactModelDF$study.country)) %>% 
-         mutate(logOR_se=1)
+                    crossing(unique(bactModelPRDF$study.country)) %>% 
+         mutate(logPR_se=1)
 
 colnames(ndNat)[1:2] <- c("natRep", "study.country")
 
@@ -1444,29 +1509,29 @@ subnatEffectModEst %>% ungroup() %>%
 ###Model 8-9: Study quality (low vs. not low)
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
+```{r, warning = FALSE, message=FALSE, results="hide"}
 
-lowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+lowBiasEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(bias == "Low"),
+                       data = bactModelPRDF %>% filter(bias == "Low"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-notLowBiasEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+notLowBiasEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(bias == "Not low"),
+                       data = bactModelPRDF %>% filter(bias == "Not low"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ```
 
@@ -1484,21 +1549,21 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ndLowBias <- data.frame("bias" == "Low") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-            mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+            mutate(logPR_se=1)
 
 colnames(ndLowBias)[1:2] <- c("bias", "study.country")
 
 ndNotLowBias <- data.frame("bias" == "Not low") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-            mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+            mutate(logPR_se=1)
 
 colnames(ndNotLowBias)[1:2] <- c("bias", "study.country")
 
-ndNotLowBias <- bactModelDF %>%
+ndNotLowBias <- bactModelPRDF %>%
          filter(bias == "Not low") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
 lowBiasEffectModEst <- add_epred_draws(object = lowBiasEffectMod,
                                  newdata=ndLowBias,
@@ -1546,28 +1611,28 @@ notLowBiasEffectModEst %>%
 ### Model 10-11: Symptoms required vs. not required for sputum collection
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-sympReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+sympReqYesEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(symptomsRequired == "Yes"),
+                       data = bactModelPRDF %>% filter(symptomsRequired == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-sympReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+sympReqNoEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(symptomsRequired == "No"),
+                       data = bactModelPRDF %>% filter(symptomsRequired == "No"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -1583,21 +1648,21 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ndSympReqYes <- data.frame("symptomsRequired" == "Yes") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-                mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+                mutate(logPR_se=1)
 
 colnames(ndSympReqYes)[1:2] <- c("symptomsRequired", "study.country")
 
 ndSympReqNo <- data.frame("symptomsRequired" == "No") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-                mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+                mutate(logPR_se=1)
 
 colnames(ndSympReqNo)[1:2] <- c("symptomsRequired", "study.country")
 
-ndSympReqNo <- bactModelDF %>%
+ndSympReqNo <- bactModelPRDF %>%
          filter(symptomsRequired == "No") %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
 sympReqYesEffectModEst <- add_epred_draws(object = sympReqYesEffectMod,
                                  newdata=ndSympReqYes,
@@ -1642,28 +1707,28 @@ sympReqNoEffectModEst %>% ungroup() %>%
 Reported xpert or culture required for bact-tb diagnosis vs. xpert or culture not required
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-xpCltReqYesEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+xpCltReqYesEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(XpertCultRequired == "Yes"),
+                       data = bactModelPRDF %>% filter(XpertCultRequired == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-xpCltReqNoEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+xpCltReqNoEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(XpertCultRequired == "No"),
+                       data = bactModelPRDF %>% filter(XpertCultRequired == "No"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -1680,14 +1745,14 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ndxpCltReqYes <- data.frame("XpertCultRequired" == "Yes") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-                  mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+                  mutate(logPR_se=1)
 
 colnames(ndxpCltReqYes)[1:2] <- c("XpertCultRequired", "study.country")
 
 ndxpCltReqNo <- data.frame("XpertCultRequired" == "No") %>% 
-                        crossing(unique(bactModelDF$study.country)) %>% 
-                  mutate(logOR_se=1)
+                        crossing(unique(bactModelPRDF$study.country)) %>% 
+                  mutate(logPR_se=1)
 
 colnames(ndxpCltReqNo)[1:2] <- c("XpertCultRequired", "study.country")
 
@@ -1733,62 +1798,62 @@ xpCltReqNoEffectModEst %>% ungroup() %>%
 ### Model 14-18: Country specific estimates
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
+```{r, warning = FALSE, message=FALSE, results="hide"}
 
-BangladeshEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+BangladeshEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1 | id),
-                       data = bactModelDF %>% filter(study.country == "Bangladesh"),
+                       data = bactModelPRDF %>% filter(study.country == "Bangladesh"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-ChinaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+ChinaEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1 | id),
-                       data = bactModelDF %>% filter(study.country == "China"),
+                       data = bactModelPRDF %>% filter(study.country == "China"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-VietnamEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+VietnamEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1 | id),
-                       data = bactModelDF %>% filter(study.country == "Vietnam"),
+                       data = bactModelPRDF %>% filter(study.country == "Vietnam"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-EthiopiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+EthiopiaEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | id),
-                       data = bactModelDF %>% filter(study.country == "Ethiopia"),
+                       data = bactModelPRDF %>% filter(study.country == "Ethiopia"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-IndiaEffectMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+IndiaEffectMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | id),
-                       data = bactModelDF %>% filter(study.country == "India"),
+                       data = bactModelPRDF %>% filter(study.country == "India"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ```
 
@@ -1805,30 +1870,30 @@ summary(VietnamEffectMod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-bangladeshNd <-  bactModelDF %>%
+bangladeshNd <-  bactModelPRDF %>%
                  filter(study.country == "Bangladesh") %>%
                  select(study.country) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
-chinaNd <- bactModelDF %>%
+chinaNd <- bactModelPRDF %>%
                  filter(study.country == "China") %>%
                  select(study.country) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
-indiaNd <- bactModelDF %>%
+indiaNd <- bactModelPRDF %>%
                  filter(study.country == "India") %>%
                  select(study.country) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
-vietnamNd <- bactModelDF %>%
+vietnamNd <- bactModelPRDF %>%
                  filter(study.country == "Vietnam") %>%
                  select(study.country) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
-ethiopiaNd <- bactModelDF %>%
+ethiopiaNd <- bactModelPRDF %>%
                  filter(study.country == "Ethiopia") %>%
                  select(study.country) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
 BangladeshEffectModEst <- add_epred_draws(object = BangladeshEffectMod,
                                  newdata=bangladeshNd,
@@ -1927,7 +1992,7 @@ IndiaEffectModEst %>% ungroup() %>%
 ```
 
 ```{r}
-bactModelDF %>% filter(study.country %in% c("Bangladesh", "China", "Ethiopia", 
+bactModelPRDF %>% filter(study.country %in% c("Bangladesh", "China", "Ethiopia", 
                                             "India", "Vietnam")) %>% 
                 group_by(study.country) %>%
                 summarise(n.total.participants = sum(n.participants.male,
@@ -1938,11 +2003,11 @@ bactModelDF %>% filter(study.country %in% c("Bangladesh", "China", "Ethiopia",
 
 ### Model 19-23: Five study-end-year bands 
 
-```{r, warning = FALSE, message=FALSE}
+```{r, warning = FALSE, message=FALSE, results="hide"}
 
-year00_04Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+year00_04Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(study.end.year < 2005, 
+                       data = bactModelPRDF %>% filter(study.end.year < 2005, 
                                                      study.end.year > 1999),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
@@ -1950,11 +2015,11 @@ year00_04Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-year05_09Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+year05_09Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(study.end.year < 2010,
+                       data = bactModelPRDF %>% filter(study.end.year < 2010,
                                                      study.end.year > 2004),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
@@ -1962,11 +2027,11 @@ year05_09Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-year10_14Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+year10_14Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(study.end.year < 2015, 
+                       data = bactModelPRDF %>% filter(study.end.year < 2015, 
                                                      study.end.year > 2009),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
@@ -1974,11 +2039,11 @@ year10_14Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-year15_19Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+year15_19Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(study.end.year < 2020,
+                       data = bactModelPRDF %>% filter(study.end.year < 2020,
                                                      study.end.year > 2014),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
@@ -1986,18 +2051,18 @@ year15_19Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-year20_24Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+year20_24Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(study.end.year > 2019),
+                       data = bactModelPRDF %>% filter(study.end.year > 2019),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
                        family = gaussian(),
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2012,26 +2077,26 @@ summary(year20_24Mod)
 Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-nd00_04 <- bactModelDF %>% filter(study.end.year > 1999, 
+nd00_04 <- bactModelPRDF %>% filter(study.end.year > 1999, 
                                   study.end.year < 2005) %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
-nd05_09 <- bactModelDF %>% filter(study.end.year < 2010,
+nd05_09 <- bactModelPRDF %>% filter(study.end.year < 2010,
                                   study.end.year > 2004) %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
-nd10_14 <- bactModelDF %>% filter(study.end.year < 2015, 
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
+nd10_14 <- bactModelPRDF %>% filter(study.end.year < 2015, 
                                   study.end.year > 2009)%>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
-nd15_19 <- bactModelDF %>% filter(study.end.year < 2020, 
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
+nd15_19 <- bactModelPRDF %>% filter(study.end.year < 2020, 
                                   study.end.year > 2014)%>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
-nd20_24 <- bactModelDF %>% filter(study.end.year > 2019)%>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
+nd20_24 <- bactModelPRDF %>% filter(study.end.year > 2019)%>%
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
 
 year00_04ModEst <- add_epred_draws(object = year00_04Mod,
@@ -2079,11 +2144,11 @@ year00_04ModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(study.end.year < 2005,
+dim(bactModelPRDF %>% filter(study.end.year < 2005,
                            study.end.year > 1999))[1]
-bactModelDF %>% filter(study.end.year < 2005,
+bactModelPRDF %>% filter(study.end.year < 2005,
                            study.end.year > 1999) %>% summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(study.end.year < 2005,
+bactModelPRDF %>% filter(study.end.year < 2005,
                            study.end.year > 1999) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
@@ -2100,12 +2165,12 @@ year05_09ModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(study.end.year < 2010,
+dim(bactModelPRDF %>% filter(study.end.year < 2010,
                                   study.end.year > 2004))[1]
-bactModelDF %>% filter(study.end.year < 2010,
+bactModelPRDF %>% filter(study.end.year < 2010,
                                   study.end.year > 2004) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(study.end.year < 2010,
+bactModelPRDF %>% filter(study.end.year < 2010,
                                   study.end.year > 2004) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
@@ -2122,12 +2187,12 @@ year10_14ModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(study.end.year < 2015, 
+dim(bactModelPRDF %>% filter(study.end.year < 2015, 
                                   study.end.year > 2009))[1]
-bactModelDF %>% filter(study.end.year < 2015, 
+bactModelPRDF %>% filter(study.end.year < 2015, 
                                   study.end.year > 2009) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(study.end.year < 2015, 
+bactModelPRDF %>% filter(study.end.year < 2015, 
                                   study.end.year > 2009) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
@@ -2144,12 +2209,12 @@ year15_19ModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(study.end.year < 2020, 
+dim(bactModelPRDF %>% filter(study.end.year < 2020, 
                                   study.end.year > 2014))[1]
-bactModelDF %>% filter(study.end.year < 2020, 
+bactModelPRDF %>% filter(study.end.year < 2020, 
                                   study.end.year > 2014) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(study.end.year < 2020, 
+bactModelPRDF %>% filter(study.end.year < 2020, 
                                   study.end.year > 2014) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
@@ -2166,17 +2231,17 @@ year20_24ModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(study.end.year > 2019))[1]
-bactModelDF %>% filter(study.end.year > 2019) %>% 
+dim(bactModelPRDF %>% filter(study.end.year > 2019))[1]
+bactModelPRDF %>% filter(study.end.year > 2019) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(study.end.year > 2019) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
+bactModelPRDF %>% filter(study.end.year > 2019) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
 ### Model 26-27: Included in Horton review vs. not
-```{r, warning = FALSE, message=FALSE}
-hortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+hortonMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(publication.year < 2017,
+                       data = bactModelPRDF %>% filter(publication.year < 2017,
 +                            id != 20, id!=75),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(exponential(2), class = sd),
@@ -2184,11 +2249,11 @@ hortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
-postHortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+postHortonMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + (1 | study.country) + (1 | id),
-                       data = bactModelDF %>% filter(id ==20 | id ==75 | 
+                       data = bactModelPRDF %>% filter(id ==20 | id ==75 | 
                                                     publication.year > 2016 | 
                                                     is.na(publication.year)),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -2197,7 +2262,7 @@ postHortonMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ```
 
@@ -2208,16 +2273,16 @@ summary(postHortonMod)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
-ndHorton <- bactModelDF %>% filter(publication.year < 2017,
+ndHorton <- bactModelPRDF %>% filter(publication.year < 2017,
                             id != 17, id!=72) %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
-ndPostHorton <- bactModelDF %>% filter(id ==17 | id ==72 | 
+ndPostHorton <- bactModelPRDF %>% filter(id ==17 | id ==72 | 
                                                     publication.year > 2016 | 
                                                     is.na(publication.year)) %>%
-         select(study.country, LogOdds_Female) %>%
-         mutate(logOR_se=1)
+         select(study.country, tempPrevFemale) %>%
+         mutate(logPR_se=1)
 
 
 hortonModEst <- add_epred_draws(object = hortonMod,
@@ -2246,12 +2311,12 @@ hortonModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(publication.year < 2017,
+dim(bactModelPRDF %>% filter(publication.year < 2017,
                             id != 20, id!=75))[1]
-bactModelDF %>% filter(publication.year < 2017,
+bactModelPRDF %>% filter(publication.year < 2017,
                             id != 20, id!=75) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(publication.year < 2017,
+bactModelPRDF %>% filter(publication.year < 2017,
                             id != 20, id!=75) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
 
@@ -2266,14 +2331,14 @@ postHortonModEst %>% ungroup() %>%
     select(mfRatio, .lower, .upper) %>% round(digits=2)
 
 ### 
-dim(bactModelDF %>% filter(id ==20 | id ==75 | 
+dim(bactModelPRDF %>% filter(id ==20 | id ==75 | 
                             publication.year > 2016 | 
                             is.na(publication.year)))[1]
-bactModelDF %>% filter(id ==20 | id ==75 | 
+bactModelPRDF %>% filter(id ==20 | id ==75 | 
                             publication.year > 2016 | 
                             is.na(publication.year)) %>% 
 summarize(participants = sum(n.participants.male, n.participants.female, na.rm=TRUE))
-bactModelDF %>% filter(id ==20 | id ==75 | 
+bactModelPRDF %>% filter(id ==20 | id ==75 | 
                             publication.year > 2016 | 
                             is.na(publication.year)) %>% summarize(percMale = sum(n.participants.male, na.rm=TRUE)/sum(n.participants.male, n.participants.female, na.rm=TRUE))*100
 ```
@@ -2384,25 +2449,25 @@ covariates[which(covariates$study.country == "Lao People's Democratic Republic")
 covariates[which(covariates$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
 ### For Cambodia 2024, we need to use 2023 values so temporarily set its' study end year to 2023
-newBactModelDF0 <- bactModelDF
-newBactModelDF0[which(bactModelDF$id ==1), "study.end.year"] <- 2023
+newbactModelPRDF0 <- bactModelPRDF
+newbactModelPRDF0[which(bactModelPRDF$id ==1), "study.end.year"] <- 2023
 
 ### For Mynamar 1994 and 2010, we need to use 2015 values so temporarily set its' study end year to 2015
-newBactModelDF0[which(bactModelDF$id ==46), "study.end.year"] <- 
-newBactModelDF0[which(bactModelDF$id ==47), "study.end.year"] <- 2015
+newbactModelPRDF0[which(bactModelPRDF$id ==46), "study.end.year"] <- 
+newbactModelPRDF0[which(bactModelPRDF$id ==47), "study.end.year"] <- 2015
 
-newBactModelDF <- left_join(newBactModelDF0, covariates)
+newbactModelPRDF <- left_join(newbactModelPRDF0, covariates)
 
 ### Add GDI
-newBactModelDF <- left_join(newBactModelDF, GDI)
+newbactModelPRDF <- left_join(newbactModelPRDF, GDI)
 
-newBactModelDF <- as.data.frame(newBactModelDF)
+newbactModelPRDF <- as.data.frame(newbactModelPRDF)
 
 ### Reset the study end year for Cambodia 2024
-newBactModelDF[which(bactModelDF$id ==1), "study.end.year"] <- 2024
+newbactModelPRDF[which(bactModelPRDF$id ==1), "study.end.year"] <- 2024
 ### Reset the study end year for Myanmar 1994, 2010
-newBactModelDF[which(bactModelDF$id ==46), "study.end.year"] <- 1994
-newBactModelDF[which(bactModelDF$id ==47), "study.end.year"] <- 2010
+newbactModelPRDF[which(bactModelPRDF$id ==46), "study.end.year"] <- 1994
+newbactModelPRDF[which(bactModelPRDF$id ==47), "study.end.year"] <- 2010
 ```
 
 ### Covariate correlation assessment
@@ -2412,7 +2477,7 @@ https://solomonkurz.netlify.app/blog/2019-02-16-bayesian-correlations-let-s-talk
 ```{r, warning = FALSE, message=FALSE}
 ### Rename the columns so they present well in plot
 ### Use "Z" as a space delimiter as model run will strip "_" or "." 
-formatBactModelDF <- newBactModelDF %>% 
+formatbactModelPRDF <- newbactModelPRDF %>% 
                      filter(natRep == "Yes") %>%
                      rename("StudyZendZyear" = year_z, 
                             "AlcoholZuseZdisorder" = alcohol.use.disorder, 
@@ -2431,13 +2496,13 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
                                    `StudyZendZyear`) ~ 0,
                          sigma ~ 0) + 
                          set_rescor(TRUE), 
-                         data    = formatBactModelDF,
+                         data    = formatbactModelPRDF,
                          prior   = prior(lkj(2), class = rescor),
                          family  = gaussian(),
                          control = list(adapt_delta = 0.99),
                          chains  = 4,
                          cores   = 4,
-                         iter    = 5000)
+                         iter    = 15000, thin=3)
 
 # summary(covCorrMod)
 
@@ -2467,11 +2532,11 @@ Note this is different from model 3 above as it is only fit to nationally-repres
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-timeMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + study.end.year + 
                           (1 | study.country) + (1 | id),
-                       data = newBactModelDF  %>% 
+                       data = newbactModelPRDF  %>% 
                               filter(natRep == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
@@ -2480,7 +2545,7 @@ timeMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2509,10 +2574,10 @@ timeMod %>% spread_draws(b_study.end.year) %>% mutate(study.end.year = exp(b_stu
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+gdiMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + GDI + (1 | study.country) + (1 | id),
-                       data = newBactModelDF  %>% 
+                       data = newbactModelPRDF  %>% 
                               filter(natRep == "Yes"),
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
@@ -2521,7 +2586,7 @@ gdiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2549,11 +2614,11 @@ gdiMod %>% spread_draws(b_GDI) %>% mutate(GDI = exp(b_GDI)) %>%
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-alcoholUsePrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+alcoholUsePrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                             1 +  alcohol.use.disorder +
                             (1 | study.country) + (1 | id),
-                        data = newBactModelDF  %>% 
+                        data = newbactModelPRDF  %>% 
                               filter(natRep == "Yes"),
                         prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                             prior(normal(0, 1), class = b) +
@@ -2562,7 +2627,7 @@ alcoholUsePrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                         control = list(adapt_delta = 0.99),
                         chains = 4,
                         cores = 4,
-                        iter = 5000)
+                        iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2593,10 +2658,10 @@ alcoholUsePrevMod %>% spread_draws(b_alcohol.use.disorder) %>%
 Model specification 
 
 ```{r, warning = FALSE, message=FALSE}
-diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+diabetesPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                   1 +  type2.diabetes.mellitus +
                                   (1 | study.country) + (1 | id),
-                              data = newBactModelDF  %>% 
+                              data = newbactModelPRDF  %>% 
                                      filter(natRep == "Yes"),
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 1), class = b) +
@@ -2605,7 +2670,7 @@ diabetesPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                               control = list(adapt_delta = 0.99),
                               chains = 4,
                               cores = 4,
-                              iter = 5000)
+                              iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2635,11 +2700,11 @@ diabetesPrevMod %>% spread_draws(b_type2.diabetes.mellitus) %>%
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+hivPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                           1 + HIV.AIDS +
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF %>% 
+                      data = newbactModelPRDF %>% 
                              filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                               prior(normal(0, 1), class = b) +
@@ -2648,7 +2713,7 @@ hivPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 5000)
+                      iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2674,11 +2739,11 @@ hivPrevMod %>% spread_draws(b_HIV.AIDS) %>% mutate(HIV.AIDS = exp(b_HIV.AIDS)) %
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+smokingPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                    1 +  smoking +
                                    (1 | study.country) + (1 | id),
-                               data = newBactModelDF %>% 
+                               data = newbactModelPRDF %>% 
                                       filter(natRep == "Yes"),
                                prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                    prior(normal(0, 1), class = b) +
@@ -2687,7 +2752,7 @@ smokingPrevMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                                control = list(adapt_delta = 0.99),
                                chains = 4,
                                cores = 4,
-                               iter = 5000)
+                               iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2717,11 +2782,11 @@ smokingPrevMod %>% spread_draws(b_smoking) %>%
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+lowBMIMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                   1 +  bmi +
                                   (1 | study.country) + (1 | id),
-                              data = newBactModelDF  %>% 
+                              data = newbactModelPRDF  %>% 
                                      filter(natRep == "Yes"),
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 1), class = b) +
@@ -2730,7 +2795,7 @@ lowBMIMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                               control = list(adapt_delta = 0.99),
                               chains = 4,
                               cores = 4,
-                              iter = 5000)
+                              iter = 15000, thin=3)
 ```
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
@@ -2759,13 +2824,13 @@ lowBMIMod %>% spread_draws(b_bmi) %>%
 
 Model specification 
 
-```{r, warning = FALSE, message=FALSE}
-multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+multiMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF  %>% 
+                      data = newbactModelPRDF  %>% 
                               filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 1), class = b) +
@@ -2774,7 +2839,7 @@ multiMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 5000,
+                      iter = 15000, thin=3,
                       ### For moment matching loo
                       save_all_pars = TRUE)
 ```
@@ -2791,7 +2856,7 @@ summary(multiMod)
 #                           ",",
 #                     round(exp(as.numeric(summary(multiMod)[["fixed"]][,4])),2)))
 
-print(x)
+# print(x)
 
 multiMod %>%
     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
@@ -2815,13 +2880,13 @@ stanplot(multiMod)
 #### Country-level estimates 
 
 ```{r}
-ndMulti <- newBactModelDF %>%
+ndMulti <- newbactModelPRDF %>%
            select(study.country, year_z, GDI, 
                   type2.diabetes.mellitus, alcohol.use.disorder, 
                   bmi, HIV.AIDS, smoking) %>%
            na.omit() %>%
            unique() %>% 
-           mutate(logOR_se=1)
+           mutate(logPR_se=1)
 
 ### Adds draws from the expectation of the posterior predictive distribution
 multiModEst <- add_epred_draws(object = multiMod,
@@ -2857,14 +2922,22 @@ write.csv(multiCountryEsts, here("output/SEX/multivariableModelCountryEstimates.
 # Smear positive analysis 
 
 ## Format data for modeling
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
 cleanSexSmrDF0 <- smrPosIndicator("sex") %>% filter(sex.smr.analysis.indicator !="none")
 
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
 cleanSexSmrDF <- cleanSexSmrDF0 %>% 
                  filter(sex.smr.analysis.indicator != "none") %>% 
-                 mutate("id" = row_number()) %>%
+                 mutate("id" = row_number(),
+                        ### We have a lower ci of zero so replace with super small non-zero number
+                        adj.prev100k.ci.lower.smear.positive.tb.female = ifelse(
+                                            adj.prev100k.ci.lower.smear.positive.tb.female == 0, 
+                                            1e-4, 
+                                            adj.prev100k.ci.lower.smear.positive.tb.female
+                        )) %>%
                  ### Scale all prevalence estimates back to decimals 
                  mutate_at(vars(matches('prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>% 
                  select(id,
@@ -2902,62 +2975,67 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                                            "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
                                        sex.smr.analysis.indicator == 
                                            "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
-    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
-                 names_to = "Sex", 
-                 values_to = "Adjusted Prevalence", 
-                 names_prefix = "tempPrev") %>% 
-    mutate("Standard Error" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Male" ~ (adj.prev100k.ci.upper.smear.positive.tb.male-
+
+    #### Create a confidence interval for those without 
+    #### these are using the wilson method with continuity correction
+    #### cannot seem to get case_when to work so this is going to be verbose bc deadline
+    
+    rowwise() %>%
+    mutate(calc.ci.lower.male = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[1],
+                                        ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[1], 
+                                              NA)),
+            calc.ci.upper.male = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                        (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[2],
+                                  ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[2], 
+                                              NA)),
+           calc.ci.lower.female = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[1],
+                                  ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[1], 
+                                              NA)),
+            calc.ci.upper.female = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[2],
+                                   ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[2], 
+                                              NA))) %>%
+        ungroup() %>%
+        mutate("stndErrMale" = case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.male /
                                                                  adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
-                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Female" ~ (adj.prev100k.ci.upper.smear.positive.tb.female-
-                                                                   adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
-                                       
-                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Male" ~ (prev100k.ci.upper.smear.positive.tb.male-
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.male /
                                                                  prev100k.ci.lower.smear.positive.tb.male)/3.92,
-                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
-                                            Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
-                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
-                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Male" ~ 
-                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
-                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb","prev100k.smear.positive.tb") & Sex == "Female" ~ 
-                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
-  
-           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
-           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
-           "LogOddsStandardError" = case_when(sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
-                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.male/
-                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.male)) -
-                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.male /
-                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.male)))/3.92,
-                                              sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
-                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
-                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
-                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.female /
-                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92,
-                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
-                                                     Sex == "Male" ~ (log(prev100k.ci.upper.smear.positive.tb.male/
-                                                                          (1-prev100k.ci.upper.smear.positive.tb.male)) -
-                                                                      log(prev100k.ci.lower.smear.positive.tb.male /
-                                                                          (1-prev100k.ci.lower.smear.positive.tb.male)))/3.92,
-                                                 sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" &
-                                                     Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
-                                                                            (1-prev100k.ci.upper.smear.positive.tb.female)) -
-                                                                        log(prev100k.ci.lower.smear.positive.tb.female /
-                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
-                                            sex.smr.analysis.indicator %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
-                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
-                                        sex.smr.analysis.indicator  %in% c("n.smear.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
-                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                            log(calc.ci.upper.male / calc.ci.lower.male)/3.92),
+           "stndErrFemale" =  case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.female /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.female / 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                                        log(calc.ci.upper.male / calc.ci.lower.male)/3.92)) %>% 
                                 mutate(natRep = ifelse(is.na(study.geography), 
                                                        NA, 
                                                        ifelse(study.geography == "Nationally representative", 
                                                        "Yes", "No")),
+                                       ## preserve the extracted study end year
+                                       study.end.year.ext = study.end.year, 
+                                       ## update missing study end year to be publication year - mean lag
+                                       study.end.year = ifelse(!is.na(study.end.year), 
+                                                               study.end.year.ext, 
+                                                               publication.year - meanLag),
+                                       ## Mean center year for temporal analysis
+                                       year_z = study.end.year - round(mean(study.end.year, na.rm=TRUE)),
 
-                                       year_z = ifelse(!is.na(study.end.year), 
-                                                       study.end.year - round(mean(study.end.year, na.rm=TRUE)),
-                                                       (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
                                        bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
                                        
                                        symptomScreen = ifelse(is.na(screening.tests), 
@@ -2972,44 +3050,32 @@ cleanSexSmrDF <- cleanSexSmrDF0 %>%
                                                                         participants.sputum.collected,ignore.case=TRUE),
                                                                  "Yes", "No")),
 
-                                       XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
-                                                                  NA, ifelse(!grepl("smear|micros|field|NTP", 
-                                                                              bacteriological.tb.definition,
-                                                                              ignore.case=TRUE), 
-                                                                  "Yes", 
-                                                                   "No")),
-                                       ### Fix those that were missed with the above attempt 
-                                       XpertCultRequired = ifelse(covidence.id %in% c(26989,26928,26920,26918,26892,26861,26857), 
-                                                                  "Yes", XpertCultRequired), 
-                                       XpertCultRequired = ifelse(covidence.id %in% c(28002), 
-                                                                  "No", XpertCultRequired),
-                                       #### if we used the culture positive count, then xpert culture was requried
-                                       XpertCultRequired = ifelse(grepl("culture", sex.smr.analysis.indicator), 
-                                                                  "Yes", XpertCultRequired),
-                                       #### if we used the smear positive prevs, then xpert culture was not requried
-                                       XpertCultRequired = ifelse(grepl("smear", sex.smr.analysis.indicator), 
-                                                                  "No", XpertCultRequired),
-                                       XpertCultUsed = ifelse((grepl("Yes", xpert.used) & 
-                                                                 (grepl("All samples", xpert.samples) |
-                                                                  !grepl("mear|NAAT", other.xpert.samples))) |
-                                                                  (grepl("Yes", culture.used) & 
-                                                                  grepl("All samples|Subset", culture.samples) & 
-                                                                  !grepl("HIV", other.culture.samples)), 
-                                                                 "Yes", "No"),
-                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))  %>% filter(LogOddsStandardError < Inf)
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdjPR <- varianceAdjustPR("sex")
+
 
 smrModelDF <- cleanSexSmrDF %>%
-    select(id,covidence.id, WHO.region, study.country, Sex, year_z, natRep, 
-           symptomsRequired, XpertCultRequired, XpertCultUsed, 
-           LogOdds, LogOddsStandardError, 
-           n.participants.male, n.participants.female) %>%
-    pivot_wider(names_from = Sex,
-                values_from = c(LogOdds, LogOddsStandardError),
-                names_sep = "_") %>%
-    mutate(
-        logOR = LogOdds_Male - LogOdds_Female,
-        logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2) 
-    ) 
+    select(id,covidence.id, WHO.region, study.country, year_z, natRep, 
+           symptomsRequired,
+           n.participants.male, n.participants.female,
+           tempPrevMale, tempPrevFemale,
+           stndErrMale, stndErrFemale,
+           sex.smr.analysis.indicator) %>%
+
+    mutate(logPR = log(tempPrevMale / tempPrevFemale),
+           unadj_logPR_se = sqrt(stndErrMale^2 + stndErrFemale^2), 
+           logPR_se = ifelse(grepl("adj", sex.smr.analysis.indicator), 
+                                     unadj_logPR_se,
+                                     ifelse(grepl("smear", sex.smr.analysis.indicator),
+                                         sqrt(`unadj_logPR_se`^2 + varAdjPR["Smear Variance Median"]),
+                                         sqrt(`unadj_logPR_se`^2 + varAdjPR["Bact Variance Median"])))
+)
+
 ```
 
 ## Smear positive descriptive statistics
@@ -3018,7 +3084,7 @@ smrModelDF <- cleanSexSmrDF %>%
 
 print(paste(dim(cleanSexSmrDF0)[1], "unique surveys with sex-stratified smear positive TB"))
 
-# sort(unique(cleanSexDF0$title.extracted))
+# sort(unique(cleanSexPRDF0$title.extracted))
 print(paste(length(unique(cleanSexSmrDF0$title.extracted))-1, "unique publications"))
 
 print(paste(sum(!is.na(cleanSexSmrDF0$n.participants.female)), "studies report participant numbers totaling", 
@@ -3030,13 +3096,11 @@ print(paste0(round(sum(cleanSexSmrDF0$n.participants.male, na.rm=TRUE)/sum(clean
 ### Case 1: we used the reported count so simply sum 
 ### 27 total surveys; no missing 
 cleanSexSmrDF %>% filter(sex.smr.analysis.indicator == "n.smear.positive.tb") %>% 
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = n.smear.positive.tb.male + n.smear.positive.tb.female) %>% 
     select(diagnosedCases) %>% sum() -> smrCases1
 
 ## Among males only
 cleanSexSmrDF %>% filter(sex.smr.analysis.indicator == "n.smear.positive.tb") %>% 
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = n.smear.positive.tb.male) %>% 
     select(diagnosedCases) %>% sum() -> smrMaleCases1
 
@@ -3044,7 +3108,6 @@ cleanSexSmrDF %>% filter(sex.smr.analysis.indicator == "n.smear.positive.tb") %>
 ### counts (if available) or we need participant counts. 
 ### 37 total surveys; 27 reported case counts; 10 estimated; 0 missing 
 cleanSexSmrDF %>% filter(sex.smr.analysis.indicator != "n.smear.positive.tb") %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~
                                            n.smear.positive.tb.male + n.smear.positive.tb.female,
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
@@ -3070,7 +3133,6 @@ cleanSexSmrDF %>% filter(sex.smr.analysis.indicator != "n.smear.positive.tb") %>
 
 ## Among males only
 cleanSexSmrDF %>% filter(sex.smr.analysis.indicator != "n.smear.positive.tb") %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>%
     mutate(diagnosedCases = case_when(!is.na(n.smear.positive.tb.male) ~ 
                                            n.smear.positive.tb.male, 
                                        !is.na(n.participants.male)  & !is.na(adj.prev100k.smear.positive.tb.male) ~
@@ -3092,8 +3154,7 @@ sum(maleCases1, maleCases2) / sum(cases1, cases2) *100
 
 
 ### How many with culture positive TB 
-cleanSexDF %>% filter(!is.na(n.culture.positive.tb.male)) %>%
-    select(!Sex:LogOddsStandardError) %>% distinct() %>% 
+cleanSexPRDF %>% filter(!is.na(n.culture.positive.tb.male)) %>%
     # select(n.culture.positive.tb.male, n.culture.positive.tb.female) %>% 
     # View()
     nrow()
@@ -3110,8 +3171,8 @@ smrModelDF %>% reframe(PercMale = sum(n.participants.male, na.rm=TRUE)/sum(n.par
 ## Model 36: Smear positive main effect 
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+mainEffectSmrMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1 | study.country) + (1|id),
                        data = smrModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -3120,7 +3181,7 @@ mainEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -3134,8 +3195,8 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 nd <- smrModelDF %>%
-      select(study.country, LogOdds_Female) %>%
-      mutate(logOR_se=1)
+      select(study.country, tempPrevFemale) %>%
+      mutate(logPR_se=1)
 
 mainEffectSmrModEst <- add_epred_draws(object = mainEffectSmrMod,
                                  newdata=nd,
@@ -3152,8 +3213,8 @@ mainEffectSmrModEst %>% ungroup %>% mean_qi(mfRatio) %>% select(mfRatio, .lower,
 ## Model 37: Smear positive effect by world region model
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+regionEffectSmrMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1|WHO.region) + (1|id),
                        data = smrModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -3162,7 +3223,7 @@ regionEffectSmrMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -3176,8 +3237,8 @@ Prediction
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 ndRegion <- smrModelDF %>%
-            select(WHO.region, LogOdds_Female) %>%
-            mutate(logOR_se=1)
+            select(WHO.region, tempPrevFemale) %>%
+            mutate(logPR_se=1)
 
 regionEffectSmrModEst <- add_epred_draws(object = regionEffectSmrMod,
                                  newdata=ndRegion,
@@ -3198,20 +3259,19 @@ empirical_smr_prev <- smrModelDF %>%
         id,
         WHO.region = WHO.region,
         year_z = year_z,
-        logOR_se,
+        logPR_se,
         natRep = natRep,
-        p_female_empirical = plogis(LogOdds_Female),
-        p_male_empirical = plogis(LogOdds_Male),
-        or_empirical = p_male_empirical / p_female_empirical,
-        or_empirical = (p_male_empirical / (1 - p_male_empirical)) / 
-            (p_female_empirical / (1 - p_female_empirical))  # odds ratio
+        p_female_empirical = tempPrevFemale,
+        p_male_empirical = tempPrevMale,
+        pr_empirical = p_male_empirical / p_female_empirical,
+     # odds ratio
     ) %>% mutate(type = "Survey-specific ratios",
                  type2 = "Survey-specific smear positive TB prevalence")
 
 
     ggplot() +
     # geom_hline(aes(yintercept = 1), linetype=2) +
-    geom_point(data = empirical_smr_prev, aes(y=WHO.region, x=or_empirical, color = type2),alpha = 0.5, size=8) +
+    geom_point(data = empirical_smr_prev, aes(y=WHO.region, x=pr_empirical, color = type2),alpha = 0.5, size=8) +
     stat_pointinterval(data=regionEffectSmrModEst, aes(x=mfRatio, y=WHO.region, color=type), .width = 0.95, size=20) +
     scale_color_manual(values = myPal) +
     scale_y_discrete(limits=rev, 
@@ -3234,58 +3294,58 @@ empirical_smr_prev <- smrModelDF %>%
 
 ### Is there a difference in the percentage of smear positive used as bacteriologically positive between the two regions? 
 ### South East Asia Region
-nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", grepl("smear", sex.analysis.indicator))) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region", grepl("smear", sex.analysis.indicator))) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Africa Region
-nrow(bactModelDF %>% filter(WHO.region == "Africa region", grepl("smear", sex.analysis.indicator))) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "Africa region", grepl("smear", sex.analysis.indicator))) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Consider effect sizes in a moment 
 
 ### Do we see differences in symptoms required? 
 ## South East Asia Region
-nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", symptomsRequired == "Yes")) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region", symptomsRequired == "Yes")) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region", symptomsRequired == "Yes")) / 
     nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Africa Region
-nrow(bactModelDF %>% filter(WHO.region == "Africa region",  symptomsRequired == "Yes")) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "Africa region",  symptomsRequired == "Yes")) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 nrow(smrModelDF %>% filter(WHO.region == "Africa region",  symptomsRequired == "Yes")) / 
     nrow(smrModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Do we see differences in symptoms required? 
 ## South East Asia Region
-nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region", XpertCultRequired == "Yes")) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region", XpertCultRequired == "Yes")) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Africa Region
-nrow(bactModelDF %>% filter(WHO.region == "Africa region",  XpertCultRequired == "Yes")) / 
-    nrow(bactModelDF %>% filter(WHO.region == "South-East Asia region")) * 100
+nrow(bactModelPRDF %>% filter(WHO.region == "Africa region",  XpertCultRequired == "Yes")) / 
+    nrow(bactModelPRDF %>% filter(WHO.region == "South-East Asia region")) * 100
 
 ### Some difference -- what about effect sizes?
-bactModelDF %>% 
+bactModelPRDF %>% 
     filter(WHO.region == "South-East Asia region", XpertCultRequired == "Yes") %>% 
-    mutate(MFRatio = exp(logOR)) %>% 
+    mutate(MFRatio = exp(logPR)) %>% 
     select(MFRatio) %>% mean()
 
-bactModelDF %>% 
+bactModelPRDF %>% 
     filter(WHO.region == "South-East Asia region", XpertCultRequired == "No") %>% 
-    mutate(MFRatio = exp(logOR)) %>% 
+    mutate(MFRatio = exp(logPR)) %>% 
     select(MFRatio) %>% mean()
 
-bactModelDF %>% 
+bactModelPRDF %>% 
     filter(WHO.region == "Africa region", XpertCultRequired == "Yes") %>% 
-    mutate(MFRatio = exp(logOR)) %>% 
+    mutate(MFRatio = exp(logPR)) %>% 
     select(MFRatio) %>% mean()
 
-bactModelDF %>% 
+bactModelPRDF %>% 
     filter(WHO.region == "Africa region", XpertCultRequired == "No") %>% 
-    mutate(MFRatio = exp(logOR)) %>% 
+    mutate(MFRatio = exp(logPR)) %>% 
     select(MFRatio) %>% mean()
 
 ```
@@ -3293,10 +3353,10 @@ bactModelDF %>%
 ## Model 37: Bacteriologically-confirmed by region using only surveys that also report smear positive
 ```{r, warning = FALSE, message=FALSE}
 ### What if we compare only among the surveys that report both the smear and bacteriologically confirmed TB 
-reportBothModelDF <- bactModelDF %>% 
+reportBothModelDF <- bactModelPRDF %>% 
                      filter(covidence.id %in% smrModelDF$covidence.id)
 
-regionEffectRptBothMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+regionEffectRptBothMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1  + (1|WHO.region) + (1|id),
                        data = reportBothModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -3305,12 +3365,12 @@ regionEffectRptBothMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 ndBothRegion <- reportBothModelDF %>%
                 select(WHO.region) %>%
                 unique() %>%
-                mutate(logOR_se=1)
+                mutate(logPR_se=1)
 
 regionBothEffectModEst <- add_epred_draws(object = regionEffectRptBothMod,
                                           newdata=ndBothRegion,
@@ -3327,10 +3387,10 @@ regionBothEffectModEst %>% group_by(WHO.region) %>% mean_qi(mfRatio)
 
 ## Model 38: Symptoms required included as covariate in main model
 
-```{r, warning = FALSE, message=FALSE}
-sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+sympReqMainMod<- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + symptomsRequired + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept),
                                prior(normal(0,1), class = b) +
                                prior(exponential(2), class = sd),
@@ -3338,18 +3398,18 @@ sympReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 summary(sympReqMainMod)
 
-ndsympReq <- crossing(unique(bactModelDF$study.country), 
-                      unique(na.omit(bactModelDF$symptomsRequired))) %>%
+ndsympReq <- crossing(unique(bactModelPRDF$study.country), 
+                      unique(na.omit(bactModelPRDF$symptomsRequired))) %>%
     # 
-    # bactModelDF %>%
+    # bactModelPRDF %>%
     #             select(study.country, LogOdds_Female, symptomsRequired) %>%
-                mutate(logOR_se=1)
+                mutate(logPR_se=1)
 
-colnames(ndsympReq) <- c("study.country", "symptomsRequired", "logOR_se")
+colnames(ndsympReq) <- c("study.country", "symptomsRequired", "logPR_se")
 
 sympReqModEst <- add_epred_draws(object = sympReqMainMod,
                                  newdata=ndsympReq,
@@ -3373,10 +3433,10 @@ bayes_R2(sympReqMainMod)
 
 ## Model 39: Xpert or culture required for diagnosis 
 
-```{r, warning = FALSE, message=FALSE}
-xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+xpCltReqMainMod<- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                            1 + XpertCultRequired + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +                               prior(normal(0,1), class = b) +
 
                            prior(exponential(2), class = sd),
@@ -3384,12 +3444,12 @@ xpCltReqMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 
-ndXperCult <- bactModelDF %>%
-                select(study.country, LogOdds_Female, XpertCultRequired) %>%
-                mutate(logOR_se=1)
+ndXperCult <- bactModelPRDF %>%
+                select(study.country, tempPrevFemale, XpertCultRequired) %>%
+                mutate(logPR_se=1)
 
 ndXperCultModEst <- add_epred_draws(object = xpCltReqMainMod,
                                  newdata=ndXperCult,
@@ -3408,10 +3468,10 @@ ndXperCultModEst %>% ungroup() %>%
 
 ## Model 40: Xpert or culture used for diagnosis 
 
-```{r, warning = FALSE, message=FALSE}
-xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
+```{r, warning = FALSE, message=FALSE, results="hide"}
+xpCltUseMainMod<- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                            1 + XpertCultUsed + (1 | study.country) + (1 | id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +                               prior(normal(0,1), class = b) +
 
                            prior(exponential(2), class = sd),
@@ -3419,12 +3479,12 @@ xpCltUseMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 
-ndXperCultUse <- bactModelDF %>%
-                 select(study.country, LogOdds_Female, XpertCultUsed) %>%
-                 mutate(logOR_se=1)
+ndXperCultUse <- bactModelPRDF %>%
+                 select(study.country, tempPrevFemale, XpertCultUsed) %>%
+                 mutate(logPR_se=1)
 
 ndXperCultUseModEst <- add_epred_draws(object = xpCltUseMainMod,
                                  newdata=ndXperCultUse,
@@ -3443,10 +3503,10 @@ ndXperCultUseModEst %>% ungroup() %>%
 
 ## Model 41: Country and regional nested random effects 
 
-```{r, warning = FALSE, message=FALSE}
-cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+cntryRegMainMod<- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 +  (1 | WHO.region/study.country) + (1 | id),
-                       data = bactModelDF,
+                       data = bactModelPRDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept),
                                prior(student_t(7, 0, 1.5), class = b) +
                                prior(exponential(2), class = sd),
@@ -3454,12 +3514,12 @@ cntryRegMainMod<- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 
 
-ndcntryRegReq <- bactModelDF %>% 
+ndcntryRegReq <- bactModelPRDF %>% 
                  select(study.country, WHO.region) %>%
-                 mutate(logOR_se=1)
+                 mutate(logPR_se=1)
 
 
 cntryRegMainModEst <- add_epred_draws(object = cntryRegMainMod,
@@ -3482,12 +3542,12 @@ bayes_R2(cntryRegMainMod)
 ## Model 42: Effect over time with "Xpert or Culture Required" as a covariate
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectXpertReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectXpertReqMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + XpertCultRequired*year_z + 
                           (1 + XpertCultRequired*year_z | study.country) + 
                           (1 | id),
-                       data = bactModelDF, 
+                       data = bactModelPRDF, 
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(normal(0, 1), class = b) +
                                prior(exponential(2), class = sd) +
@@ -3496,7 +3556,7 @@ timeEffectXpertReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -3509,12 +3569,12 @@ plot(timeEffectXpertReqMod)
 Prediction
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
-ndXpertReqTime <- bactModelDF %>%
-                  select(logOR_se) %>%
-                  crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
-                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+ndXpertReqTime <- bactModelPRDF %>%
+                  select(logPR_se) %>%
+                  crossing(year_z = seq(min(cleanSexPRDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexPRDF$year_z, na.rm = TRUE), 1), 
                            XpertCultRequired = c("Yes", "No")) %>%
-                  mutate(logOR_se = 1)
+                  mutate(logPR_se = 1)
 
 timeEffectXpertReqModEst <- add_epred_draws(object = timeEffectXpertReqMod,
                                  newdata=ndXpertReqTime,
@@ -3532,14 +3592,14 @@ yXpertReq <- timeEffectXpertReqModEst %>%
              filter(XpertCultRequired == "Yes") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 
 yXpertNoReq <- timeEffectXpertReqModEst %>%
              filter(XpertCultRequired == "No") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 ```
 
@@ -3557,14 +3617,14 @@ ggplot() +
     
     geom_point(data = empirical_prev %>% 
                       filter(XpertCultRequired == "Yes") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "salmon") +
     
         geom_point(data = empirical_prev %>% 
                       filter(XpertCultRequired == "No") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "springgreen4") +
     
     expand_limits(y=0) +
@@ -3578,12 +3638,12 @@ ggplot() +
 ## Model 43: Effect over time with "Xpert or Culture Used" as a covariate
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectXpertUsedMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectXpertUsedMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + XpertCultUsed*year_z + 
                           (1 + year_z | study.country) + 
                           (1 | id),
-                       data = bactModelDF, 
+                       data = bactModelPRDF, 
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(normal(0, 1), class = b) +
                                prior(exponential(2), class = sd) +
@@ -3592,7 +3652,7 @@ timeEffectXpertUsedMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -3605,12 +3665,12 @@ plot(timeEffectXpertUsedMod)
 Prediction
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
-ndXpertUsedTime <- bactModelDF %>%
-                  select(logOR_se) %>%
-                  crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
-                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+ndXpertUsedTime <- bactModelPRDF %>%
+                  select(logPR_se) %>%
+                  crossing(year_z = seq(min(cleanSexPRDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexPRDF$year_z, na.rm = TRUE), 1), 
                            XpertCultUsed = c("Yes", "No")) %>%
-                  mutate(logOR_se = 1)
+                  mutate(logPR_se = 1)
 
 timeEffectXpertUsedModEst <- add_epred_draws(object = timeEffectXpertUsedMod,
                                  newdata=ndXpertUsedTime,
@@ -3628,14 +3688,14 @@ yXpertUsed <- timeEffectXpertUsedModEst %>%
              filter(XpertCultUsed == "Yes") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 
 yXpertNoUsed <- timeEffectXpertUsedModEst %>%
              filter(XpertCultUsed == "No") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 ```
 
@@ -3653,14 +3713,14 @@ ggplot() +
     
     geom_point(data = empirical_prev %>% 
                       filter(XpertCultUsed == "Yes") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "orange") +
     
         geom_point(data = empirical_prev %>% 
                       filter(XpertCultUsed == "No") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "dodgerblue4") +
     
     expand_limits(y=0) +
@@ -3718,15 +3778,15 @@ eapcXpUseDF %>%
     median_qi()
 ```
 
-## Model 42: Effect over time with "Symptoms Required" as a covariate
+## Model 44: Effect over time with "Symptoms Required" as a covariate
 
 Model specification
-```{r, warning = FALSE, message=FALSE}
-timeEffectSympReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+```{r, warning = FALSE, message=FALSE, results="hide"}
+timeEffectSympReqMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + symptomsRequired*year_z + 
                           (1 + symptomsRequired*year_z | study.country) + 
                           (1 | id),
-                       data = bactModelDF, 
+                       data = bactModelPRDF, 
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                prior(normal(0, 1), class = b) +
                                prior(exponential(2), class = sd) +
@@ -3735,7 +3795,7 @@ timeEffectSympReqMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                        control = list(adapt_delta = 0.99),
                        chains = 4,
                        cores = 4,
-                       iter = 5000)
+                       iter = 15000, thin=3)
 ```
 
 Summarize and check 
@@ -3748,12 +3808,12 @@ plot(timeEffectSympReqMod)
 Prediction
 
 ```{r, warning = FALSE, message=FALSE, echo=FALSE}
-ndSympReqTime <- bactModelDF %>%
-                    select(logOR_se) %>%
-                    crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
-                                        max(cleanSexDF$year_z, na.rm = TRUE), 1), 
+ndSympReqTime <- bactModelPRDF %>%
+                    select(logPR_se) %>%
+                    crossing(year_z = seq(min(cleanSexPRDF$year_z, na.rm = TRUE), 
+                                        max(cleanSexPRDF$year_z, na.rm = TRUE), 1), 
                                        symptomsRequired = c("Yes", "No")) %>%
-                  mutate(logOR_se = 1)
+                  mutate(logPR_se = 1)
 
 timeEffectSympReqModEst <- add_epred_draws(object = timeEffectSympReqMod,
                              newdata=ndSympReqTime,
@@ -3771,14 +3831,14 @@ ySympReq <-  timeEffectSympReqModEst %>%
              filter(symptomsRequired == "Yes") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 
 ySympNoReq <- timeEffectSympReqModEst %>%
              filter(symptomsRequired == "No") %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
-             mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), 
+             mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
                             Mean = round(mfRatio, 2) )
 ```
 
@@ -3796,14 +3856,14 @@ ggplot() +
     
     geom_point(data = empirical_prev %>% 
                       filter(XpertCultRequired == "Yes") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "goldenrod3") +
     
         geom_point(data = empirical_prev %>% 
                       filter(XpertCultRequired == "No") %>%
-                       rename("Study standard error" = logOR_se),
-               aes(x=year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)), y=or_empirical, size = 1/`Study standard error`),
+                       rename("Study standard error" = logPR_se),
+               aes(x=year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), y=pr_empirical, size = 1/`Study standard error`),
                colour = "purple") +
     
     expand_limits(y=0) +
@@ -3814,16 +3874,16 @@ ggplot() +
     ggtitle("Male-to-female TB prevalence ratio over time\nSymptoms required (gold) vs. symptoms not required (purple)")
 ```
 
-## Model 42: Covariate analysis with all surveys
+## Model 45: Covariate analysis with all surveys
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, results="hide"}
 
-multiAllSurvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiAllSurvMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF,
+                      data = newbactModelPRDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 1), class = b) +
                           prior(exponential(2), class = sd),
@@ -3831,7 +3891,7 @@ multiAllSurvMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 5000, 
+                      iter = 15000, thin=3, 
                       ### For moment matching loo
                       save_all_pars = TRUE)
 
@@ -3850,16 +3910,16 @@ bayes_R2(multiAllSurvMod)
 
 ```
 
-## Model 43: Covariate analysis with less restrictive prior (N(0,10))
+## Model 46: Covariate analysis with less restrictive prior (N(0,10))
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, results="hide"}
 
-multiN10Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiN10Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF %>% filter(natRep == "Yes"),
+                      data = newbactModelPRDF %>% filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 10), class = b) +
                           prior(exponential(2), class = sd),
@@ -3867,7 +3927,7 @@ multiN10Mod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 5000, ### For moment matching loo
+                      iter = 15000, thin=3, ### For moment matching loo
                       save_all_pars = TRUE)
 
 summary(multiN10Mod)
@@ -3881,12 +3941,12 @@ summary(multiN10Mod)
 # 
 # print(coefsN10)
 
-multiCauchyMod %>%
+multiN10Mod %>%
     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% mean_qi() %>% 
                 select(b_Intercept:b_smoking.upper) %>% exp() %>% round(digits = 2) %>% t()
 
-multiCauchyMod %>%
+multiN10Mod %>%
     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% median_qi() %>% 
                 select(b_Intercept:b_smoking.upper) %>% 
@@ -3896,16 +3956,16 @@ multiCauchyMod %>%
 bayes_R2(multiN10Mod)
 ```
 
-## Model 44: Covariate analysis with restricted prior (Cauchy(0,1.25))
+## Model 47: Covariate analysis with restricted prior (Cauchy(0,1.25))
 
-```{r, echo=FALSE, warning = FALSE, message=FALSE}
+```{r, echo=FALSE, warning = FALSE, message=FALSE, results="hide"}
 
-multiCauchyMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~ 
+multiCauchyMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newBactModelDF %>% filter(natRep == "Yes"),
+                      data = newbactModelPRDF %>% filter(natRep == "Yes"),
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(cauchy(0,1.25), class = b) +
                           prior(exponential(2), class = sd),
@@ -3913,22 +3973,22 @@ multiCauchyMod <- brms::brm(formula = logOR | se(logOR_se, sigma=TRUE) ~
                       control = list(adapt_delta = 0.99),
                       chains = 4,
                       cores = 4,
-                      iter = 5000, 
+                      iter = 15000, thin=3, 
                       ### For moment matching loo
                       save_all_pars = TRUE)
 
 summary(multiCauchyMod)
 
 ### output for contribution table
-coefsNatCauch <- data.frame(parameter = rownames(summary(multiCauchyMod)[["fixed"]]),
-                PE = round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,1])),2), 
-                CrI = paste(round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,3])),2), 
-                          ",",
-                    round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,4])),2)))
+# coefsNatCauch <- data.frame(parameter = rownames(summary(multiCauchyMod)[["fixed"]]),
+#                 PE = round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,1])),2), 
+#                 CrI = paste(round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,3])),2), 
+#                           ",",
+#                     round(exp(as.numeric(summary(multiCauchyMod)[["fixed"]][,4])),2)))
+# 
+# print(coefsNatCauch)
 
-print(coefsNatCauch)
-
-bayes_R2(coefsNatCauch)
+bayes_R2(multiCauchyMod)
 
 
 multiCauchyMod %>%
@@ -3952,36 +4012,36 @@ multiCauchyMod %>%
 ## Each of these had a Pareto k sampling issues so use moment matching
 looCauch <- loo(multiCauchyMod, moment_match = TRUE)
 looCauch
-looN1 <- loo(multiN1Mod, moment_match = TRUE)
+looN1 <- loo(multiN10Mod, moment_match = TRUE)
 looN1
 looN10 <- loo(multiMod, moment_match = TRUE)
 looN10
 
 loo_compare(looCauch, looN1, looN10)
-
-allModelDraws <- 
-    rbind(
-multiCauchyMod %>%
-    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
-                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
-    pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
-    mutate(Model = "Only national surveys\ncauchy(0, 1.25)"), 
-
-multiN1Mod %>%
-        spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
-                     b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
-        pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
-        mutate(Model = "Only national surveys\nnormal (0,1)"), 
-
-multiMod %>%
-    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
-                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
-    pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
-    mutate(Model = "Only national surveys\nnormal (0,10)")
-)
-
-allModelDraws %>% select(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
-                 b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% group_by(Model) %>% mean_qi()
+# 
+# allModelDraws <- 
+#     rbind(
+# multiCauchyMod %>%
+#     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+#                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+#     pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+#     mutate(Model = "Only national surveys\ncauchy(0, 1.25)"), 
+# 
+# multiN10Mod %>%
+#         spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+#                      b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+#         pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+#         mutate(Model = "Only national surveys\nnormal (0,10)"), 
+# 
+# multiMod %>%
+#     spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+#                  b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>%
+#     pivot_longer(cols = b_Intercept:b_smoking, names_to = "Parameter", names_prefix = "b_", values_to = "Value") %>% 
+#     mutate(Model = "Only national surveys\nnormal (0,1)")
+# )
+# 
+# allModelDraws %>% select(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 # b_type2.diabetes.mellitus, b_bmi, b_HIV.AIDS, b_smoking) %>% group_by(Model) %>% mean_qi()
 
 ```
 
