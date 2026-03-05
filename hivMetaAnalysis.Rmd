@@ -45,7 +45,7 @@ source(here("code/varianceComponentModel.R"))
 
 ### Read in country-level HIV prevalence 
 ### available for calculations below.
-artCoverage <- read.csv(here("data/hivAnalysis/unaids-2025-adult-art-coverage.csv")) %>% 
+artCoverage <- read.csv(here("data/covariates/unaids-2025-adult-art-coverage.csv")) %>% 
                rename(study.country=spectrum_country, 
                       study.end.year = year) %>% 
                ### We need to replace the HIV prevalence value for 2009 Uganda to 
@@ -1098,7 +1098,7 @@ Set up notification data
 pop <- artCoverage
 
 ### Read in TB notification data from WHO
-notif0 <- read.csv(here("data/TB_notifications_2025-07-18.csv"))
+notif0 <- read.csv(here("data/covariates/TB_notifications_2025-07-18.csv"))
 
 ### Calculate the HIV-status stratified TB notification 
 ### rate and transform to log odds space

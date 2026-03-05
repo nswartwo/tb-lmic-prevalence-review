@@ -2353,7 +2353,7 @@ Because covariates are measured at the national-level, this analysis will be res
 #### External covariates  #####################################################
 ##############################################################################|
 
-covariates<- read.csv(file=here("data/covariates_1994-2023.csv")) %>% 
+covariates<- read.csv(file=here("data/covariates/covariates_1994-2023.csv")) %>% 
     dplyr::rename(study.country = location_name) %>%
     filter(
            sex_name != "Both",
@@ -2391,7 +2391,7 @@ covariates<- read.csv(file=here("data/covariates_1994-2023.csv")) %>%
 
 ### BMI data
 #### NEEDS TO BE UPDATED 
-bmi <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_ADULT_UNDERWEIGHT_33 Countries.csv")) %>% 
+bmi <- read.csv(file=here("data/covariates/IHME_GBD_2021_COV_1980_2021_ADULT_UNDERWEIGHT_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
     group_by(year_id, study.country, sex) %>%
@@ -2409,7 +2409,7 @@ bmi$bmi <- scale(bmi$bmi)
 
 ### Smoking data 
 #### NEEDS TO BE UPDATED 
-smoking.prevalence <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_SMOKING_PREV_33 Countries.csv")) %>% 
+smoking.prevalence <- read.csv(file=here("data/covariates/IHME_GBD_2021_COV_1980_2021_SMOKING_PREV_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
     group_by(year_id, study.country, sex) %>%
@@ -2425,7 +2425,7 @@ smoking.prevalence <- read.csv(file=here("data/IHME_GBD_2021_COV_1980_2021_SMOKI
 smoking.prevalence$smoking <- scale(smoking.prevalence$smoking)
 
 ### Gender development index 
-GDI <- read_csv(here("data/GenderDevelopmentIndex.csv"))[,-c(2,5)] %>%
+GDI <- read_csv(here("data/covariates/GenderDevelopmentIndex.csv"))[,-c(2,5)] %>%
        mutate(GDI.unscaled = as.numeric(`Gender Development Index`),
               GDI = scale(GDI.unscaled)) %>% 
        select(!`Gender Development Index`) %>%
