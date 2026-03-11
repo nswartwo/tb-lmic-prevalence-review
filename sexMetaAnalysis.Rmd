@@ -2468,26 +2468,24 @@ covariates<- read.csv(file=here("data/covariates/covariates_1994-2023.csv")) %>%
     rename(study.end.year = year)
 
 ### BMI data
-#### NEEDS TO BE UPDATED 
-bmi <- read.csv(file=here("data/covariates/IHME_GBD_2021_COV_1980_2021_ADULT_UNDERWEIGHT_33 Countries.csv")) %>% 
+bmi <- read.csv(file=here("data/covariates/IHME_GBD_2023_COV_1994_2023_ADULT_UNDERWEIGHT_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
     group_by(year_id, study.country, sex) %>%
     summarize(val = sum(mean_value)) %>%
     pivot_wider(names_from = c(sex), 
                 values_from = val) %>% 
-    mutate(bmi = as.numeric(unlist(Male)) - as.numeric(unlist(Female))) %>% 
+    mutate(bmi.unscaled = as.numeric(unlist(Male)) - as.numeric(unlist(Female))) %>% 
     select(study.country, 
            year_id, 
-           bmi) %>%
+           bmi.unscaled) %>%
     rename(study.end.year = year_id)
 
-bmi$bmi <- scale(bmi$bmi)
+bmi$bmi <- scale(bmi$bmi.unscaled)
 
 
 ### Smoking data 
-#### NEEDS TO BE UPDATED 
-smoking.prevalence <- read.csv(file=here("data/covariates/IHME_GBD_2021_COV_1980_2021_SMOKING_PREV_33 Countries.csv")) %>% 
+smoking.prevalence <- read.csv(file=here("data/covariates/IHME_GBD_2023_COV_1994_2023_SMOKING_PREV_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
     select(study.country, year_id, sex, covariate_name_short, mean_value) %>% 
     group_by(year_id, study.country, sex) %>%
@@ -2504,11 +2502,11 @@ smoking.prevalence$smoking <- scale(smoking.prevalence$smoking)
 
 ### Gender development index 
 GDI <- read_csv(here("data/covariates/GenderDevelopmentIndex.csv"))[,-c(2,5)] %>%
-       mutate(GDI.unscaled = as.numeric(`Gender Development Index`),
-              GDI = scale(GDI.unscaled)) %>% 
-       select(!`Gender Development Index`) %>%
-       rename(study.country = Entity, 
-              study.end.year = Year)
+    mutate(GDI.unscaled = as.numeric(`Gender Development Index`),
+           GDI = scale(GDI.unscaled)) %>% 
+    select(!`Gender Development Index`) %>%
+    rename(study.country = Entity, 
+           study.end.year = Year)
 
 ### Rename several countries 
 # GDI[which(GDI$study.country == "Eswatini (Kingdom of)"), "study.country"] <- "Eswatini"
@@ -2519,7 +2517,7 @@ covariates <- full_join(covariates, smoking.prevalence)
 covariates <- full_join(covariates, bmi)
 
 # covariates <- full_join(covariates, GDI, by=c("study.country", "study.end.year"))
-    
+
 ### Rename several countries 
 covariates[which(covariates$study.country == "United Republic of Tanzania"), "study.country"] <- "Tanzania"
 covariates[which(covariates$study.country == "Viet Nam"), "study.country"] <- "Vietnam"
@@ -2532,20 +2530,15 @@ newbactModelPRDF0[which(bactModelPRDF$id ==1), "study.end.year"] <- 2023
 
 ### For Mynamar 1994 and 2010, we need to use 2015 values so temporarily set its' study end year to 2015
 newbactModelPRDF0[which(bactModelPRDF$id ==46), "study.end.year"] <- 
-newbactModelPRDF0[which(bactModelPRDF$id ==47), "study.end.year"] <- 2015
+    newbactModelPRDF0[which(bactModelPRDF$id ==47), "study.end.year"] <- 2015
+
+### For Ecuador 2007, we need to use 2010 values so temporarily set its' study end year to 2010
+newbactModelPRDF0[which(bactModelPRDF$id ==36), "study.end.year"] <- 2010
 
 newbactModelPRDF <- left_join(newbactModelPRDF0, covariates)
 
 ### Add GDI
 newbactModelPRDF <- left_join(newbactModelPRDF, GDI)
-
-newbactModelPRDF <- as.data.frame(newbactModelPRDF)
-
-### Reset the study end year for Cambodia 2024
-newbactModelPRDF[which(bactModelPRDF$id ==1), "study.end.year"] <- 2024
-### Reset the study end year for Myanmar 1994, 2010
-newbactModelPRDF[which(bactModelPRDF$id ==46), "study.end.year"] <- 1994
-newbactModelPRDF[which(bactModelPRDF$id ==47), "study.end.year"] <- 2010
 ```
 
 ### Covariate correlation assessment
