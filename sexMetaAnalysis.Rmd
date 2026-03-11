@@ -2430,7 +2430,6 @@ Because covariates are measured at the national-level, this analysis will be res
 ##############################################################################|
 #### External covariates  #####################################################
 ##############################################################################|
-
 covariates<- read.csv(file=here("data/covariates/covariates_1994-2023.csv")) %>% 
     dplyr::rename(study.country = location_name) %>%
     filter(
@@ -2440,30 +2439,18 @@ covariates<- read.csv(file=here("data/covariates/covariates_1994-2023.csv")) %>%
     select(study.country, year, sex_name, cause_name, val) %>% 
     pivot_wider(names_from = c(sex_name, cause_name), 
                 values_from = val) %>% 
-    mutate(alcohol.use.disorder = 
-               scale(`Male_Alcohol use disorders` - `Female_Alcohol use disorders`), 
-           # diabetes.mellitus = 
-           #     scale(`Male_Diabetes mellitus` - `Female_Diabetes mellitus`), 
-           # type1.diabetes.mellitus = 
-           #     scale(`Male_Diabetes mellitus type 1` - `Female_Diabetes mellitus type 1`), 
-           type2.diabetes.mellitus = 
-               scale(`Male_Diabetes mellitus type 2` - `Female_Diabetes mellitus type 2`), 
-           # nutritional.deficiencies = 
-           #     scale(`Male_Nutritional deficiencies` - `Female_Nutritional deficiencies`), 
-           HIV.AIDS = 
-               scale(`Male_HIV/AIDS` - `Female_HIV/AIDS`), 
-           # TB.incidence = 
-           #     scale(Male_Tuberculosis - Female_Tuberculosis)
+    mutate(alcohol.use.disorder.unscaled = 
+                `Male_Alcohol use disorders` - `Female_Alcohol use disorders`, 
+           type2.diabetes.mellitus.unscaled = 
+                `Male_Diabetes mellitus type 2` - `Female_Diabetes mellitus type 2`, 
+           HIV.AIDS.unscaled = 
+                `Male_HIV/AIDS` - `Female_HIV/AIDS`,
            ) %>% 
     select(study.country, 
            year, 
-           alcohol.use.disorder, 
-           # diabetes.mellitus, 
-           # type1.diabetes.mellitus, 
-           type2.diabetes.mellitus,
-           # nutritional.deficiencies, 
-           HIV.AIDS, 
-           # TB.incidence
+           alcohol.use.disorder.unscaled, 
+           type2.diabetes.mellitus.unscaled,
+           HIV.AIDS.unscaled, 
            ) %>% 
     rename(study.end.year = year)
 
@@ -2481,9 +2468,6 @@ bmi <- read.csv(file=here("data/covariates/IHME_GBD_2023_COV_1994_2023_ADULT_UND
            bmi.unscaled) %>%
     rename(study.end.year = year_id)
 
-bmi$bmi <- scale(bmi$bmi.unscaled)
-
-
 ### Smoking data 
 smoking.prevalence <- read.csv(file=here("data/covariates/IHME_GBD_2023_COV_1994_2023_SMOKING_PREV_33 Countries.csv")) %>% 
     rename(study.country = location_name) %>%
@@ -2492,18 +2476,15 @@ smoking.prevalence <- read.csv(file=here("data/covariates/IHME_GBD_2023_COV_1994
     summarize(val = sum(mean_value)) %>%
     pivot_wider(names_from = c(sex), 
                 values_from = val) %>% 
-    mutate(smoking = as.numeric(unlist(Male)) - as.numeric(unlist(Female))) %>% 
+    mutate(smoking.unscaled = as.numeric(unlist(Male)) - as.numeric(unlist(Female))) %>% 
     select(study.country, 
            year_id, 
-           smoking) %>%
+           smoking.unscaled) %>%
     rename(study.end.year = year_id)
-
-smoking.prevalence$smoking <- scale(smoking.prevalence$smoking)
 
 ### Gender development index 
 GDI <- read_csv(here("data/covariates/GenderDevelopmentIndex.csv"))[,-c(2,5)] %>%
-    mutate(GDI.unscaled = as.numeric(`Gender Development Index`),
-           GDI = scale(GDI.unscaled)) %>% 
+    mutate(GDI.unscaled = as.numeric(`Gender Development Index`)) %>% 
     select(!`Gender Development Index`) %>%
     rename(study.country = Entity, 
            study.end.year = Year)
@@ -2525,30 +2506,61 @@ covariates[which(covariates$study.country == "Lao People's Democratic Republic")
 covariates[which(covariates$study.country == "Democratic People's Republic of Korea"), "study.country"] <- "North Korea"
 
 ### For Cambodia 2024, we need to use 2023 values so temporarily set its' study end year to 2023
-newbactModelPRDF0 <- bactModelPRDF
-newbactModelPRDF0[which(bactModelPRDF$id ==1), "study.end.year"] <- 2023
+covBactModelDF0 <- bactModelPRDF
+covBactModelDF0[which(bactModelPRDF$id ==1), "study.end.year"] <- 2023
 
 ### For Mynamar 1994 and 2010, we need to use 2015 values so temporarily set its' study end year to 2015
-newbactModelPRDF0[which(bactModelPRDF$id ==46), "study.end.year"] <- 
-    newbactModelPRDF0[which(bactModelPRDF$id ==47), "study.end.year"] <- 2015
+covBactModelDF0[which(bactModelPRDF$id ==46), "study.end.year"] <- 
+    covBactModelDF0[which(bactModelPRDF$id ==47), "study.end.year"] <- 2015
 
 ### For Ecuador 2007, we need to use 2010 values so temporarily set its' study end year to 2010
-newbactModelPRDF0[which(bactModelPRDF$id ==36), "study.end.year"] <- 2010
+covBactModelDF0[which(bactModelPRDF$id ==36), "study.end.year"] <- 2010
 
-newbactModelPRDF <- left_join(newbactModelPRDF0, covariates)
+covBactModelDF_ALL <- left_join(covBactModelDF0, covariates)
 
 ### Add GDI
-newbactModelPRDF <- left_join(newbactModelPRDF, GDI)
+covBactModelDF_ALL <- left_join(covBactModelDF_ALL, GDI)
+
+### Reset the study end year for Cambodia 2024
+covBactModelDF_ALL[which(bactModelPRDF$id ==1), "study.end.year"] <- 2024
+### Reset the study end year for Myanmar 1994, 2010
+covBactModelDF_ALL[which(bactModelPRDF$id ==46), "study.end.year"] <- 1994
+covBactModelDF_ALL[which(bactModelPRDF$id ==47), "study.end.year"] <- 2010
+### Resent the study end year for Ecuador 2007
+covBactModelDF_ALL[which(bactModelPRDF$id ==36), "study.end.year"] <- 2007
+
+### For the main covariate analysis we use only the nationally represenative surveys 
+### we mean center and scale to unit standard deviation
+covBactModelDF <- covBactModelDF_ALL %>%
+                  filter(natRep == "Yes", 
+                         ! is.na(GDI.unscaled)) %>% 
+                  mutate(GDI = scale(GDI.unscaled), 
+                         alcohol.use.disorder = scale(alcohol.use.disorder.unscaled), 
+                         type2.diabetes.mellitus = scale(type2.diabetes.mellitus.unscaled),
+                         HIV.AIDS = scale(HIV.AIDS.unscaled), 
+                         smoking = scale(smoking.unscaled),
+                         bmi = scale(bmi.unscaled))
+
+### Also scale covariates in the dataframe with all surveys for comparison in Model 49
+covBactModelDF_ALL <- covBactModelDF_ALL %>%
+                  filter(!is.na(GDI.unscaled)) %>% 
+                  mutate(GDI = scale(GDI.unscaled), 
+                         alcohol.use.disorder = scale(alcohol.use.disorder.unscaled), 
+                         type2.diabetes.mellitus = scale(type2.diabetes.mellitus.unscaled),
+                         HIV.AIDS = scale(HIV.AIDS.unscaled), 
+                         smoking = scale(smoking.unscaled),
+                         bmi = scale(bmi.unscaled))
+
 ```
 
-### Covariate correlation assessment
+### Covariate correlation assessment (Figure S5)
 Estimate the correlation between the covariate data using a BRMS multivariate model with fixed intercepts and sigmas. Approach inspired by this post 
 https://solomonkurz.netlify.app/blog/2019-02-16-bayesian-correlations-let-s-talk-options/
 
 ```{r, warning = FALSE, message=FALSE, results="hide"}
 ### Rename the columns so they present well in plot
 ### Use "Z" as a space delimiter as model run will strip "_" or "." 
-formatbactModelPRDF <- newbactModelPRDF %>% 
+formatbactModelPRDF <- covBactModelDF %>% 
                      filter(natRep == "Yes") %>%
                      rename("StudyZendZyear" = year_z, 
                             "AlcoholZuseZdisorder" = alcohol.use.disorder, 
@@ -2602,13 +2614,11 @@ covCorrMod <-  brms::brm(bf(mvbind(`AlcoholZuseZdisorder`,
 Note this is different from model 3 above as it is only fit to nationally-representative surveys 
 
 Model specification 
-
 ```{r, warning = FALSE, message=FALSE, results="hide"}
 timeMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + study.end.year + 
                           (1 | study.country) + (1 | id),
-                       data = newbactModelPRDF  %>% 
-                              filter(natRep == "Yes"),
+                       data = covBactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd),
@@ -2629,19 +2639,17 @@ Covariate effect (Table 1)
 ```{r, echo=FALSE}
 ### output for contribution table
 cbind(
-timeMod %>% spread_draws(b_study.end.year) %>% mutate(Mean = exp(b_study.end.year)) %>% 
+timeMod %>% spread_draws(b_study.end.year) %>% 
+    mutate(Mean = exp(b_study.end.year)) %>% 
     select(Mean) %>% 
     mean_qi() %>% 
     select(Mean),
 
-timeMod %>% spread_draws(b_study.end.year) %>% mutate(Median = exp(b_study.end.year)) %>% 
+timeMod %>% spread_draws(b_study.end.year) %>% 
+    mutate(Median = exp(b_study.end.year)) %>% 
     select(Median) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(timeMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 29: Gender disparity index univariate model 
@@ -2651,8 +2659,7 @@ Model specification
 ```{r, warning = FALSE, message=FALSE, results="hide"}
 gdiMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + GDI + (1 | study.country) + (1 | id),
-                       data = newbactModelPRDF  %>% 
-                              filter(natRep == "Yes"),
+                       data = covBactModelDF,
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                            prior(normal(0, 1), class = b) +
                            prior(exponential(2), class = sd),
@@ -2673,18 +2680,18 @@ Covariate effect (Table 1)
 ```{r, echo=FALSE}
 ### output for contribution table
 cbind(
-gdiMod %>% spread_draws(b_GDI) %>% mutate(Mean = exp(b_GDI)) %>% 
+gdiMod %>% spread_draws(b_GDI) %>% 
+    mutate(Mean = exp(b_GDI)) %>% 
     select(Mean) %>% 
     mean_qi() %>% 
     select(Mean),
 
-gdiMod %>% spread_draws(b_GDI) %>% mutate(Median = exp(b_GDI)) %>% 
+gdiMod %>% spread_draws(b_GDI) %>% 
+    mutate(Median = exp(b_GDI)) %>% 
     select(Median) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(gdiMod)[["fixed"]][2,4])),2)
+
 ```
 
 ### Model 30: Alcohol use disorder univariate model
@@ -2695,8 +2702,7 @@ Model specification
 alcoholUsePrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                             1 +  alcohol.use.disorder +
                             (1 | study.country) + (1 | id),
-                        data = newbactModelPRDF  %>% 
-                              filter(natRep == "Yes"),
+                        data = covBactModelDF,
                         prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                             prior(normal(0, 1), class = b) +
                             prior(exponential(2), class = sd),
@@ -2728,10 +2734,6 @@ alcoholUsePrevMod %>% spread_draws(b_alcohol.use.disorder) %>%
     select(Median) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(alcoholUsePrevMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 31: Diabetes univariate model
@@ -2742,8 +2744,7 @@ Model specification
 diabetesPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                   1 +  type2.diabetes.mellitus +
                                   (1 | study.country) + (1 | id),
-                              data = newbactModelPRDF  %>% 
-                                     filter(natRep == "Yes"),
+                              data = covBactModelDF,
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 1), class = b) +
                                   prior(exponential(2), class = sd),
@@ -2775,10 +2776,6 @@ diabetesPrevMod %>% spread_draws(b_type2.diabetes.mellitus) %>%
     select(Median) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(diabetesPrevMod)[["fixed"]][2,4])),2)
 ```
 
 
@@ -2790,8 +2787,7 @@ Model specification
 hivPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                           1 + HIV.AIDS +
                           (1 | study.country) + (1 | id),
-                      data = newbactModelPRDF %>% 
-                             filter(natRep == "Yes"),
+                      data = covBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                               prior(normal(0, 1), class = b) +
                               prior(exponential(2), class = sd),
@@ -2820,10 +2816,6 @@ hivPrevMod %>% spread_draws(b_HIV.AIDS) %>%
     transmute(Median = exp(b_HIV.AIDS)) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(hivPrevMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 33: Smoking univariate model
@@ -2834,8 +2826,7 @@ Model specification
 smokingPrevMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                    1 +  smoking +
                                    (1 | study.country) + (1 | id),
-                               data = newbactModelPRDF %>% 
-                                      filter(natRep == "Yes"),
+                               data = covBactModelDF,
                                prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                    prior(normal(0, 1), class = b) +
                                    prior(exponential(2), class = sd),
@@ -2866,10 +2857,6 @@ smokingPrevMod %>% spread_draws(b_smoking) %>%
     select(Median) %>% 
     median_qi() %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(smokingPrevMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 34: Underweight [Low BMI] univariate model
@@ -2880,8 +2867,7 @@ Model specification
 lowBMIMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                                   1 +  bmi +
                                   (1 | study.country) + (1 | id),
-                              data = newbactModelPRDF  %>% 
-                                     filter(natRep == "Yes"),
+                              data = covBactModelDF,
                               prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                                   prior(normal(0, 1), class = b) +
                                   prior(exponential(2), class = sd),
@@ -2912,10 +2898,6 @@ lowBMIMod %>% spread_draws(b_bmi) %>%
     mutate(Median = exp(b_bmi)) %>% 
     median_qi(Median) %>% 
     select(Median, .lower, .upper)) %>% round(2)
-
-# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,1])),2)
-# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,3])),2)
-# round(exp(as.numeric(summary(lowBMIMod)[["fixed"]][2,4])),2)
 ```
 
 ### Model 35: Multi-variable covariate analysis
@@ -2929,8 +2911,7 @@ multiMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                           type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newbactModelPRDF  %>% 
-                              filter(natRep == "Yes"),
+                      data = covBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 1), class = b) +
                           prior(exponential(2), class = sd),
@@ -2951,6 +2932,32 @@ plot(multiMod)
 bayes_R2(multiMod)
 ```
 
+Multiplicative effect per one standard deviation change (Table 1)
+
+```{r, echo=FALSE}
+cbind(c("Intercept", "year_z", "GDI", "alcohol.use.disorder", 
+                 "type2.diabetes.mellitus", "HIV.AIDS", "smoking", "bmi"),
+matrix(
+    multiMod %>%
+        spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                     b_type2.diabetes.mellitus, b_HIV.AIDS, b_smoking, b_bmi) %>% 
+        mean_qi() %>% 
+        select(b_Intercept:b_bmi.upper) %>% 
+        exp() %>%
+        round(digits = 2), 
+nrow = 8, 3, byrow = TRUE))
+
+multiMod %>%
+    spread_draws(b_Intercept, b_year_z, b_GDI, b_alcohol.use.disorder, 
+                 b_type2.diabetes.mellitus, b_HIV.AIDS, b_smoking, b_bmi) %>% 
+    median_qi() %>% 
+    select(b_Intercept:b_bmi.upper) %>% 
+    select(! (contains("lower") | contains("upper"))) %>%
+    exp() %>%
+    round(digits = 2) %>% t()
+```
+
+Coefficient summary (Table S15)
 ```{r, echo=FALSE}
 cbind(c("Intercept", "year_z", "GDI", "alcohol.use.disorder", 
                  "type2.diabetes.mellitus", "HIV.AIDS", "smoking", "bmi"),
@@ -2977,7 +2984,7 @@ multiMod %>%
 #### Country-level estimates 
 
 ```{r}
-ndMulti <- newbactModelPRDF %>%
+ndMulti <- covBactModelDF %>%
            select(study.country, year_z, GDI, 
                   type2.diabetes.mellitus, alcohol.use.disorder, 
                   bmi, HIV.AIDS, smoking) %>%
@@ -4586,13 +4593,13 @@ allTemporalMods
 ## Model 49: Covariate analysis with all surveys
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, results="hide"}
-
+#### NEEDS DATA RESCALED
 multiAllSurvMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                           1 + year_z + GDI +
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newbactModelPRDF,
+                      data = covBactModelDF_ALL,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 1), class = b) +
                           prior(exponential(2), class = sd),
@@ -4628,7 +4635,7 @@ multiN10Mod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newbactModelPRDF %>% filter(natRep == "Yes"),
+                      data = covBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(normal(0, 10), class = b) +
                           prior(exponential(2), class = sd),
@@ -4680,7 +4687,7 @@ multiCauchyMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~
                           alcohol.use.disorder + type2.diabetes.mellitus + 
                           bmi + HIV.AIDS + smoking + 
                           (1 | study.country) + (1 | id),
-                      data = newbactModelPRDF %>% filter(natRep == "Yes"),
+                      data = covBactModelDF,
                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
                           prior(cauchy(0,1.25), class = b) +
                           prior(exponential(2), class = sd),
