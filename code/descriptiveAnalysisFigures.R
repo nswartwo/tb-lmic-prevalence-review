@@ -59,7 +59,7 @@ cleanDF0 <- cleanDF0 %>%
 ##############################################################################|
 ##### Read in the World Bank Region data ######################################
 ##############################################################################|
-regionWHO <- read.csv("data/who-regions.csv")[,c(1,4)] %>%
+regionWHO <- read.csv(here("data/who-regions.csv"))[,c(1,4)] %>%
              rename(study.country = Entity)
 
 

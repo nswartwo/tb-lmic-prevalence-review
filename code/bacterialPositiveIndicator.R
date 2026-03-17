@@ -16,7 +16,7 @@ cleanStratumDF0 <- readRDS(here("data/fullDataClean.rds")) %>%
 
 ##############################################################################|
 ##### ADD WHO REGION AND STUDY ID TO DATA  ####################################
-regionWHO <- read.csv("data/who-regions.csv")[,c(1,4)] %>% 
+regionWHO <- read.csv(here("data/who-regions.csv"))[,c(1,4)] %>% 
     rename(study.country = Entity,
            WHO.region = World.regions.according.to.WHO)
 
