@@ -984,7 +984,7 @@ layout <- c(
 finalForestPlot <- p_left + forestRatio+ p_right + plot_layout(design = layout)
 finalForestPlot
 # Save
- ggsave(plot = finalForestPlot, "output/SEX/mfFigure.png", height = 24, width=16, units = "in")
+ # ggsave(plot = finalForestPlot, "output/SEX/mfFigure.tif", height = 24, width=16, units = "in")
 ```
 
 ## Plot posterior of random effects variance (Figure S3 and Table S13)
@@ -1142,7 +1142,7 @@ eapcDF <- timeEffectMod %>% spread_draws(b_Intercept, b_year_z) %>%
 ### Posterior mean of the estimated average annual percentage change
 eapcDF %>%
     mean_qi(`annual change`, `intercept`, `time effect`) %>%
-    mutate_if(is.numeric, round, digits=2)
+    mutate_if(is.numeric, round, digits=3)
 ### Posterior median of the estimated average annual percentage change
 eapcDF %>%
     median_qi(`annual change`, `intercept`, `time effect`) %>%
@@ -2045,6 +2045,61 @@ VietnamEffectModEst %>% ungroup() %>%
 ```
 
 ### Model 19-23: Five study-end-year bands 
+```{r, echo=FALSE}
+bactModelPRDF %>% filter(study.end.year < 2005, 
+                         study.end.year > 1999) %>%
+    reframe(Participants = sum(n.participants.female,
+                                n.participants.male, 
+                                na.rm=TRUE),
+            PercMale = sum(n.participants.male, 
+                            na.rm=TRUE) / 
+                 sum(n.participants.female,
+                     n.participants.male, 
+                     na.rm=TRUE)*100) %>% round(digits=2)
+
+bactModelPRDF %>% filter(study.end.year < 2010,
+                         study.end.year > 2004) %>%
+    reframe(Participants = sum(n.participants.female,
+                                n.participants.male, 
+                                na.rm=TRUE),
+            PercMale = sum(n.participants.male, 
+                            na.rm=TRUE) / 
+                 sum(n.participants.female,
+                     n.participants.male, 
+                     na.rm=TRUE)*100) %>% round(digits=2)
+
+bactModelPRDF %>% filter(study.end.year < 2015, 
+                         study.end.year > 2009) %>%
+    reframe(Participants = sum(n.participants.female,
+                                n.participants.male, 
+                                na.rm=TRUE),
+            PercMale = sum(n.participants.male, 
+                            na.rm=TRUE) / 
+                 sum(n.participants.female,
+                     n.participants.male, 
+                     na.rm=TRUE)*100) %>% round(digits=2)
+
+bactModelPRDF %>% filter(study.end.year < 2020,
+                         study.end.year > 2014) %>%
+    reframe(Participants = sum(n.participants.female,
+                                n.participants.male, 
+                                na.rm=TRUE),
+            PercMale = sum(n.participants.male, 
+                            na.rm=TRUE) / 
+                 sum(n.participants.female,
+                     n.participants.male, 
+                     na.rm=TRUE)*100) %>% round(digits=2)
+
+bactModelPRDF %>% filter(study.end.year > 2019) %>%
+    reframe(Participants = sum(n.participants.female,
+                                n.participants.male, 
+                                na.rm=TRUE),
+            PercMale = sum(n.participants.male, 
+                            na.rm=TRUE) / 
+                 sum(n.participants.female,
+                     n.participants.male, 
+                     na.rm=TRUE)*100)    
+```
 
 ```{r, warning = FALSE, message=FALSE, results="hide"}
 
@@ -3754,7 +3809,7 @@ Model specification
 ```{r, warning = FALSE, message=FALSE, results="hide"}
 timeEffectXpertReqMod0 <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
                            1 + XpertCultRequired + year_z + 
-                          (1 + year_z | study.country) + 
+                          (1 + year_z + XpertCultRequired| study.country) + 
                           (1 | id),
                        data = bactModelPRDF, 
                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
@@ -3838,7 +3893,7 @@ eapcXpertReqDF0 %>%
 eapcXpertReqDF0 %>%
     select(`annual change`, `intercept`, `time effect`,
            `covariate effect`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 ```
 
 ## Model 44: Effect over time with "Xpert or Culture Required" as a covariate (with interaction)
@@ -3895,7 +3950,7 @@ yXpertReq <- timeEffectXpertReqModEst %>%
              group_by(year_z) %>%
              mean_qi(mfRatio) %>%
              mutate(Year = year_z + round(mean(cleanSexPRDF$study.end.year, na.rm=TRUE)), 
-                            Mean = round(mfRatio, 2) )
+                            Mean = round(mfRatio, 2))
 
 yXpertNoReq <- timeEffectXpertReqModEst %>%
              filter(XpertCultRequired == "No") %>%
@@ -3912,48 +3967,46 @@ yXpertNoReq <- timeEffectXpertReqModEst %>%
 minYr <- min(timeEffectModEst$year_z)
 maxYr <- max(timeEffectModEst$year_z)
 
-
-
-# add_epred_draws(timeEffectXpertReqMod, 
+# add_epred_draws(timeEffectXpertReqMod,
 #                              newdata = ndXpertReqTime  %>%
 #                                        filter(year_z %in% c(minYr, maxYr)),
-#                              re_formula = ~ 1 + XpertCultRequired) %>%
+#                              re_formula = NA) %>%
 #                 group_by(.draw, XpertCultRequired) %>%
 #               summarize(logPR_diff = diff(.epred),
-#                         n_years = diff(range(year_z)),  
-#                         .groups = "drop")  %>% 
+#                         n_years = diff(range(year_z)),
+#                         .groups = "drop")  %>%
 #     mutate(slope_per_year = logPR_diff / n_years,
 #            EAPC = (exp(slope_per_year) - 1) * 100) %>%
 #     select(XpertCultRequired, EAPC) %>%
-#     group_by(XpertCultRequired) %>% 
+#     group_by(XpertCultRequired) %>%
 #     mean_qi(EAPC)
-#     
-#     
-#     
+# 
+# 
+# 
 #     timeEffectXpertReqModEst %>%
 #                    filter(year_z %in% c(minYr, maxYr)) %>%
-#                    group_by(.draw, XpertCultRequired) %>% 
+#                    group_by(.draw, XpertCultRequired) %>%
 #                    summarize(logPR_diff = diff(.epred),
-#                              n_years = diff(range(year_z)),  .groups = "drop")  %>% 
+#                              n_years = diff(range(year_z)),  .groups = "drop")  %>%
 #     mutate(slope_per_year = logPR_diff / n_years,
 #            EAPC = (exp(slope_per_year) - 1) * 100) %>%
 #     select(XpertCultRequired, EAPC) %>%
-#     group_by(XpertCultRequired) %>% 
-#     mean_qi(EAPC)
-    
+#     group_by(XpertCultRequired) %>%
+#     median_qi(EAPC)
+```  
 
-
+```{r}
 eapcXpertReqDF <- timeEffectXpertReqMod %>% 
                   spread_draws(b_Intercept,
                                b_year_z, b_XpertCultRequiredYes, 
                                          `b_XpertCultRequiredYes:year_z`) %>% 
     mutate(
-           # "minYrEst"  = exp(b_Intercept + minYr * b_year_z),
-           # "minYr1Est" = exp(b_Intercept + (minYr + 1) * b_year_z),
-           # "maxYrEst"  = exp(b_Intercept + maxYr * b_year_z),
-           # "difference" =  minYr1Est - minYrEst,
-           # "annual change" = difference / minYrEst * 100, 
-           # "Positive" = ifelse(`annual change` > 0, "Yes", "No"), 
+           "minYrEst"  = exp(b_Intercept + minYr * b_year_z),
+           "minYr1Est" = exp(b_Intercept + (minYr + 1) * b_year_z),
+           "maxYrEst"  = exp(b_Intercept + maxYr * b_year_z),
+           "difference" =  minYr1Est - minYrEst,
+           "annual change" = difference / minYrEst * 100,
+           "Positive" = ifelse(`annual change` > 0, "Yes", "No"),
            "annual change" = exp(b_year_z)-1,
            "intercept" = (b_Intercept), 
            "time effect" = (b_year_z),
@@ -3969,7 +4022,7 @@ eapcXpertReqDF %>%
 eapcXpertReqDF %>%
     select(`annual change`, `intercept`, `time effect`,
            `covariate effect`, `covariate interaction`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 
 ### Posterior mean of the estimated average annual percentage change
 # eapcXpertReqDF %>%
@@ -4117,7 +4170,7 @@ eapcXpertUsedDF0 %>%
 eapcXpertUsedDF0 %>%
     select(`annual change`, `intercept`, `time effect`, 
            `covariate effect`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 ```
 
 ## Model 46: Effect over time with "Xpert or Culture Used" as a covariate (with interaction)
@@ -4205,10 +4258,10 @@ eapcXpertUsedDF <- timeEffectXpertUsedMod %>%
            # "annual change" = difference / minYrEst * 100, 
            # "Positive" = ifelse(`annual change` > 0, "Yes", "No"), 
            "annual change" = exp(b_year_z)-1,
-           "intercept" = exp(b_Intercept), 
-           "time effect" = exp(b_year_z),
-           "covariate effect" = exp(b_XpertCultUsedYes), 
-           "covariate interaction" = exp(`b_XpertCultUsedYes:year_z`)) 
+           "intercept" = (b_Intercept), 
+           "time effect" = (b_year_z),
+           "covariate effect" = (b_XpertCultUsedYes), 
+           "covariate interaction" = (`b_XpertCultUsedYes:year_z`)) 
 rbind(
 ### Posterior mean of the estimated average annual percentage change
 eapcXpertUsedDF %>%
@@ -4217,9 +4270,9 @@ eapcXpertUsedDF %>%
     mean_qi(),
 ### Posterior median of the estimated average annual percentage change
 eapcXpertUsedDF %>%
-    select(`annual change`, `intercept`, `time effect`, ()
+    select(`annual change`, `intercept`, `time effect`, 
            `covariate effect`, `covariate interaction`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 ```
 
 ### Plot comparison of time trends
@@ -4251,7 +4304,7 @@ ggplot() +
          x = "Year") +
     theme_minimal(base_size = 20)  + 
     scale_size_continuous(range = c(1,10), guide = "none") + 
-    ggtitle("Male-to-female TB prevalence ratio over time\nXpert/Culture used (orange) vs. Xpert/Culture not used (blue)")
+    ggtitle("Male-to-female TB prevalence ratio over time\nXpert/Culture available (orange) vs. Xpert/Culture not available (blue)")
 ```
 
 ### Estimated average annual percentage change (EAPC)
@@ -4260,46 +4313,46 @@ ggplot() +
 minYr <- min(timeEffectXpertUsedModEst$year_z)
 maxYr <- max(timeEffectXpertUsedModEst$year_z)
 
-# eapcXpUseDF <- timeEffectXpertUsedMod %>% 
-#     spread_draws(Ib_ntercept, 
-#                  b_XpertCultUsedYes,
-#                  b_year_z, 
-#                  `b_XpertCultUsedYes:year_z`,
-#     ) %>% 
-#     mutate("eapcXpertYes" = (exp(b_Intercept + 
-#                                 b_XpertCultUsedYes + 
-#                                 ((minYr + 1) * (b_year_z + `b_XpertCultUsedYes:year_z`))) - 
-#                              exp(Ib_ntercept + 
-#                                 b_XpertCultUsedYes + 
-#                                 (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))) / 
-#                             exp(Intercept + 
-#                                 b_XpertCultUsedYes + 
-#                                 (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))  * 100, 
-#            "PositiveXpertYes" = ifelse(eapcXpertYes > 0, "Yes", "No"),
-#            "eapcXpertNo" =  (exp(b_Intercept + 
-#                                 ((minYr + 1) * b_year_z)) - 
-#                              exp(b_Intercept + 
-#                                 (minYr * b_year_z))) / 
-#                             exp(Intercept + 
-#                                 (b_minYr * b_year_z))  * 100,
-#            "PositiveXpertNo" = ifelse(eapcXpertNo > 0, "Yes", "No"),
-# ) 
-# 
-# eapcXpUseDF %>%
-#     select(`eapcXpertYes`) %>%
-#     mean_qi()
-# 
-# eapcXpUseDF %>%
-#     select(`eapcXpertYes`) %>%
-#     median_qi()
-# 
-# eapcXpUseDF %>%
-#     select(`eapcXpertNo`) %>%
-#     mean_qi()
-# 
-# eapcXpUseDF %>%
-#     select(`eapcXpertNo`) %>%
-#     median_qi()
+eapcXpUseDF <- timeEffectXpertUsedMod %>%
+    spread_draws(b_Intercept,
+                 b_XpertCultUsedYes,
+                 b_year_z,
+                 `b_XpertCultUsedYes:year_z`,
+    ) %>%
+    mutate("eapcXpertYes" = (exp(b_Intercept +
+                                b_XpertCultUsedYes +
+                                ((minYr + 1) * (b_year_z + `b_XpertCultUsedYes:year_z`))) -
+                             exp(b_Intercept +
+                                b_XpertCultUsedYes +
+                                (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))) /
+                            exp(b_Intercept +
+                                b_XpertCultUsedYes +
+                                (minYr * (b_year_z + `b_XpertCultUsedYes:year_z`)))  * 100,
+           "PositiveXpertYes" = ifelse(eapcXpertYes > 0, "Yes", "No"),
+           "eapcXpertNo" =  (exp(b_Intercept +
+                                ((minYr + 1) * b_year_z)) -
+                             exp(b_Intercept +
+                                (minYr * b_year_z))) /
+                            exp(b_Intercept +
+                                (minYr * b_year_z))  * 100,
+           "PositiveXpertNo" = ifelse(eapcXpertNo > 0, "Yes", "No"),
+)
+
+eapcXpUseDF %>%
+    select(`eapcXpertYes`) %>%
+    mean_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertYes`) %>%
+    median_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertNo`) %>%
+    mean_qi()
+
+eapcXpUseDF %>%
+    select(`eapcXpertNo`) %>%
+    median_qi()
 ```
 
 ## Model 47: Effect over time with "Symptoms Required" as a covariate (with interaction)
@@ -4370,8 +4423,8 @@ ySympNoReq0 <- timeEffectSympReqModEst0 %>%
 
 ```{r, echo=FALSE, warning = FALSE, message=FALSE}
 ### Set the min and max years just for clarity
-minYr <- min(timeEffectSympReqModEst$year_z)
-maxYr <- max(timeEffectSympReqModEst$year_z)
+minYr <- min(timeEffectSympReqModEst0$year_z)
+maxYr <- max(timeEffectSympReqModEst0$year_z)
 
 
 eapcSympReqDF0 <- timeEffectSympReqMod0 %>% 
@@ -4399,7 +4452,7 @@ eapcSympReqDF0 %>%
 eapcSympReqDF0 %>%
     select(`annual change`, `intercept`, `time effect`,
            `covariate effect`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 ```
 
 ## Model 48: Effect over time with "Symptoms Required" as a covariate (with interaction)
@@ -4487,10 +4540,10 @@ eapcSympReqDF <- timeEffectSympReqMod %>%
            # "annual change" = difference / minYrEst * 100, 
            # "Positive" = ifelse(`annual change` > 0, "Yes", "No"), 
            "annual change" = exp(b_year_z)-1,
-           "intercept" = exp(b_Intercept), 
-           "time effect" = exp(b_year_z),
-           "covariate effect" = exp(b_symptomsRequiredYes), 
-           "covariate interaction" = exp(`b_symptomsRequiredYes:year_z`)) 
+           "intercept" = (b_Intercept), 
+           "time effect" = (b_year_z),
+           "covariate effect" = (b_symptomsRequiredYes), 
+           "covariate interaction" = (`b_symptomsRequiredYes:year_z`)) 
 rbind(
 ### Posterior mean of the estimated average annual percentage change
 eapcSympReqDF %>%
@@ -4501,7 +4554,7 @@ eapcSympReqDF %>%
 eapcSympReqDF %>%
     select(`annual change`, `intercept`, `time effect`,
            `covariate effect`, `covariate interaction`) %>%
-    median_qi()) %>% mutate_if(is.numeric, round, digits=2)
+    median_qi()) %>% mutate_if(is.numeric, round, digits=3)
 ```
 
 ### Plot comparison of time trends
