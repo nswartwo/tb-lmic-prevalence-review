@@ -1,0 +1,40 @@
+Survey country,Survey year,Measure of prevalence,Required culture or xpert?,Male TB notifications (N),Female TB notifications (N),Male TB prevalence rate,Female TB prevalence rate
+Myanmar,1994,n.smear.positive.tb,No,NA,NA,0.002395954,0.000790855
+China,2000,adj.prev100k.ci.bacteriological.tb,No,143640,70126,0.00304,0.00115
+Cambodia,2002,n.bacteriological.tb,No,9105,8153,0.019155144,0.011887682
+Indonesia,2004,adj.prev100k.ci.smear.positive.tb,No,74899,54082,0.00138,0.00072
+Eritrea,2005,n.smear.positive.tb,No,335,352,0.001131405,0.000668617
+Philippines,2007,n.bacteriological.tb,No,60770,25796,0.009637035,0.003740224
+Vietnam,2007,adj.prev100k.ci.bacteriological.tb,No,NA,NA,0.00536,0.00118
+Bangladesh,2009,adj.prev100k.ci.smear.positive.tb,No,NA,NA,0.001217,0.000403
+China,2010,adj.prev100k.ci.bacteriological.tb,No,594703,263349,0.00183,0.00064
+Myanmar,2010,adj.prev100k.ci.bacteriological.tb,No,27962,14356,0.009306,0.003674
+Cambodia,2011,adj.prev100k.ci.bacteriological.tb,No,8601,7275,0.01097,0.00609
+Ethiopia,2011,adj.prev100k.ci.bacteriological.tb,No,27569,22125,0.00304,0.00246
+Laos,2011,adj.prev100k.ci.bacteriological.tb,No,NA,NA,0.00855,0.00366
+Pakistan,2011,adj.prev100k.ci.bacteriological.tb,No,98918,96497,0.004844,0.003204
+Nigeria,2012,adj.prev100k.ci.bacteriological.tb,No,32354,20547,0.00751,0.00359
+Rwanda,2012,adj.prev100k.ci.bacteriological.tb,No,2362,1209,0.00208,0.00053
+Tanzania,2012,adj.prev100k.ci.bacteriological.tb,No,NA,NA,0.0041,0.00204
+Thailand,2012,prev100k.ci.bacteriological.tb,No,21971,9027,0.003605,0.001245
+Gambia,2013,adj.prev100k.ci.bacteriological.tb,No,1397,721,0.00333,0.00109
+Ghana,2013,adj.prev100k.ci.bacteriological.tb,No,9318,4942,0.00431,0.00303
+Indonesia,2014,adj.prev100k.ci.bacteriological.tb,No,177044,122592,0.010827,0.004606
+Malawi,2014,adj.prev100k.ci.bacteriological.tb,Yes,8724,5716,0.00546,0.00374
+Sudan,2014,adj.prev100k.ci.bacteriological.tb,No,10123,6336,0.002328,0.001424
+Zambia,2014,adj.prev100k.ci.bacteriological.tb,No,20472,13024,0.00833,0.00487
+Zimbabwe,2014,adj.prev100k.ci.bacteriological.tb,No,15723,11640,0.00413,0.00288
+Mongolia,2015,adj.prev100k.ci.bacteriological.tb,No,2429,1832,0.0084,0.00298
+Uganda,2015,adj.prev100k.ci.bacteriological.tb,Yes,26226,12771,0.00734,0.00178
+Bangladesh,2016,adj.prev100k.ci.bacteriological.tb,Yes,125646,87336,0.00452,0.00143
+Kenya,2016,adj.prev100k.ci.bacteriological.tb,Yes,44799,24865,0.00809,0.00359
+North Korea,2016,adj.prev100k.ci.bacteriological.tb,No,NA,NA,0.00917,0.00319
+Philippines,2016,adj.prev100k.ci.bacteriological.tb,Yes,188226,96016,0.01713,0.00627
+Myanmar,2018,n.bacteriological.tb,No,71961,39740,0.008433089,0.002234056
+Namibia,2018,adj.prev100k.ci.bacteriological.tb,No,4430,2665,0.006433,0.003044
+Vietnam,2018,adj.prev100k.ci.bacteriological.tb,Yes,NA,NA,0.00522,0.00133
+Eswatini,2019,adj.prev100k.ci.bacteriological.tb,Yes,1580,1120,0.00425,0.00293
+Lesotho,2019,adj.prev100k.ci.bacteriological.tb,Yes,4373,2402,0.00849,0.00327
+Nepal,2019,adj.prev100k.ci.bacteriological.tb,Yes,18964,10710,0.005301,0.002352
+South Africa,2019,adj.prev100k.ci.bacteriological.tb,Yes,112911,80172,0.01094,0.00675
+India,2021,adj.prev100k.ci.bacteriological.tb,No,1128964,721899,0.00472,0.00154

@@ -1,0 +1,417 @@
+---
+title: "Sex Stratified TB Prevalence Estimates for LMICs" 
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+classoption: landscape
+geometry: margin=.5cm
+header-includes:
+  - \pagenumbering{gobble}
+---
+
+# About this script 
+
+This script reads in the clean dataset from data folder and then runs fits a Bayesian generalized multilevel model on the studies that report sex stratified prevalence results. This model aims to estimate sex stratified prevalence. 
+
+# Setup
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##### LOAD IN NECESSARY PACKAGES ##############################################
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(reshape2)
+library(here)
+library(magrittr)
+library(DT)
+library(metafor)
+library(meta)
+library(brms)
+library(scales)
+# library(posterior)
+library(tidybayes)
+library(wesanderson)
+library(ggplot2)
+library(patchwork)
+
+expit <- function (x) {exp(x)/(1 + exp(x))}
+
+myPal <- c("black", "violet")
+
+source(here("code/bacterialPositiveIndicator.R"))
+source(here("code/smearPositiveIndicator.R"))
+source(here("code/varianceComponentModel.R"))
+
+### Set seed 
+set.seed(500)
+
+##############################################################################|
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+cleanSexDF0 <- readRDS("data/sex-stratified-clean-data.rds")
+### Calculate mean publication lag 
+meanLag <- round(mean(cleanSexDF0$publication.year - cleanSexDF0$study.end.year, na.rm=TRUE))
+```
+
+# Bacteriologically-confirmed TB prevalence 
+
+## Format data for modeling 
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanSexDF <-  cleanSexDF0 %>% 
+               filter(sex.analysis.indicator != "none") %>% 
+               mutate("id" = row_number()) %>% 
+    ### Scale all prevalence estimates back to decimals 
+    mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>%
+    select(id,
+           covidence.id, 
+           figure.id.yr, 
+           study.geography, 
+           title.extracted,
+           study.country,
+           study.rurality, 
+           WHO.region,
+           screening.tests,
+           participants.sputum.collected,
+           bacteriological.tb.definition,
+           xpert.used,
+           xpert.samples,
+           other.xpert.samples,
+           culture.used,
+           culture.samples,
+           other.culture.samples,
+           study.start.year, 
+           study.end.year, 
+           publication.year,
+           study.quality.summary,
+           ends_with("male"), ends_with("sex"),
+           sex.analysis.indicator) %>%
+    
+    mutate("tempPrevMale" =  case_when(sex.analysis.indicator == 
+                                           "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.male,
+                                       sex.analysis.indicator == 
+                                           "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.male/n.participants.male, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.male/n.participants.male,
+                                        sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+           "tempPrevFemale" = case_when(sex.analysis.indicator == 
+                                            "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.female, 
+                                        sex.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.female,
+                                        sex.analysis.indicator == 
+                                            "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.female, 
+                                        sex.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.female/n.participants.female, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female)) %>%
+    pivot_longer(cols = c(tempPrevFemale,tempPrevMale), 
+                 names_to = "Sex", 
+                 values_to = "Adjusted Prevalence", 
+                 names_prefix = "tempPrev") %>% 
+    mutate("Standard Error" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            Sex == "Male" ~ (adj.prev100k.ci.upper.bacteriological.tb.male-
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" & 
+                                            Sex == "Female" ~ (adj.prev100k.ci.upper.bacteriological.tb.female-
+                                                                   adj.prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (adj.prev100k.ci.upper.smear.positive.tb.male-
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (adj.prev100k.ci.upper.smear.positive.tb.female-
+                                                                   adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            Sex == "Male" ~ (prev100k.ci.upper.bacteriological.tb.male-
+                                                                 prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" & 
+                                            Sex == "Female" ~ (prev100k.ci.upper.bacteriological.tb.female-
+                                                                   prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Male" ~ (prev100k.ci.upper.smear.positive.tb.male-
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" & 
+                                            Sex == "Female" ~ (prev100k.ci.upper.smear.positive.tb.female-
+                                                                   prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.male),
+                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            sqrt((`Adjusted Prevalence`*(1-`Adjusted Prevalence`))/n.participants.female)),
+  
+           "Phi" = (`Adjusted Prevalence`/`Standard Error`^2) - (`Adjusted Prevalence`/`Standard Error`)^2 - 1, 
+           "LogOdds" = log(`Adjusted Prevalence`/(1-`Adjusted Prevalence`)), 
+           
+           "LogOddsStandardError" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.male /
+                                                                           (1-adj.prev100k.ci.upper.bacteriological.tb.male)) -
+                                                                   log(adj.prev100k.ci.lower.bacteriological.tb.male/
+                                                                           (1-adj.prev100k.ci.lower.bacteriological.tb.male))) /3.92,
+                                              sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb" &
+                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.bacteriological.tb.female/
+                                                                             (1-adj.prev100k.ci.upper.bacteriological.tb.female)) -
+                                                                         log(adj.prev100k.ci.lower.bacteriological.tb.female /
+                                                                                 (1-adj.prev100k.ci.lower.bacteriological.tb.female))) /3.92,
+                                              sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Male" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.male/
+                                                                           (1-adj.prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                       log(adj.prev100k.ci.lower.smear.positive.tb.male /
+                                                                               (1-adj.prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                              sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb" &
+                                                  Sex == "Female" ~ (log(adj.prev100k.ci.upper.smear.positive.tb.female/
+                                                                             (1-adj.prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                         log(adj.prev100k.ci.lower.smear.positive.tb.female /
+                                                                                 (1-adj.prev100k.ci.lower.smear.positive.tb.female)))/3.92,
+                                              sex.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Sex == "Male" ~ (log(prev100k.ci.upper.bacteriological.tb.male/
+                                                                     (1-prev100k.ci.upper.bacteriological.tb.male)) -
+                                                                 log(prev100k.ci.lower.bacteriological.tb.male/
+                                                                     (1-prev100k.ci.lower.bacteriological.tb.male))) /3.92,
+                                                 sex.analysis.indicator == "prev100k.ci.bacteriological.tb" &
+                                                 Sex == "Female" ~ (log(prev100k.ci.upper.bacteriological.tb.female/
+                                                                        (1-prev100k.ci.upper.bacteriological.tb.female)) -
+                                                                    log(prev100k.ci.lower.bacteriological.tb.female /
+                                                                        (1-prev100k.ci.lower.bacteriological.tb.female))) /3.92,
+                                                 sex.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Male" ~ (log(prev100k.ci.upper.smear.positive.tb.male/
+                                                                          (1-prev100k.ci.upper.smear.positive.tb.male)) -
+                                                                      log(prev100k.ci.lower.smear.positive.tb.male /
+                                                                          (1-prev100k.ci.lower.smear.positive.tb.male)))/3.92,
+                                                 sex.analysis.indicator == "prev100k.ci.smear.positive.tb" &
+                                                     Sex == "Female" ~ (log(prev100k.ci.upper.smear.positive.tb.female/
+                                                                            (1-prev100k.ci.upper.smear.positive.tb.female)) -
+                                                                        log(prev100k.ci.lower.smear.positive.tb.female /
+                                                                            (1-prev100k.ci.lower.smear.positive.tb.female)))/3.92, 
+                                            sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Male" ~ 
+                                            log(1/(n.participants.male*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2,
+                                        sex.analysis.indicator  %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb") & Sex == "Female" ~ 
+                                            log(1/(n.participants.female*`Adjusted Prevalence`*(1-`Adjusted Prevalence`)))^2)) %>% 
+                                mutate(natRep = ifelse(is.na(study.geography), 
+                                                       NA, 
+                                                       ifelse(study.geography == "Nationally representative", 
+                                                       "Yes", "No")),
+                                       ## preserve the extracted study end year
+                                       study.end.year.ext = study.end.year, 
+                                       ## update missing study end year to be publication year - mean lag
+                                       study.end.year = ifelse(!is.na(study.end.year), 
+                                                               study.end.year.ext, 
+                                                               publication.year - meanLag),
+                                       ## Mean center year for temporal analysis
+                                       year_z = study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       
+                                       symptomScreen = ifelse(is.na(screening.tests), 
+                                                                    NA, 
+                                                                    ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No")),
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected) | grepl("unknown", 
+                                                                                                              participants.sputum.collected,ignore.case=TRUE), 
+                                                                       NA, 
+                                                                       ifelse(!grepl("x-ray|all participants|other",
+                                                                        participants.sputum.collected,ignore.case=TRUE),
+                                                                 "Yes", "No")),
+
+                                       XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
+                                                                  NA, ifelse(!grepl("smear|micros|field|NTP", 
+                                                                              bacteriological.tb.definition,
+                                                                              ignore.case=TRUE), 
+                                                                  "Yes", 
+                                                                   "No")),
+                                       ### Fix those that were missed with the above attempt 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(26989,26928,26920,26918,26892,26861,26857), 
+                                                                  "Yes", XpertCultRequired), 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(28002), 
+                                                                  "No", XpertCultRequired),
+                                       #### if we used the culture positive count, then xpert culture was requried
+                                       XpertCultRequired = ifelse(grepl("culture", sex.analysis.indicator), 
+                                                                  "Yes", XpertCultRequired),
+                                       #### if we used the smear positive prevs, then xpert culture was not requried
+                                       XpertCultRequired = ifelse(grepl("smear", sex.analysis.indicator), 
+                                                                  "No", XpertCultRequired),
+                                       XpertCultUsed = ifelse((grepl("Yes", xpert.used) & 
+                                                                 (grepl("All samples", xpert.samples) |
+                                                                  !grepl("mear|NAAT", other.xpert.samples))) |
+                                                                  (grepl("Yes", culture.used) & 
+                                                                  grepl("All samples|Subset", culture.samples) & 
+                                                                  !grepl("HIV", other.culture.samples)), 
+                                                                 "Yes", "No"),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdj <- varianceAdjust("sex")
+
+bactModelDF <- cleanSexDF %>%
+    select(id, covidence.id, title.extracted, WHO.region, study.country, study.rurality,
+           Sex, year_z, 
+           natRep, bias, symptomScreen, symptomsRequired, 
+           XpertCultRequired,  XpertCultUsed,
+           LogOdds, LogOddsStandardError, sex.analysis.indicator, 
+           n.participants.male, n.participants.female, 
+           publication.year, study.end.year, study.end.year.ext) %>%
+    pivot_wider(names_from = Sex,
+                values_from = c(LogOdds, LogOddsStandardError),
+                names_sep = "_") %>%
+    mutate(logOR = LogOdds_Male - LogOdds_Female,
+           unadj_logOR_se = sqrt(LogOddsStandardError_Male^2 + LogOddsStandardError_Female^2), 
+           logOR_se = ifelse(grepl("adj", sex.analysis.indicator), 
+                                     unadj_logOR_se,
+                                     ifelse(grepl("smear", sex.analysis.indicator),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logOR_se`^2 + varAdj["Bact Variance Median"]))))
+
+```
+
+
+## Model 1: TB prevalence by sex
+
+Model specification
+
+```{r}
+
+tbPrevMod <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, 
+                                           sigma=TRUE) ~ 1 + (1|study.country) + (1|id) + Sex,
+                    data = cleanSexDF,
+                    prior = prior(normal(0,10), class=Intercept) +
+                            prior(normal(0, 10), class = b) +
+                            prior(exponential(1), class=sd), 
+                    family = "gaussian",
+                    control = list(adapt_delta = 0.99),
+                    cores = 4,
+                    chains = 4,
+                    iter = 4000)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(tbPrevMod)
+plot(tbPrevMod)
+```
+
+Prediction
+
+```{r}
+tbPrevMod_est <- tbPrevMod %>% 
+                 as_draws_df() %>%
+                 select(b_Intercept, b_SexMale) %>%
+                 transmute(Female = expit(b_Intercept)*1e5, 
+                           Male   = expit(b_Intercept + b_SexMale)*1e5) 
+```
+
+Summary values 
+```{r}
+### Female
+tbPrevMod_est %>% 
+    select(Female) %>%
+    mean_qi() %>% 
+    mutate("Mean prevalence (per 100K)" = round(Female,2), 
+           "95% credible interval" = paste0(round(.lower,2), "-", round(.upper,2))) %>%
+    select(`Mean prevalence (per 100K)`, `95% credible interval`)
+
+### Male
+tbPrevMod_est %>% 
+    select(Male) %>%
+    mean_qi() %>% 
+    mutate("Mean prevalence (per 100K)" = round(Male,2), 
+           "95% credible interval" = paste0(round(.lower,2), "-", round(.upper,2))) %>%
+    select(`Mean prevalence (per 100K)`, `95% credible interval`)
+```
+
+Plot
+
+```{r}
+ggplot(data = tbPrevMod_est %>% pivot_longer(c("Female", "Male"))) +
+    stat_halfeye(aes(x=value, fill=name), normalize="panels", alpha=0.5, size =10) +
+    # facet_wrap(facets=vars(name)) + 
+    labs(x="", y="") +
+    theme_minimal() + theme(legend.position = "bottom") + 
+    ggtitle("Estimated overall TB prevalence by sex from 102 prevalence surveys")
+```
+
+## Model 2: TB prevalence by sex over time
+
+Model specification
+
+```{r}
+tbPrevTimeMod <- brms::brm(formula = `LogOdds`|se(`LogOddsStandardError`, sigma=TRUE) ~
+                           1 + year_z*Sex + (1 + year_z*Sex | study.country) + (1 | id),
+                           data = cleanSexDF,
+                           prior = prior(normal(0,10), class=Intercept) +
+                                   prior(normal(0, 10), class = b) +
+                                   prior(exponential(1), class=sd), 
+                           family = "gaussian",
+                           control = list(adapt_delta = 0.99),
+                           cores = 4,
+                           chains = 4,
+                           iter = 4000)
+
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(tbPrevTimeMod)
+plot(tbPrevTimeMod)
+```
+
+Prediction
+
+```{r}
+ndPrevTime <- cleanSexDF %>%
+              select(study.country) %>%
+              crossing(year_z = seq(min(cleanSexDF$year_z, na.rm = TRUE), 
+                                    max(cleanSexDF$year_z, na.rm = TRUE), 1), Sex = c("Male", "Female")) %>%
+              mutate(LogOddsStandardError = 1)
+
+tbPrevTimeModEst <- add_epred_draws(object = tbPrevTimeMod,
+                                    newdata=na.omit(ndPrevTime),
+                                    re_formula = ~ 1 + year_z*Sex,
+                                    allow_new_levels = TRUE) %>%
+                                    mutate(mfRatio = exp(.epred),
+                                    type="Posterior mean and 95% credible interval")
+```
+
+Summary values 
+```{r}
+### Female
+tbPrevTimeMod_est %>% 
+    select(Female) %>%
+    group_by(year_z) %>% 
+    mean_qi() %>% 
+    mutate(Year = year_z + round(mean(cleanSexDF$study.end.year, na.rm=TRUE)))
+    # mutate("Mean prevalence (per 100K)" = round(Female,2), 
+    #        "95% credible interval" = paste0(round(.lower,2), "-", round(.upper,2))) %>%
+    # select(`Mean prevalence (per 100K)`, `95% credible interval`)
+
+### Male
+tbPrevTimeMod_est %>% 
+    select(Male) %>%
+    mean_qi() %>% 
+    mutate("Mean prevalence (per 100K)" = round(Male,2), 
+           "95% credible interval" = paste0(round(.lower,2), "-", round(.upper,2))) %>%
+    select(`Mean prevalence (per 100K)`, `95% credible interval`)
+```

@@ -1,18 +1,10 @@
-"","Survey ID","WHO region","Year(s) of study","HIV+ participants (N)","HIV+ TB positive (N)","HIV- participants (N)","HIV- TB positive (N)","Total participants (N)","Total TB positive (N)"
-"1","Malawi (National)","Africa (WHO)","2013-2014",1840,22,17973,52,19813,74
-"2","South Africa (Western Cape Province, c)","Africa (WHO)","2005",174,NA,588,NA,762,NA
-"3","Kenya (Asembo Area) ","Africa (WHO)","2006-2007",NA,NA,NA,49,NA,NA
-"4","Uganda (Rubaga)","Africa (WHO)","2008-2009",NA,13,NA,25,NA,38
-"5","Tanzania (National)","Africa (WHO)","2011-2012",NA,10,NA,NA,NA,NA
-"6","Zambia (National) ","Africa (WHO)","2013-2014",2062,NA,28429,NA,30491,NA
-"7","South Africa (Western Cape Province)","Africa (WHO)","2008",306,NA,901,NA,1207,NA
-"8","Cambodia (Phnom Penh)","Western Pacific (WHO)","2012-2013",NA,40,NA,697,NA,737
-"9","Rwanda (National) ","Africa (WHO)","2012",NA,1,NA,35,NA,36
-"10","Zimbabwe (Harare)","Africa (WHO)","2005-2006",1916,NA,7144,NA,9060,NA
-"11","Zimbabwe (Harare)","Africa (WHO)",NA,1916,34,7144,NA,9060,NA
-"12","Zambia (Lusaka Province)","Africa (WHO)","2005",NA,43,NA,36,NA,79
-"13","Uganda (National) ","Africa (WHO)","2014-2015",NA,39,NA,106,NA,145
-"14","Lesotho (National)","Africa (WHO)","2019",NA,39,NA,65,NA,104
-"15","Kenya (National)","Africa (WHO)","2015-2016",1627,46,30759,154,32386,200
-"16","South Africa (National)","Africa (WHO)","2017-2019",4588,98,22289,93,26877,191
-"17","Malawi (Blantyre)","Africa (WHO)","2019-2020",1877,6,12815,23,14692,29
+,Survey ID,WHO region,Year(s) of study,HIV+ participants (N),HIV+ TB positive (N),HIV- participants (N),HIV- TB positive (N),Total participants with known HIV Status(N),Total TB positive (N)
+1,Malawi (National),Africa region,2013-2014,1840,22,17973,52,19813,74
+2,Zambia (National) ,Africa region,2013-2014,2062,NA,28429,NA,30491,NA
+3,Zimbabwe (Harare),Africa region,2005-2006,1916,NA,7144,NA,9060,NA
+4,Zimbabwe (Harare),Africa region,NA,1916,34,7144,NA,9060,NA
+5,Zambia (Lusaka Province),Africa region,2005,NA,43,NA,36,NA,79
+6,Lesotho (National),Africa region,2019,NA,39,NA,65,NA,104
+7,Kenya (National),Africa region,2015-2016,1627,46,30759,154,32386,200
+8,South Africa (National),Africa region,2017-2019,4588,98,22289,93,26877,191
+9,Malawi (Blantyre),Africa region,2019-2020,1877,6,12815,23,14692,29

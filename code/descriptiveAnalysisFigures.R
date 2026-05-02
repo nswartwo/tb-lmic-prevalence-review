@@ -216,11 +216,11 @@ print(
               legend.background = element_rect(color = "white"),
               panel.grid.minor = element_blank(),
               panel.grid.major = element_blank()) +
-        scale_fill_manual(values = myPal[3:4],
+        scale_fill_manual(values = myPal[c(4,11)],
                              name = "Survey representativeness") +
         scale_x_discrete(limits = rev(levels(order)))+
         geom_text(data = nCountryCoverage %>% filter(natRep == "Subnational"), 
-                  aes(x=study.country, y=n, label = n), hjust = 1.5, color = "white") + 
+                  aes(x=study.country, y=n, label = n), hjust = 1.5, color = "black") + 
         geom_text(data = nCountryCoverage %>% filter(natRep == "National"), 
                   aes(x=study.country, y=total.studies, label = n), hjust = 1.5, color = "white") + 
         labs(x = "Survey country", y="Number of prevalence surveys") 

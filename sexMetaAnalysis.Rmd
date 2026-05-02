@@ -556,6 +556,9 @@ Summarize and check
 print(summary(mainEffectMod), digits=3)
 plot(mainEffectMod)
 
+### Posterior predictive check 
+pp_check(mainEffectMod)
+
 ### Bayes R2
 bayes_R2(mainEffectMod)
 ```

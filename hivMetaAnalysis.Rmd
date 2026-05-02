@@ -1124,15 +1124,20 @@ notif_ratio  <- notif0 %>%
            # Log Notification rate 
            logNotifHivPos = log(notifHivPos),
            logNotifHivNeg = log(notifHivNeg),
-           logNotifStErrHivPos = (log(casesHivPos + stndErrCasesHivPos)  - 
+        
+           logNotifStErrHivPos = (log(casesHivPos + stndErrCasesHivPos)  -
                                   log(casesHivPos - stndErrCasesHivPos)) / hivpop.all,
-           logNotifStErrHivNeg = (log(casesHivNeg + stndErrCasesHivNeg)  - 
+           logNotifStErrHivNeg = (log(casesHivNeg + stndErrCasesHivNeg)  -
                                   log(casesHivNeg - stndErrCasesHivNeg)) / (totpop-hivpop.all),
            ### Notification rate ratio HIV positive / HIV negative
            log_NR = logNotifHivPos - logNotifHivNeg,
            # Hedges 1999 on meta-analyses of log response ratios
            logNR_se = sqrt(logNotifStErrHivPos^2 + logNotifStErrHivNeg^2)
-    )
+    ) %>% rowwise() %>% 
+    mutate(logNotifStErrHivPos2 = sd(log(rpois(1e6,casesHivPos))), 
+           logNotifStErrHivNeg2 = sd(log(rpois(1e6,casesHivNeg))), 
+           logNR_se2 = sqrt(logNotifStErrHivPos2^2 + logNotifStErrHivNeg2^2)
+)
 ```
 
 ## Model 4: TB notifications by country
@@ -1147,10 +1152,10 @@ notif_ratio_model <- bf(
 
 
 notifRatioMod <- brms::brm(formula = log_NR | se(logNR_se, sigma=TRUE) ~
-                              1 + (1|study.country),
+                              1 + (1 | study.country),
                           data = notif_ratio %>% filter(natRep == "Yes"),
-                          prior = prior(student_t(10, 0, 1.5), class = Intercept) +
-                                        prior(exponential(4), class = sd),
+                          prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                                        prior(exponential(2), class = sd),
                           family = gaussian(),
                           control = list(adapt_delta = 0.99),
                           chains = 4,
@@ -1173,14 +1178,11 @@ Prediction
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 nd_n <- notif_ratio %>% 
         filter(natRep == "Yes") %>%
-        select(study.country) %>%
-        distinct() %>%
-        mutate(logNR_se=1)
+        select(study.country, logNR_se)
 
 mainEffectNotifEst <- add_epred_draws(object = notifRatioMod,
                                       newdata=nd_n,
-                                      re_formula =   ~ 1 + (1 | study.country),
-                                      allow_new_levels = TRUE) %>%
+                                      re_formula =   ~ 1 + (1 | study.country)) %>%
     mutate(model_notif = exp(.epred),
            type="Posterior mean and 95% credible interval")
 
@@ -1198,14 +1200,16 @@ mainEffectNotifEstCountrySummary <- mainEffectNotifEst %>%
                   round, 2)); mainEffectNotifEstCountrySummary
 
 datPlot <- mainEffectNotifEstCountrySummary %>% 
-    select(study.country, model_notif) %>% 
+    select(study.country, model_notif, .lower, .upper) %>% 
     left_join(notif_ratio %>% filter(natRep=="Yes") %>% select(study.country, log_NR)) 
 
 ggplot(data=datPlot) + 
-    geom_point(aes(x=study.country, y=exp(log_NR)), color="orchid2", size=4) +
-    geom_point(aes(x=study.country, y=model_notif), size=4) + 
+    geom_point(aes(x=study.country, y=exp(log_NR)), color="orchid2", size=7) +
+    geom_errorbar(aes(x=study.country, ymin=.lower, ymax=.upper)) +
+
+    geom_point(aes(x=study.country, y=model_notif), size=5) + 
     theme_minimal(base_size = 30) +
-    expand_limits(y=c(0,1.2))
+    expand_limits(y=c(0,1.2)) + coord_flip() + ylab("HIVp/HIVn notification rate ratio")
 ```
 
 # Prevalence to notification comparison 
