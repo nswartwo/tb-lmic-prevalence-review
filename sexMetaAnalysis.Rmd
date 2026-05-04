@@ -642,6 +642,7 @@ Summarize and check
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(regionEffectMod)
 plot(regionEffectMod)
+pp_check(regionEffectMod, ndraws=100)
 ### Bayes R2
 bayes_R2(regionEffectMod)
 ```
@@ -1051,7 +1052,7 @@ Summarize and check
 ```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
 summary(timeEffectMod)
 plot(timeEffectMod)
-
+pp_check(timeEffectMod, ndraws =100)
 #Bayes R2
 bayes_R2(timeEffectMod)
 ```
@@ -2988,6 +2989,8 @@ Summarize and check
 summary(multiMod)
 plot(multiMod)
 bayes_R2(multiMod)
+pp_check(multiMod, ndraws=100)
+
 ```
 
 Multiplicative effect per one standard deviation change (Table 1)
