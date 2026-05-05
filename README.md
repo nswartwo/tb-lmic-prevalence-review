@@ -1,12 +1,17 @@
 # tb-lmic-prevalence-review
 
-Analytic code for meta-analyses associated with a systematic review of tuberculosis (TB) prevalence in low- and middle-income countries (LMICs).
+Analytic code for meta-analyses associated with a systematic review of tuberculosis (TB) prevalence in low- and middle-income countries (LMICs). 
+
+## If you use the codes in this repository, please cite the relevant papers: 
+-  **TB prevalence by sex**: ["Differences in Tuberculosis Prevalence by Sex Over 1993-2025: A Systematic Review and Meta-Analysis"](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5466740) 
+-  **TB prevalence by participant HIV status**: ["Differences in tuberculosis prevalence among people living with and without HIV in low-and-middle-income countries: A systematic review and meta-analysis"](https://www.medrxiv.org/content/10.64898/2026.04.20.26351343v1)
 
 ## Project description
 
-This project has two parts:  
+This project has several parts:  
     1. a systematic review of TB prevalence within LMICs from 1993 to present.  
-    2. construction and comparison of TB prevalence to notification ratios across various data strata. 
+    2. meta-anaysis of TB prevalence across several data stratifications (sex, HIV status, urban/rural residence, age).  
+    3. construction and comparison of TB prevalence to notification ratios across the above data strata. 
     
 ## Systematic review 
 
@@ -28,7 +33,7 @@ We first aimed to understand the distributions of the data we collected. We desi
 
 ## Meta analysis 
 
-The dataset generated from the systematic review of TB prevalence will be used to examine the differences in TB prevalence across gender (male:female) and HIV status (HIV positive: HIV negative) strata. In order to replicate these analyses, run `sexMetaAnalysis.Rmd` and `hivMetaAnalysis.Rmd` using the `fullDataClean.rds` datafile. 
+The dataset generated from the systematic review of TB prevalence will be used to examine the differences in TB prevalence across gender (male:female) and HIV status (HIV positive: HIV negative) strata. In order to replicate these analyses, run `sexMetaAnalysis.Rmd` and `hivMetaAnalysis.Rmd` using the `fullDataClean.rds` datafile. Each of these files will call a helper function in `code/bacterialPositiveIndicator.R` to filter the dataset to the 102 surveys that report sex-stratified bacteriologically confirmed TB prevalence estimates or the 17 surveys that report HIV-status stratified bacteriologically confirmed TB prevalence estimates, respectively.
 
 A similar meta-analysis was built upon the same `fullDataClean.rds` datafile to examine the differences in TB prevalence across urban vs. rural survey locations. The code for this analysis can be found on its own [repository](https://github.com/petermacp/urban-to-rural). 
 
@@ -43,6 +48,9 @@ A similar meta-analysis was built upon the same `fullDataClean.rds` datafile to 
 1. Clone the repository
 2. Open the project in R / Positron
 3. Install required packages
-4. Render the analysis documents:
+4. Run descriptive analysis scripts:  
+   - `descriptiveAnalysisFigures.R`
+   - `descriptiveAnalysisTables.R`
+5. Render the analysis documents:
    - `sexMetaAnalysis.Rmd`
    - `hivMetaAnalysis.Rmd`
