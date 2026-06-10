@@ -16,18 +16,11 @@ library(forcats)
 library(tidyr)
 library(reshape2)
 library(here)
-library(magrittr)
-library(DT)
-library(metafor)
-library(meta)
 library(brms)
-library(scales)
-# library(posterior)
 library(tidybayes)
+library(scales)
 library(wesanderson)
 library(ggplot2)
-
-expit <- function (x) {exp(x)/(1 + exp(x))}
 
 myPal <- c("black", "violet")
 
@@ -48,8 +41,9 @@ sum(is.na(cleanSexNatDF0$study.end.year))
 table(cleanSexNatDF0$sex.analysis.indicator)
 
 ```
+## Format prevalence data
 
-```{r Prevalence Estimates, echo = FALSE,  warning = FALSE, message=FALSE}
+```{r Format Prevalence Data, echo = FALSE,  warning = FALSE, message=FALSE}
 
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
@@ -290,10 +284,83 @@ bactModelNatDF <- cleanSexNatDF %>%
 
 ```
 
+## Model 1: Sex-stratified TB prevalence 
+
+```{r Sex-stratified Prevalence Time Model, warning=FALSE, message=FALSE}
+
+tbPrevMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
+                           1 + Sex*year_z + (1 + Sex*year_z | study.country) + (1 + Sex*year_z | id),
+                       data = bactModelNatDF1,
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(exponential(2), class = sd),
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 10000, warmup = 2500, thin=3)
+plot(tbPrevMod)
+pp_check(tbPrevMod, ndraws=100)
+
+summary(tbPrevMod)
+
+tb_prev_mod_est <-  tbPrevMod %>% 
+    add_epred_draws(newdata = crossing(study.country=unique(bactModelNatDF1$study.country), 
+                                       year_z = unique(bactModelNatDF1$year_z),
+                                       Sex = c("female", "male"), 
+                                       logTbPrevSE = 0),
+                    re_formula =  ~ 1 + Sex*year_z + (1 + Sex*year_z | study.country), 
+                    allow_new_levels=TRUE) %>%
+    ungroup() %>% 
+    dplyr::select(study.country, year_z, Sex, .draw, .epred) %>%
+    group_by(Sex, year_z, study.country) %>%  
+    mutate(tbPrev = exp(.epred) * 1e5, 
+           study.end.year = year_z + round(mean(bactModelNatDF1$study.end.year, na.rm=TRUE)))
+
+
+tb_prev_mod_est_summary <- 
+    tb_prev_mod_est %>%
+    group_by(Sex, study.country, study.end.year) %>%
+    median_qi(tbPrev, na.rm=T) %>% 
+    mutate(across(c(tbPrev, .lower, .upper), 
+                  round, 2)); tb_prev_mod_est_summary
+
+ggplot() +
+    geom_line(data=tb_prev_mod_est_summary, 
+              aes(x=study.end.year, y=tbPrev, group=Sex, color=Sex)) +
+    theme_minimal() + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB prevalence by country, 1994-2024") +
+    scale_x_continuous(breaks = seq(1994, 2024, 5)) +
+    facet_wrap(vars(study.country)) + 
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") + 
+    xlab("Survey end year") + 
+    geom_point(data=bactModelNatDF1, aes(x=study.end.year, y=tbPrev*1e5,
+                                    group=Sex, color=Sex))
+
+tb_prev_mod_est_summary2 <- 
+    tb_prev_mod_est %>%
+    group_by(Sex, study.end.year) %>%
+    median_qi(tbPrev, na.rm=T) %>% 
+    mutate(across(c(tbPrev, .lower, .upper), 
+                  round, 2)); tb_prev_mod_est_summary2
+
+ggplot(data=tb_prev_mod_est_summary2) +
+    geom_line(aes(x=study.end.year, y=tbPrev, group=Sex, color=Sex)) +
+    theme_minimal(base_size = 18) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    ggtitle("Sex-stratified TB prevalence by country, 1994-2024") +
+    scale_x_continuous(breaks = seq(1994, 2024, 5)) +
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") + 
+    xlab("Survey end year") 
+```
+
+## Format notification data
+
 ```{r Notification Data, echo = FALSE,  warning = FALSE, message=FALSE, width=11.5, height=8.5}
 
 ##### NOTIFICATION DATA ##############################################
-notif00 <- read.csv(here("data/covariates/TB_notifications_2025-07-18.csv"))
+# notif00 <- read.csv(here("data/covariates/TB_notifications_2025-07-18.csv"))
+notif00 <- read.csv("~/Downloads/TB_notifications_2026-04-23.csv")
 sexPop0 <- read.csv(here("data/covariates/populationData.csv"))
 
 sexPop <- sexPop0 %>% melt(id.vars = c("Country.Name", "Series.Name")) %>%
@@ -313,6 +380,8 @@ sexPop[grep("People's", sexPop$country), "country"] <-
     notif00[grep("People's", notif00$country), "country"] <- "North Korea"
 sexPop[grep("Gambia", sexPop$country), "country"] <- 
     notif00[grep("Gambia", notif00$country), "country"] <- "Gambia"
+sexPop[grep("Tanzania", sexPop$country), "country"] <- 
+    notif00[grep("Tanzania", notif00$country), "country"] <- "Tanzania"
 
 #### Convert to male-to-female ratios 
 notif0 <- notif00 %>% 
@@ -341,6 +410,8 @@ for (i in 1:nrow(notif0)){
         notif0$cases_male[i]   <- sum((notif0 %>% select(contains(c("sn_m", "sp_m"))))[i,], na.rm = T)
     }
 }
+
+
 
 
 notifStrat <- notif0 %>% 
@@ -381,7 +452,7 @@ ggplot(data=notifRatio) +
     theme_minimal() + theme(legend.position = "none",
                             axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
     facet_grid() + ggtitle("Male to female ratio of TB notifications 1994-2021") +
-    scale_x_continuous(breaks = seq(1994, 2022, 4)) +
+    scale_x_continuous(breaks = seq(1994, 2024, 5)) +
     facet_wrap(vars(country))
 ```
 
@@ -391,7 +462,9 @@ notifStrat <- bactModelNatDF1  %>%
                     Sex,
                     logTbPrev,
                     logTbPrevSE,
-                    study.country, study.end.year,
+                    study.country, 
+                    WHO.region, 
+                    study.end.year,
                     # `Adjusted Prevalence`,
                     # sex.analysis.indicator,
                     # XpertCultRequired,
@@ -409,12 +482,14 @@ npRatioDF <- left_join(bactModelNatDF1  %>%
                                 tbPrev,
                                 logTbPrev, 
                                 logTbPrevSE,
-                                study.country, study.end.year, 
+                                study.country, 
+                                WHO.region,
+                                study.end.year, 
                                 year_z), 
                        notifStrat) 
 
-npRatioDF %>% mutate(empiricalNP = notifRate / tbPrev) %>% 
-    select(study.country, Sex, notifRate, tbPrev, empiricalNP) -> y; View(y)
+# npRatioDF %>% mutate(empiricalNP = notifRate / tbPrev) %>% 
+#     select(study.country, Sex, notifRate, tbPrev, empiricalNP) -> y; View(y)
 
 
 # tinyDF <- notifPrev %>% mutate(prevMale = expit(LogOdds_Male), 
@@ -429,83 +504,9 @@ npRatioDF %>% mutate(empiricalNP = notifRate / tbPrev) %>%
 #                                prevFemale) 
 
 # write.csv(tinyDF, here("output/pnRatioSummaryTable.csv"))
-
-# notifPrevModel <- notifPrev %>% ungroup() %>%
-#                   mutate(LogOdds_NotifMale = log(notifRateMale/(1-notifRateMale)), 
-#                          LogOdds_NotifFemale = log(notifRateFemale/(1-notifRateFemale))) %>%
-#                   select(logOR, logOR_se, mfRatioNotif, 
-#                          cases_male, cases_female,
-#                          notifRateMale, notifRateFemale,
-#                          LogOdds_Male, LogOdds_Female, 
-#                          LogOddsStandardError_Male, LogOddsStandardError_Female,
-#                          LogOdds_NotifMale, LogOdds_NotifFemale, 
-#                          study.country, id, year_z, study.end.year)
 ```
 
-### Lets fit the prevalence model 
-```{r Sex-stratified Prevalence Model, warning=FALSE, message=FALSE}
-
-tbPrevMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
-                           1 + Sex + year_z + (1 + Sex | study.country) + (1 | study.end.year),
-                       data = notifStrat,
-                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-                               prior(exponential(2), class = sd),
-                       family = gaussian(),
-                       control = list(adapt_delta = 0.99),
-                       chains = 4,
-                       cores = 4,
-                       iter = 10000, warmup = 2500, thin=3)
-
-summary(tbPrevMod)
-
-tb_prev_mod_est <-  tbPrevMod %>% 
-    add_epred_draws(newdata = crossing(study.country=unique(notifStrat$study.country), 
-                                       year_z = unique(notifStrat$year_z),
-                                       Sex = c("female", "male"), 
-                                       logTbPrevSE = 0,
-                                       logNotifRateSE = 0),
-                    re_formula =  ~ 1 + Sex + year_z + (1 + Sex | study.country), 
-                    allow_new_levels=TRUE) %>%
-    ungroup() %>% 
-    dplyr::select(study.country, year_z, Sex, .draw, .epred) %>%
-    group_by(Sex, year_z, study.country) %>%  
-    mutate(tbPrev = exp(.epred) * 1e5, 
-           study.end.year = year_z + round(mean(cleanSexNatDF$study.end.year, na.rm=TRUE)))
-
-
-tb_prev_mod_est_summary <- 
-    tb_prev_mod_est %>%
-    group_by(Sex, study.country, study.end.year) %>%
-    median_qi(tbPrev, na.rm=T) %>% 
-    mutate(across(c(tbPrev, .lower, .upper), 
-                  round, 2)); tb_prev_mod_est_summary
-
-ggplot(data=tb_prev_mod_est_summary) +
-    geom_line(aes(x=study.end.year, y=tbPrev, group=Sex, color=Sex)) +
-    theme_minimal() + theme(legend.position = "none",
-                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-    facet_grid() + ggtitle("Sex-stratified TB prevalence by country, 1994-2021") +
-    scale_x_continuous(breaks = seq(1994, 2022, 4)) +
-    facet_wrap(vars(study.country))
-
-tb_prev_mod_est_summary2 <- 
-    tb_prev_mod_est %>%
-    group_by(Sex, study.end.year) %>%
-    median_qi(tbPrev, na.rm=T) %>% 
-    mutate(across(c(tbPrev, .lower, .upper), 
-                  round, 2)); tb_prev_mod_est_summary2
-
-ggplot(data=tb_prev_mod_est_summary2) +
-    geom_line(aes(x=study.end.year, y=tbPrev, group=Sex, color=Sex)) +
-    theme_minimal() + theme(legend.position = "none",
-                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
-    ggtitle("Sex-stratified TB prevalence by country, 1994-2021") +
-    scale_x_continuous(breaks = seq(1994, 2022, 4))
-```
-
-
-
-### Sex-stratified prevalence to notification ratios 
+## Model 2: Sex-stratified prevalence to notification ratios 
 
 ```{r Sex-stratified Specification, warning=FALSE, message=FALSE}
 ### Run a multivariate model
@@ -546,9 +547,11 @@ sex_prev_notif_est <-  sex_prev_notif_model %>%
     add_epred_draws(newdata = crossing(study.country=unique(notifStrat$study.country), 
                                        year_z = unique(notifStrat$year_z),
                                        Sex = c("female", "male"), 
-                                       logTbPrevSE = 1,
+                                       logTbPrevSE = 0,
                                        logNotifRateSE = 0),
-                    re_formula =  ~ 1 + Sex + (1 + Sex | study.country) + (1 + Sex | year_z), 
+                    re_formula =  ~ 1 + Sex + 
+                                   (1 + Sex | study.country) + 
+                                   (1 + Sex | year_z), 
                     allow_new_levels=TRUE) %>%
     ungroup() %>% 
     dplyr::select(study.country, year_z, .category, Sex, .draw, .epred) %>%
@@ -571,7 +574,94 @@ sex_prev_notif_estSummaryTot <-
                   round, 2)); sex_prev_notif_estSummaryTot
 
 ### output for contribution table
-intcpt.effect <- sex_prev_notif_model %>% 
+# intcpt.effect <- sex_prev_notif_model %>% 
+#               spread_draws(b_logTbPrev_Intercept, b_logNotifRate_Intercept, 
+#                           b_logTbPrev_Sexmale, b_logNotifRate_Sexmale) %>%
+#             mutate(year.female.prev = exp(b_logTbPrev_Intercept), 
+#                    year.female.notif = exp(b_logNotifRate_Intercept), 
+#                    year.male.prev = exp(b_logTbPrev_Intercept + b_logTbPrev_Sexmale), 
+#                    year.male.notif = exp(b_logNotifRate_Intercept + b_logNotifRate_Sexmale), 
+#                    year.female.npRatio = year.female.notif/year.female.prev,
+#                    year.male.npRatio = year.male.notif/year.male.prev) %>% 
+#             median_qi(year.female.npRatio, year.male.npRatio) %>% 
+#             select(! c(.width, .point, .interval)) %>% round(digits = 2) %>%
+#            matrix(nrow=2, byrow = TRUE) ;
+# 
+# intcpt.effect
+```
+
+```{r country + ID Sex-stratified Specification, warning=FALSE, message=FALSE}
+### Run a multivariate model
+#prevalence model:
+prev_model2 <- bf(
+    logTbPrev | se(logTbPrevSE, sigma = TRUE) ~ 1 + Sex + 
+                                               (1 + Sex | p | study.country) + 
+                                               (1 + Sex | q | id)
+)
+
+#notifications model:
+notif_model2 <- bf(
+    logNotifRate | se(logNotifRateSE, sigma = TRUE) ~ 1 + Sex + 
+                                                    (1 + Sex | p | study.country) + 
+                                                    (1 + Sex | q | id)
+)
+
+#fit the model
+sex_prev_notif_model2 <- brm(
+    formula = prev_model2 + notif_model2 + set_rescor(FALSE),
+    data = notifStrat,
+    family = gaussian(), 
+    # sample_prior = "only",
+    prior = c(
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logTbPrev"),
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logNotifRate"),
+        prior(normal(0,1), class = b, resp = "logTbPrev"),
+        prior(normal(0,1), class = b, resp = "logNotifRate"),
+        prior(exponential(1), class = sd, resp = "logTbPrev"),
+        prior(exponential(.1), class = sd, resp = "logNotifRate")
+    ),
+    control = list(adapt_delta = 0.99,
+                   max_treedepth=14),
+    chains = 4,
+    cores = 4,
+    iter = 1000, 
+    warmup = 250
+)
+
+summary(sex_prev_notif_model2)
+# plot(sex_prev_notif_model2)
+            
+sex_prev_notif_est2 <-  sex_prev_notif_model2 %>% 
+    add_epred_draws(newdata = crossing(notifStrat %>% na.omit() %>%
+                                      select(study.country, id), 
+                                       Sex = c("female", "male"), 
+                                       logTbPrevSE = 0,
+                                       logNotifRateSE = 0),
+                    re_formula =  ~ 1 + Sex + 
+                                   (1 + Sex | study.country) + 
+                                   (1 + Sex | id)) %>%
+    ungroup() %>% 
+    dplyr::select(study.country, id, .category, Sex, .draw, .epred) %>%
+    pivot_wider(names_from = .category, values_from = .epred) %>%
+    mutate(npRatio = exp(logNotifRate - logTbPrev), 
+           notifRateMod = exp(logNotifRate)) 
+
+sex_prev_notif_estSummary2 <- 
+    sex_prev_notif_est2 %>%
+    group_by(Sex, study.country) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); sex_prev_notif_estSummary2
+
+sex_prev_notif_estSummaryTot2 <- 
+    sex_prev_notif_est2 %>%
+    group_by(Sex) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); sex_prev_notif_estSummaryTot2
+
+### output for contribution table
+intcpt.effect2 <- sex_prev_notif_model2 %>% 
               spread_draws(b_logTbPrev_Intercept, b_logNotifRate_Intercept, 
                           b_logTbPrev_Sexmale, b_logNotifRate_Sexmale) %>%
             mutate(year.female.prev = exp(b_logTbPrev_Intercept), 
@@ -584,103 +674,168 @@ intcpt.effect <- sex_prev_notif_model %>%
             select(! c(.width, .point, .interval)) %>% round(digits = 2) %>%
            matrix(nrow=2, byrow = TRUE) ;
 
-intcpt.effect
+intcpt.effect2
 ```
 
-```{r check notifications modeled vs. reported}
+```{r ID only Sex-stratified Specification, warning=FALSE, message=FALSE}
 
-notifComp <- sex_prev_notif_est %>% 
-            select(study.country, year_z, Sex, notifRateMod) %>% 
-            right_join(notifStrat %>% 
-                           select(study.country, year_z, Sex, notifRate, notifRateSE)) %>% 
-            group_by(study.country, year_z, Sex) %>% 
-            median_qi(notifRateMod) %>% 
-            select(! c(.width, .point, .interval)) %>% 
-            right_join(notifStrat %>% 
-                           select(study.country, year_z, study.end.year, Sex, notifRate, notifRateSE)) 
+### Run a multivariate model
+#prevalence model:
+prev_model3 <- bf(
+    logTbPrev | se(logTbPrevSE, sigma = TRUE) ~ 1 + Sex + (1 + Sex | q | id)
+)
 
-# ggplot(data=notifComp %>% mutate(ID = paste(study.country, study.end.year))) + 
-#         geom_point(aes(x=reorder(ID, notifRateMod), y=notifRate*1e5, group=Sex, fill = Sex), size=3, alpha=0.5, position=position_dodge(width = .6), shape=21, color = "black")  + 
-#         geom_errorbar(aes(x = reorder(ID, notifRateMod), ymin=(notifRate - 1.96*notifRateSE)*1e5, ymax=(notifRate + 1.96*notifRateSE)*1e5, color=Sex), position=position_dodge(width = .6), size=1, alpha=.5) +
-#     theme_minimal(base_size = 20) + coord_flip() + xlab("") + ylab("Notification Rate (per 100K)")  +
-#     theme(legend.position = "bottom")
-    
-ggplot(data=notifComp %>% na.omit() %>% mutate(ID = paste(study.country, study.end.year))) + 
-    geom_point( 
-               aes(x=reorder(ID, notifRateMod), y=notifRateMod*1e5, group=Sex, color = Sex),
-               position=position_dodge(width = .6), size=2) + 
-    geom_errorbar(aes(x = reorder(ID, notifRateMod), ymin=.lower*1e5, ymax=.upper*1e5, color=Sex), position=position_dodge(width = .6), size=1) +
-    geom_point(aes(x=reorder(ID, notifRateMod), y=notifRate*1e5, group=Sex, fill = Sex), size=3, alpha=0.5, position=position_dodge(width = .6), shape=21, color = "black")  + 
-    theme_minimal(base_size = 15) + coord_flip() + xlab("") + ylab("Notification Rate (per 100K)")  +
-    theme(legend.position = "bottom")
+#notifications model:
+notif_model3 <- bf(
+    logNotifRate | se(logNotifRateSE, sigma = TRUE) ~ 1 + Sex + (1 + Sex | q | id)
+)
 
-ggsave(plot=get_last_plot(), here("output/sexNP/notificationComp.pdf"), 
-       height=13, width = 8.5, units = "in") 
+#fit the model
+sex_prev_notif_model_3 <- brm(
+    formula = prev_model3 + notif_model3 + set_rescor(FALSE),
+    data = notifStrat,
+    family = gaussian(), 
+    # sample_prior = "only",
+    prior = c(
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logTbPrev"),
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logNotifRate"),
+        prior(normal(0,1), class = b, resp = "logTbPrev"),
+        prior(normal(0,1), class = b, resp = "logNotifRate"),
+        prior(exponential(1), class = sd, resp = "logTbPrev"),
+        prior(exponential(.1), class = sd, resp = "logNotifRate")
+    ),
+    control = list(adapt_delta = 0.99),
+    chains = 4,
+    cores = 4,
+    iter = 1000, 
+    warmup = 250
+)
 
-notifCompDiff <- notifComp %>% 
-                 left_join(notifStrat %>% select(study.country, study.end.year, Sex, logTbPrevSE)) %>% 
-                 mutate(diff = round(abs(notifRate-notifRateMod) * 1e5), 
-                        tbPrevSE = exp(logTbPrevSE), 
-                        combinedSE = tbPrevSE + notifRateSE) 
+# summary(sex_prev_notif_model_3)
+# plot(sex_prev_notif_model_3)
+            
+sex_prev_notif_est3 <-  sex_prev_notif_model_3 %>% 
+    add_epred_draws(newdata = crossing(notifStrat %>% na.omit() %>% select(id),
+                                       Sex = c("female", "male"), 
+                                       logTbPrevSE = 0,
+                                       logNotifRateSE = 0),
+                    re_formula =  ~ 1 + Sex + (1 + Sex | q | id)) %>%
+    ungroup() %>% 
+    dplyr::select(id, .category, Sex, .draw, .epred) %>%
+    pivot_wider(names_from = .category, values_from = .epred) %>%
+    mutate(npRatio = exp(logNotifRate - logTbPrev), 
+           notifRateMod = exp(logNotifRate)) 
 
-    ggplot(data = notifCompDiff %>% na.omit(), aes(x=tbPrevSE, y=diff)) + 
-        geom_point() + theme_minimal() + coord_flip() + 
-        xlab("Standard error of the TB prevalence risk") + 
-        ylab("Absolute difference in model estimated and observed notification rates (per 100K)") + 
-        expand_limits(x=1)
-    
-    ggsave(plot=get_last_plot(), "~/Desktop/prevSE-notifDiff.pdf", 
-       height=8.5, width = 8.5, units = "in") 
-    
-        ggplot(data = notifCompDiff %>% na.omit(), aes(x=notifRateSE, y=diff)) + 
-        geom_point() + theme_minimal() + coord_flip() + 
-        xlab("Standard error of the TB notification rates") + 
-        ylab("Absolute difference in model estimated and observed notification rates (per 100K)")
-    
-                 
-    ggsave(plot=get_last_plot(), "~/Desktop/notifSE-notifDiff.pdf", 
-       height=8.5, width = 8.5, units = "in") 
-    # ggplot(data = notifCompDiff %>% na.omit(), aes(x=combinedSE, y=diff)) + 
-    #     geom_point() + theme_minimal() + coord_flip() + 
-    #     xlab("Standard error of the TB prevalence risk") + 
-    #     ylab("Absolute difference in model estimated and observed notification rates (per 100K)") + 
-    #     expand_limits(x=0)
-   
+sex_prev_notif_estSummaryTot3 <- 
+    sex_prev_notif_est3 %>%
+    group_by(Sex) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); sex_prev_notif_estSummaryTot3
 
 ```
+
+```{r region + ID Sex-stratified Specification, warning=FALSE, message=FALSE}
+### Run a multivariate model
+#prevalence model:
+prev_model4 <- bf(
+    logTbPrev | se(logTbPrevSE, sigma = TRUE) ~  1 + Sex + 
+                                                (1 + Sex | p | WHO.region) + 
+                                                (1 + Sex | q | id)
+)
+
+#notifications model:
+notif_model4 <- bf(
+    logNotifRate | se(logNotifRateSE, sigma = TRUE) ~ 1 + Sex + 
+                                                (1 + Sex | p | WHO.region) + 
+                                                (1 + Sex | q | id)
+)
+
+#fit the model
+sex_prev_notif_model4 <- brm(
+    formula = prev_model4 + notif_model4 + set_rescor(FALSE),
+    data = notifStrat,
+    family = gaussian(), 
+    # sample_prior = "only",
+    prior = c(
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logTbPrev"),
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logNotifRate"),
+        prior(normal(0,1), class = b, resp = "logTbPrev"),
+        prior(normal(0,1), class = b, resp = "logNotifRate"),
+        prior(exponential(2), class = sd, resp = "logTbPrev"),
+        prior(exponential(.1), class = sd, resp = "logNotifRate")
+    ),
+    control = list(adapt_delta = 0.99),
+    chains = 4,
+    cores = 4,
+    iter = 1000, 
+    warmup = 250
+)
+
+summary(sex_prev_notif_model4)
+# plot(sex_prev_notif_model4)
+            
+sex_prev_notif_est4 <-  sex_prev_notif_model4 %>% 
+    add_epred_draws(newdata = crossing(notifStrat %>% na.omit() %>% 
+                                           select(id, WHO.region),
+                                       Sex = c("female", "male"), 
+                                       logTbPrevSE = 0,
+                                       logNotifRateSE = 0),
+                    re_formula =  ~ 1 + Sex + (1 + Sex | WHO.region) + 
+                                   (1 + Sex | id)) %>%
+    ungroup() %>% 
+    dplyr::select(WHO.region, id, .category, Sex, .draw, .epred) %>%
+    pivot_wider(names_from = .category, values_from = .epred) %>%
+    mutate(npRatio = exp(logNotifRate - logTbPrev), 
+           notifRateMod = exp(logNotifRate)) 
+
+sex_prev_notif_estSummary4 <- 
+    sex_prev_notif_est4 %>%
+    group_by(Sex, WHO.region) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); sex_prev_notif_estSummary4
+
+sex_prev_notif_estSummaryTot4 <- 
+    sex_prev_notif_est4 %>%
+    group_by(Sex) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); sex_prev_notif_estSummaryTot4
+
+```
+
 
 ```{r Sex-specific PN Ratio Plot, warning=FALSE, message=FALSE, width=8.5, length=11.5}
 ggplot() + 
-    geom_point(data=sex_prev_notif_estSummary, aes(x=reorder(study.country, npRatio), y=npRatio, group=Sex, color = Sex), position=position_dodge(width = .6), size=2) + 
-    geom_errorbar(data=sex_prev_notif_estSummary, aes(x = reorder(study.country, npRatio), ymin=.lower, ymax=.upper, color=Sex), position=position_dodge(width = .6), size=1) +
+    geom_point(data=sex_prev_notif_estSummary2, aes(x=reorder(study.country, npRatio), y=npRatio, group=Sex, color = Sex), position=position_dodge(width = .6), size=2) + 
+    geom_errorbar(data=sex_prev_notif_estSummary2, aes(x = reorder(study.country, npRatio), ymin=.lower, ymax=.upper, color=Sex), position=position_dodge(width = .6), size=1) +
     # geom_point(data=notifPrevStrat2, aes(x=reorder(study.country, npRatio), y=empiricalRatio), color="black") + 
     theme_minimal() + 
     scale_color_manual(values = c("darkred", "dodgerblue4"))+
     coord_flip() + ylab("Notification to prevalence ratio") + xlab("") +
     theme( legend.position=c(.9,.2), legend.background = element_rect(fill="white")) +
     expand_limits(y=1) + geom_hline(yintercept = 1, linetype = 2) + 
-    scale_y_continuous(breaks=seq(0,1.25, .25)) +
+    scale_y_continuous(breaks=seq(0, 3.00, .25)) +
     theme(legend.position = "bottom")
     
-ggsave(here("output/sexSpecificPNratios.png"), plot = last_plot(),
-       width = 8.5, height=11, units = "in")
+# ggsave(here("output/sexSpecificPNratios.png"), plot = last_plot(),
+#        width = 8.5, height=11, units = "in")
 
 # notifPrevStrat2 <- notifPrevStrat %>% mutate(empiricalRatio = `Adjusted Prevalence`/notifRate) %>% 
 #     left_join(notifModel_est_summary %>% select(study.country, pnRatio))
 ```
 
-
-
-### Time-effect Model Specification 
+### Sex-stratified prevalence to notification ratios over time
 ```{r Time Model Specification, warning=FALSE, message=FALSE}
 
 sex_prev_time_model <- bf(
-    logTbPrev | se(logTbPrevSE, sigma = TRUE) ~ 1 + Sex*year_z + (1 + Sex*year_z | p | study.country) 
+    logTbPrev | se(logTbPrevSE, sigma = TRUE) ~ 1 + Sex*year_z + (1 + Sex*year_z | p | study.country) + (1 + Sex*year_z | q | id) 
 )
 
 #notifications model:
 sex_notif_time_model <- bf(
-    logNotifRate | se(logNotifRateSE, sigma = TRUE) ~ 1  + Sex*year_z + (1 + Sex*year_z | p | study.country) 
+    logNotifRate | se(logNotifRateSE, sigma = TRUE) ~ 1  + Sex*year_z + (1 + Sex*year_z | p | study.country) + (1 + Sex*year_z | q | id) 
 )
 
 #fit the model
@@ -714,7 +869,7 @@ sex_prev_notif_time_est <-  sex_prev_notif_time_model %>%
                                        year_z = min(notifStrat$year_z):max(notifStrat$year_z), 
                                        logTbPrevSE = 1,
                                        logNotifRateSE = 1),
-                    re_formula =  ~ 1 + Sex*year_z + (1 + | study.country)) %>%
+                    re_formula =  ~ 1 + Sex*year_z + (1 + Sex*year_z | study.country))  %>%
     ungroup() %>% 
     dplyr::select(study.country, .category, Sex, year_z,.draw, .epred) %>%
     pivot_wider(names_from = .category, values_from = .epred) %>%
@@ -758,17 +913,27 @@ y <- sex_prev_notif_time_est  %>%
 
 ggplot(data = y) +
         geom_line(aes(x=Year, y=npRatio, group=Sex, color = Sex),  size=2) + 
+    expand_limits(y=0) +
+    scale_fill_manual(values = myPal) + scale_color_manual(values = myPal) + 
+    labs(y = "TB notification to prevalence ratio",
+         x = "Year") +
+    theme_minimal(base_size = 20)  + theme(legend.position = "bottom") +
+    facet_wrap(facets=vars(Sex)) 
+
+ggplot(data = y) +
+        geom_line(aes(x=Year, y=npRatio, group=Sex, color = Sex),  size=2) + 
     geom_ribbon(aes(x = Year, ymin=.lower, ymax=.upper, fill=Sex), alpha=.5, size=1) +
     
     expand_limits(y=0) +
     scale_fill_manual(values = myPal) + scale_color_manual(values = myPal) + 
     labs(y = "TB notification to prevalence ratio",
          x = "Year") +
-    theme_minimal(base_size = 20)  + theme(legend.position = "bottom")
+    theme_minimal(base_size = 20)  + theme(legend.position = "bottom") +
+    facet_wrap(facets=vars(Sex)) 
 
 
-ggsave(here("output/sexSpecificPNratioTime.png"), plot = last_plot(),
-       width = 11, height=8.5, units = "in")
+# ggsave(here("output/sexSpecificPNratioTime.png"), plot = last_plot(),
+#        width = 11, height=8.5, units = "in")
 ```
 
 Covariates 
@@ -1477,3 +1642,4 @@ countryEffectModEst %>% group_by(study.country) %>% mean_qi(pnRatio)
 ggsave(here("output/mfPNratios.png"), plot = last_plot(), 
        width = 8.5, height=10, units = "in")
 ```
+
