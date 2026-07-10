@@ -1,0 +1,1214 @@
+---
+title: "Relationship between sex-disaggregated TB Prevalence and Notification Rates in Low- and Middle- Income Countries " 
+date: "`r Sys.Date()`"
+output: rmarkdown::pdf_document
+classoption: landscape
+geometry: margin=.5cm
+header-includes:
+  - \pagenumbering{gobble}
+---
+
+```{r Setup, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##### LOAD IN NECESSARY PACKAGES ##############################################
+library(dplyr)
+library(forcats)
+library(tidyr)
+library(reshape2)
+library(here)
+library(brms)
+library(tidybayes)
+library(scales)
+library(wesanderson)
+library(ggplot2)
+
+myPal <- c("black", "violet")
+
+source(here("code/bacterialPositiveIndicator.R"))
+source(here("code/smearPositiveIndicator.R"))
+source(here("code/varianceComponentModel.R"))
+
+##############################################################################|
+##### LOAD CLEAN DATA SET AND FILTER TO SURVEYS REPORTING SEX #################
+cleanSexNatDF0 <- bactPostIndicator("sex") %>% 
+                  filter(sex.analysis.indicator != "none", 
+                  study.geography == "Nationally representative") 
+
+### Check if any publication years are missing
+sum(is.na(cleanSexNatDF0$study.end.year))
+
+### Distribution of samples across reporting data type 
+table(cleanSexNatDF0$sex.analysis.indicator)
+
+```
+## Format prevalence data
+
+```{r Format Prevalence Data, echo = FALSE,  warning = FALSE, message=FALSE}
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanSexNatDF <- cleanSexNatDF0 %>% 
+                 filter(sex.analysis.indicator != "none") %>% 
+                 mutate("id" = row_number()) %>% 
+                 ### Scale all prevalence estimates back to decimals 
+                 mutate_at(vars(matches('prev100k.bacteriological.tb.|prev100k.ci.([a-z]{3})er.bacteriological.tb.|prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),
+                           ~ (. / 1e5)) %>%
+                select(id,
+                       covidence.id, 
+                       figure.id.yr, 
+                       study.geography, 
+                       title.extracted,
+                       study.country,
+                       study.rurality, 
+                       WHO.region,
+                       screening.tests,
+                       participants.sputum.collected,
+                       bacteriological.tb.definition,
+                       xpert.used,
+                       xpert.samples,
+                       other.xpert.samples,
+                       culture.used,
+                       culture.samples,
+                       other.culture.samples,
+                       study.start.year, 
+                       study.end.year, 
+                       publication.year,
+                       study.quality.summary,
+                       ends_with("male"), ends_with("sex"),
+                       sex.analysis.indicator) %>%
+                
+    mutate("tbPrev.male" =  case_when(sex.analysis.indicator == 
+                                           "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.male,
+                                       sex.analysis.indicator == 
+                                           "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.male/n.participants.male, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.male/n.participants.male,
+                                        sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+           "tbPrev.female" = case_when(sex.analysis.indicator == 
+                                            "adj.prev100k.ci.bacteriological.tb" ~ adj.prev100k.bacteriological.tb.female, 
+                                        sex.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.female,
+                                        sex.analysis.indicator == 
+                                            "prev100k.ci.bacteriological.tb" ~ prev100k.bacteriological.tb.female, 
+                                        sex.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.analysis.indicator == 
+                                           "n.bacteriological.tb" ~ n.bacteriological.tb.female/n.participants.female, 
+                                       sex.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "n.culture.positive.tb" ~ n.culture.positive.tb.female/n.participants.female,
+                                       sex.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female),
+           logTbPrev.male = log(tbPrev.male), 
+           logTbPrev.female = log(tbPrev.female)) %>%
+    #### Create a confidence interval for those without 
+    #### these are using the wilson method with continuity correction
+    #### cannot seem to get case_when to work so this is going to be verbose bc deadline
+    rowwise() %>%
+    mutate(calc.ci.lower.male = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.male, n.participants.male))$conf.int[1],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[1],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.male, n.participants.male))$conf.int[1],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.male = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.male, n.participants.male))$conf.int[2],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[2],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.male, n.participants.male))$conf.int[2],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[2], 
+                                              NA)))),
+           calc.ci.lower.female = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.female, n.participants.female))$conf.int[1],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[1],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.female, n.participants.female))$conf.int[1],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[1], 
+                                              NA)))),
+            calc.ci.upper.female = ifelse(sex.analysis.indicator == "n.bacteriological.tb",  
+                                              (prop.test(n.bacteriological.tb.female, n.participants.female))$conf.int[2],
+                                       ifelse(sex.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[2],
+                                          ifelse(sex.analysis.indicator == "n.culture.positive.tb", 
+                                              (prop.test(n.culture.positive.tb.female, n.participants.female))$conf.int[2],
+                                                ifelse(sex.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[2], 
+                                              NA))))) %>%
+        ungroup() %>%
+        mutate("tbPrevSE.male" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         (adj.prev100k.ci.upper.bacteriological.tb.male -
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         (adj.prev100k.ci.upper.smear.positive.tb.male -
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            (prev100k.ci.upper.bacteriological.tb.male -
+                                                                 prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            (prev100k.ci.upper.smear.positive.tb.male -
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                            (calc.ci.upper.male - calc.ci.lower.male)/3.92),
+           "tbPrevSE.female" =  case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         (adj.prev100k.ci.upper.bacteriological.tb.female  -
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         (adj.prev100k.ci.upper.smear.positive.tb.female -
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            (prev100k.ci.upper.bacteriological.tb.female -
+                                                                 prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            (prev100k.ci.upper.smear.positive.tb.female - 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                                        (calc.ci.upper.female - calc.ci.lower.female)/3.92),
+             "logTbPrevSE.male" = case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.bacteriological.tb.male /
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.male /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            log(prev100k.ci.upper.bacteriological.tb.male /
+                                                                 prev100k.ci.lower.bacteriological.tb.male)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.male /
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                            log(calc.ci.upper.male / calc.ci.lower.male)/3.92),
+           "logTbPrevSE.female" =  case_when(sex.analysis.indicator == "adj.prev100k.ci.bacteriological.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.bacteriological.tb.female  /
+                                                                 adj.prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.female /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.bacteriological.tb" ~ 
+                                            log(prev100k.ci.upper.bacteriological.tb.female /
+                                                                 prev100k.ci.lower.bacteriological.tb.female)/3.92,
+                                        sex.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.female / 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.analysis.indicator %in% c("n.bacteriological.tb", "n.smear.positive.tb", 
+                                                                      "n.culture.positive.tb", "prev100k.smear.positive.tb")  ~ 
+                                                        log(calc.ci.upper.female / calc.ci.lower.female)/3.92)) %>% 
+    
+        pivot_longer(cols = c(tbPrev.male, tbPrev.female,
+                              logTbPrev.male, logTbPrev.female, 
+                              logTbPrevSE.male, logTbPrevSE.female), 
+                 names_to = c("Measure","Sex"), 
+                 names_pattern = "(.*)\\.(.*)$", 
+                 ) %>% 
+        pivot_wider(names_from = Measure, values_from = value) %>%
+    mutate(natRep = ifelse(is.na(study.geography), 
+                                                       NA, 
+                                                       ifelse(study.geography == "Nationally representative", 
+                                                       "Yes", "No")),
+                                       ## preserve the extracted study end year
+                                       study.end.year.ext = study.end.year, 
+                                       ## update missing study end year to be publication year - mean lag
+                                       study.end.year = ifelse(!is.na(study.end.year), 
+                                                               study.end.year.ext, 
+                                                               publication.year - meanLag),
+                                       ## Mean center year for temporal analysis
+                                       year_z = study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       
+                                       symptomScreen = ifelse(is.na(screening.tests), 
+                                                                    NA, 
+                                                                    ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No")),
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected) | grepl("unknown", 
+                                                                                                              participants.sputum.collected,ignore.case=TRUE), 
+                                                                       NA, 
+                                                                       ifelse(!grepl("x-ray|all participants|other",
+                                                                        participants.sputum.collected,ignore.case=TRUE),
+                                                                 "Yes", "No")),
+
+                                       XpertCultRequired = ifelse(is.na(bacteriological.tb.definition),
+                                                                  NA, ifelse(!grepl("smear|micros|field|NTP", 
+                                                                              bacteriological.tb.definition,
+                                                                              ignore.case=TRUE), 
+                                                                  "Yes", 
+                                                                   "No")),
+                                       ### Fix those that were missed with the above attempt 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(26989,26928,26920,26918,26892,26861,26857), 
+                                                                  "Yes", XpertCultRequired), 
+                                       XpertCultRequired = ifelse(covidence.id %in% c(28002), 
+                                                                  "No", XpertCultRequired),
+                                       #### if we used the culture positive count, then xpert culture was requried
+                                       XpertCultRequired = ifelse(grepl("culture", sex.analysis.indicator), 
+                                                                  "Yes", XpertCultRequired),
+                                       #### if we used the smear positive prevs, then xpert culture was not requried
+                                       XpertCultRequired = ifelse(grepl("smear", sex.analysis.indicator), 
+                                                                  "No", XpertCultRequired),
+                                       XpertCultUsed = ifelse((grepl("Yes", xpert.used) & 
+                                                                 (grepl("All samples", xpert.samples) |
+                                                                  !grepl("mear|NAAT", other.xpert.samples))) |
+                                                                  (grepl("Yes", culture.used) & 
+                                                                  grepl("All samples|Subset", culture.samples) & 
+                                                                  !grepl("HIV", other.culture.samples)), 
+                                                                 "Yes", "No"),
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region))
+
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdj <- varianceAdjust("sex")
+
+
+bactModelNatDF1 <- cleanSexNatDF %>%  
+    select(id, WHO.region, study.country, study.end.year, 
+           sex.analysis.indicator,
+           Sex, tbPrev, 
+           logTbPrev, logTbPrevSE,
+           XpertCultRequired, XpertCultUsed,
+           symptomsRequired,
+           study.rurality, bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z) 
+
+bactModelNatDF <- cleanSexNatDF %>%  
+    select(id, WHO.region, study.country, study.end.year, 
+           sex.analysis.indicator,
+           Sex, tbPrev,
+           logTbPrev, logTbPrevSE,
+           XpertCultRequired, XpertCultUsed,
+           symptomsRequired,
+           study.rurality, bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z) %>%
+    pivot_wider(id_cols = c(id, WHO.region, study.country, study.end.year, 
+           sex.analysis.indicator,
+           XpertCultRequired, XpertCultUsed,
+           symptomsRequired,
+           study.rurality, bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z), 
+                names_from = Sex,
+                values_from = c(tbPrev, logTbPrev, logTbPrevSE),
+                names_sep = "_") %>%
+    mutate(logPR = logTbPrev_male - logTbPrev_female,
+           unadj_logPR_se = sqrt(logTbPrevSE_male^2 + logTbPrevSE_female^2), 
+           log_PR_se = ifelse(grepl("adj", sex.analysis.indicator), 
+                                     unadj_logPR_se,
+                                     ifelse(grepl("smear", sex.analysis.indicator),
+                                         sqrt(`unadj_logPR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logPR_se`^2 + varAdj["Bact Variance Median"]))))
+
+```
+### Plot TB prevalence 
+
+```{r, height = 8, width =11}
+
+ggplot() +
+    geom_point(data=bactModelNatDF1 %>% 
+                   mutate(label = paste(study.country, study.end.year)), 
+              aes(x=reorder(label, tbPrev), y=tbPrev*1e5, group=Sex, color=Sex), size=2) +
+
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_wrap(vars(Sex)) + ggtitle("Reported sex-stratified TB prevalence by survey") +
+    coord_flip() + 
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Reported bacteriologically confirmed TB prevalence (per 100,000)") + 
+    xlab("") 
+
+```
+
+## Format notification data
+
+```{r Notification Data, echo = FALSE,  warning = FALSE, message=FALSE, width=11.5, height=8.5}
+##### NOTIFICATION DATA ##############################################
+# notif00 <- read.csv(here("data/covariates/TB_notifications_2025-07-18.csv"))
+notif00 <- read.csv("~/Downloads/TB_notifications_2026-04-23.csv")
+sexPop0 <- read.csv(here("data/covariates/populationData.csv"))
+
+sexPop <- sexPop0 %>% melt(id.vars = c("Country.Name", "Series.Name")) %>%
+          mutate(year = as.integer(gsub("X", "", variable))) %>% 
+          select(! variable) %>%
+          pivot_wider(id_cols = c(Country.Name, year), 
+                      names_from = Series.Name, values_from = value) %>% 
+          rename(country = Country.Name, 
+                 pop_male = male, 
+                 pop_female = female)
+
+### Need cambodia 2024 population
+
+
+sexPop[grep("Viet", sexPop$country), "country"] <- 
+    notif00[grep("Viet", notif00$country), "country"] <- "Vietnam"
+sexPop[grep("Lao", sexPop$country), "country"] <- 
+    notif00[grep("Lao", notif00$country), "country"] <- "Laos"
+sexPop[grep("People's", sexPop$country), "country"] <- 
+    notif00[grep("People's", notif00$country), "country"] <- "North Korea"
+sexPop[grep("Gambia", sexPop$country), "country"] <- 
+    notif00[grep("Gambia", notif00$country), "country"] <- "Gambia"
+sexPop[grep("Tanzania", sexPop$country), "country"] <- 
+    notif00[grep("Tanzania", notif00$country), "country"] <- "Tanzania"
+
+#### Convert to male-to-female ratios 
+notif0 <- notif00 %>% 
+         filter(year > 1993, 
+                country %in% unique(bactModelNatDF$study.country)) %>%
+         select(country, g_whoregion, 
+                year, 
+                newrel_m15plus,
+                newrel_f15plus, 
+                new_sn_m15plus, new_ep_m15plus, 
+                new_sp_m1524, new_sp_m2534, 
+                new_sp_m3544, new_sp_m4554,
+                new_sp_m5564, new_sp_m65, new_sp_mu,
+                new_sn_f15plus, new_ep_f15plus, 
+                new_sp_f1524, new_sp_f2534, 
+                new_sp_f3544, new_sp_f4554,
+                new_sp_f5564, new_sp_f65, new_sp_fu) %>% 
+         left_join(sexPop) %>%
+         mutate(cases_male = newrel_m15plus,
+                allCases_male = newrel_m15plus,
+                cases_female = newrel_f15plus,
+                allCases_female = newrel_f15plus,
+                smrCases_male = new_sp_m1524 + new_sp_m2534 + new_sp_m3544 + new_sp_m4554 + new_sp_m5564 + new_sp_m65, 
+                smrCases_female = new_sp_f1524 + new_sp_f2534 + new_sp_f3544 + new_sp_f4554 + new_sp_f5564 + new_sp_f65)
+
+### for some reason if else wouldn't work so let' just loop 
+for (i in 1:nrow(notif0)){
+    if (is.na(notif0$cases_male[i]) & notif0$year[i] < 2013){
+        notif0$cases_female[i] <- sum((notif0 %>% select(contains(c("sn_f", "sp_f"))))[i,], na.rm = T)
+        notif0$cases_male[i]   <- sum((notif0 %>% select(contains(c("sn_m", "sp_m"))))[i,], na.rm = T)
+        
+        notif0$allCases_female[i] <- sum((notif0 %>% select(contains(c("sn_f", 
+                                                                        "sp_f", "ep_f"))))[i,], na.rm = T)
+        notif0$allCases_male[i]   <- sum((notif0 %>% select(contains(c("sn_m", 
+                                                                        "sp_m", "ep_m"))))[i,], na.rm = T)
+    }
+}
+
+### Need cases bangladesh 2009 and Myanmar 1994
+
+
+notifStrat <- notif0 %>% 
+              pivot_longer(cols=c(pop_male, pop_female, 
+                                 cases_male, cases_female,
+                                 allCases_male, allCases_female,
+                                 smrCases_male, smrCases_female), 
+                          names_to = c("Measure", "Sex"), 
+                          # names_prefix = "notifRate",
+                          names_sep = "_",
+                          values_to = "values",
+                          values_drop_na = TRUE) %>%
+              pivot_wider(names_from = Measure, 
+                          values_from = values) %>% 
+              mutate(### Poisson uncertainty
+                     casesSE = sqrt(cases / pop),
+                     ### Notification rate 
+                     notifRate = cases/pop, 
+                     allnotifRate = allCases / pop, 
+                     smrNotifRate = smrCases / pop,
+                     ### Notification rate uncertainty
+                     notifRateSE = casesSE/pop, 
+                     ### Log notification rate 
+                     logNotifRate = log(notifRate), 
+                     logSmrNotifRate = log(smrNotifRate), 
+                     ### Uncertainty in log notification rate
+                     logNotifRateSE = log((cases + casesSE) / (cases-casesSE))/pop)  %>%
+              select(country, year, Sex, pop, cases, casesSE, allCases, 
+                     notifRate, notifRateSE, allnotifRate, 
+                     logNotifRate, logNotifRateSE, 
+                     smrNotifRate, logSmrNotifRate)
+
+
+notifRatio <- notif0 %>% 
+              mutate(notifRateMale = cases_male/pop_male, 
+                     notifRateFemale = cases_female/pop_female, 
+                     # notifRateBoth = (cases_female + cases_male) / (pop_female + pop_male), 
+                     allNotifRateMale = allCases_male/pop_male, 
+                     allNotifRateFemale = allCases_female/pop_female,
+                     logNotifRateMale = log(notifRateMale),
+                     logNotifRateFemale = log(notifRateFemale),
+                     mfRatioNotif = notifRateMale/notifRateFemale,
+                     logMfRatioNotif = log(mfRatioNotif)) %>% 
+              rename(study.country = country, 
+                     study.end.year = year) 
+
+notifPrevRatio <- left_join(bactModelNatDF, notifRatio) %>% 
+              mutate(notifRateMale = ifelse(notifRateMale==0, NA, notifRateMale),
+                     allNotifRateMale = ifelse(allNotifRateMale==0, NA, allNotifRateMale),
+                     notifRateFemale = ifelse(notifRateFemale==0, NA, notifRateFemale),
+                     allNotifRateFemale = ifelse(allNotifRateFemale==0, NA, allNotifRateFemale),
+                     
+                     empPNMale = tbPrev_male / notifRateMale, 
+                     empAllPNMale = tbPrev_male / allNotifRateMale, 
+                     empNPMale = notifRateMale / tbPrev_male, 
+                     empPNFemale = tbPrev_female / notifRateFemale, 
+                     empAllPNFemale = tbPrev_female / allNotifRateFemale, 
+                     empNPFemale = notifRateFemale / tbPrev_female, 
+                     label = paste(study.country, study.end.year))
+
+bactNotifStrat <- bactModelNatDF1  %>%
+             select(id,
+                    Sex,
+                    logTbPrev,
+                    logTbPrevSE,
+                    study.country, 
+                    WHO.region, 
+                    study.end.year,
+                    # `Adjusted Prevalence`,
+                    # sex.analysis.indicator,
+                    # XpertCultRequired,
+                    year_z) %>%
+             rename(country = study.country,
+                    year = study.end.year) %>%
+             left_join(notifStrat, by=c("country", "year", "Sex")) %>%
+             rename(study.country = country,
+                    study.end.year = year) %>%
+             mutate(notifRate = ifelse(notifRate==0, NA, notifRate))
+
+smrNotifStrat <- bactModelNatDF1  %>%
+             select(id,
+                    Sex,
+                    logTbPrev,
+                    logTbPrevSE,
+                    study.country, 
+                    WHO.region, 
+                    study.end.year,
+                    year_z) %>%
+             rename(country = study.country,
+                    year = study.end.year) %>%
+             left_join(notifStrat, by=c("country", "year", "Sex")) %>%
+             rename(study.country = country,
+                    study.end.year = year) %>%
+             mutate(notifRate = ifelse(notifRate==0, NA, notifRate))
+
+
+npRatioDF <- left_join(bactModelNatDF1  %>%
+                         select(id, Sex,
+                                tbPrev,
+                                logTbPrev, 
+                                logTbPrevSE,
+                                study.country, 
+                                WHO.region,
+                                study.end.year, 
+                                year_z), 
+                       notifStrat) 
+
+notifStratNaRm <- bactNotifStrat %>% na.omit()
+
+```
+
+
+## Model 1: Sex-stratified TB prevalence only
+
+```{r Sex-stratified Prevalence Model, warning=FALSE, message=FALSE, results="hide", fig.height = 8, fig.width =11}
+tbPrevMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
+                           1 + Sex + (1 + Sex | study.country) + (1 + Sex | id),
+                       data = bactModelNatDF1,
+                       prior = 
+                               # prior(normal(0,10), class = Intercept) +
+                               # prior(exponential(2), class = sd) +
+                               # prior(normal(0,10), class = b) +
+                               # prior(exponential(4), class = sigma),
+                       
+                               prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(exponential(4), class = sigma) +
+                               prior(lkj(4), class=cor),
+                       
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 10000, warmup = 2500, thin=3)
+
+# tbPrevSimpMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
+#                            1 + Sex + (1 | study.country) + (1 + Sex | id),
+#                        data = bactModelNatDF1,
+#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+#                                prior(exponential(2), class = sd),
+#                             
+#                        family = gaussian(),
+#                        control = list(adapt_delta = 0.99),
+#                        chains = 4,
+#                        cores = 4,
+#                        iter = 10000, warmup = 2500, thin=3)
+
+### check the fit 
+plot(tbPrevMod)
+
+### posterior predictive check 
+pp_check(tbPrevMod, ndraws=100)
+
+### coefficients
+summary(tbPrevMod)
+
+### create model estimates 
+survey_tb_prev_mod_est <-  tbPrevMod %>% 
+    add_epred_draws(newdata = bactModelNatDF1 %>%  
+                              mutate(logTbPrevSE = 0),
+                    re_formula =  ~ 1 + Sex + (1 + Sex | study.country) + (1 + Sex | id), 
+                    allow_new_levels=TRUE) %>%
+    ungroup() %>% 
+    mutate(label = paste(study.country, study.end.year)) %>% 
+    dplyr::select(label, study.country, id, Sex, .draw, .epred) %>%
+    group_by(Sex, id, study.country) %>%  
+    mutate(tbPrev = exp(.epred) * 1e5)
+
+### Create summary statistics 
+survey_tb_prev_mod_summary <- 
+    survey_tb_prev_mod_est %>%
+    group_by(Sex, study.country, id, label) %>%
+    mean_qi(tbPrev, na.rm=T) %>% 
+    mutate(across(c(tbPrev, .lower, .upper), 
+                  round, 2)); survey_tb_prev_mod_summary
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
+
+ggplot() +
+    geom_point(data=survey_tb_prev_mod_summary, 
+              aes(x=reorder(label, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
+    geom_errorbar(data=survey_tb_prev_mod_summary, 
+              aes(x=reorder(label, tbPrev), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB prevalence by survey") +
+    coord_flip() + 
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") + 
+    xlab("") + 
+    geom_point(data=bactModelNatDF1 %>%
+               mutate(label = paste(study.country, study.end.year)),
+               aes(x=reorder(label, tbPrev), y=tbPrev*1e5,
+                    group=Sex, color=Sex), alpha = .3, size=3) +
+    facet_wrap(facets = vars(Sex))
+
+```
+
+### Country level prevalence 
+
+```{r}
+cntry_nd <- crossing(study.country = unique(bactModelNatDF1$study.country),
+                            Sex = unique(bactModelNatDF1$Sex),
+                            logTbPrevSE = 0)
+
+
+cntry_tb_prev_mod_est <-  tbPrevMod %>% 
+                          add_epred_draws(newdata = cntry_nd,
+                                          re_formula =  ~ 1 + (1 + Sex | study.country),
+                                          allow_new_levels=TRUE) %>%
+                            ungroup() %>% 
+                            dplyr::select(study.country, Sex, .draw, .epred) %>%
+                            group_by(Sex, study.country) %>%  
+                            mutate(tbPrev = exp(.epred) * 1e5)
+
+cntry_tb_prev_mod_summary <- 
+    cntry_tb_prev_mod_est %>%
+    group_by(Sex, study.country) %>%
+    mean_qi(tbPrev, na.rm=T) %>% 
+    mutate(across(c(tbPrev, .lower, .upper), 
+                  round, 2)); cntry_tb_prev_mod_summary
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
+ggplot() +
+    geom_point(data=cntry_tb_prev_mod_summary, 
+              aes(x=reorder(study.country, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
+    geom_errorbar(data=cntry_tb_prev_mod_summary, 
+              aes(x=reorder(study.country, tbPrev), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB prevalence by country") +
+    coord_flip() + 
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") + 
+    xlab("") + 
+    geom_point(data=bactModelNatDF1,
+               aes(x=reorder(study.country, tbPrev), y=tbPrev*1e5,
+                    group=Sex, color=Sex), alpha = .3, size=3) +
+    facet_wrap(facets = vars(Sex), scales = "free_x")
+```
+
+
+### Model 2: Notification as a covariate
+
+```{r Sex-stratified Prevalence with Notifications Model, warning=FALSE, message=FALSE, results="hide", fig.height = 8, fig.width =11}
+
+model2 <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
+                           1 + Sex + (1 + Sex | study.country) + (1 + Sex | id) + notifRate,
+                       data = notifStratNaRm %>% mutate("id" = row_number()),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(exponential(4), class = sigma) +
+                               prior(lkj(4), class=cor),
+                       
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 10000, warmup = 2500, thin=3)
+
+# tbPrevSimpMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
+#                            1 + Sex + (1 | study.country) + (1 + Sex | id),
+#                        data = bactModelNatDF1,
+#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+#                                prior(exponential(2), class = sd),
+#                             
+#                        family = gaussian(),
+#                        control = list(adapt_delta = 0.99),
+#                        chains = 4,
+#                        cores = 4,
+#                        iter = 10000, warmup = 2500, thin=3)
+
+### check the fit 
+# plot(model2)
+
+### posterior predictive check 
+pp_check(model2, ndraws=100)
+
+### coefficients
+summary(model2)
+
+### create model estimates 
+survey_mod2_est <-  model2 %>% 
+    add_epred_draws(newdata = notifStratNaRm %>%  
+                              mutate(logTbPrevSE = 0),
+                    re_formula =  ~ 1 + Sex + (1 + Sex | study.country) + (1 + Sex | id) + notifRate, 
+                    allow_new_levels=TRUE) %>%
+    ungroup() %>% 
+    mutate(label = paste(study.country, study.end.year)) %>% 
+    dplyr::select(label, study.country, id, Sex, notifRate, .draw, .epred) %>%
+    group_by(Sex, id, study.country) %>%  
+    mutate(tbPrev = exp(.epred) * 1e5, 
+           pnRatio = exp(.epred) / notifRate) %>% 
+    select(!notifRate)
+
+### Create summary statistics 
+survey_mod2_summary <- 
+    survey_mod2_est %>%
+    group_by(Sex, study.country, id, label) %>%
+    mean_qi(tbPrev, na.rm=T) %>% 
+    mutate(across(c(tbPrev, .lower, .upper), 
+                  round, 2)); survey_mod2_summary
+
+survey_mod2_pn_summary <- 
+    survey_mod2_est %>%
+    group_by(Sex, study.country, id, label) %>%
+    mean_qi(pnRatio, na.rm=T) %>% 
+    mutate(across(c(pnRatio, .lower, .upper), 
+                  round, 2)); survey_mod2_pn_summary
+```
+
+```{r Survey estimates, warning=FALSE, message=FALSE, results="hide", fig.height = 8, fig.width =11}
+tmp <- left_join(survey_mod2_summary, notifStratNaRm %>% mutate(rawTBPrev = exp(logTbPrev) * 1e5) %>% select(!c(study.country)), 
+                 by = c("id", "Sex"))
+
+ggplot() +
+    geom_point(data=survey_mod2_summary,
+              aes(x=reorder(label, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
+    geom_errorbar(data=survey_mod2_summary,
+              aes(x=reorder(label, tbPrev), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB prevalence by survey") +
+    coord_flip() +
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") +
+    xlab("") +
+    geom_point(data=tmp, 
+               aes(x=reorder(label, tbPrev), y=rawTBPrev,
+                    group=Sex, color=Sex), alpha = .3, size=3) +
+    facet_wrap(facets = vars(Sex))
+
+```
+
+### Country level prevalence 
+
+```{r}
+cntry_mod2_nd <- tmp %>% mutate(logTbPrevSE = 0)
+
+
+cntry_mod2_est <-  model2 %>%
+                          add_epred_draws(newdata = cntry_mod2_nd,
+                                          re_formula =  ~ 1 + (1 + Sex | study.country) + notifRate,
+                                          allow_new_levels=TRUE) %>%
+                            ungroup() %>%
+                            dplyr::select(study.country, Sex, notifRate, .draw, .epred) %>%
+                            mutate(tbPrev = exp(.epred) * 1e5, 
+                                   pnRatio = exp(.epred) / notifRate) %>% 
+                            select(!notifRate)
+
+cntry_mod2_summary <-
+    cntry_mod2_est %>%
+    group_by(Sex, study.country) %>%
+    mean_qi(tbPrev, na.rm=T) %>%
+    mutate(across(c(tbPrev, .lower, .upper),
+                  round, 2)); cntry_mod2_summary
+
+cntry_mod2_pn_summary <-
+    cntry_mod2_est %>%
+    group_by(Sex, study.country) %>%
+    mean_qi(pnRatio, na.rm=T) %>%
+    mutate(across(c(pnRatio, .lower, .upper),
+                  round, 2)); cntry_mod2_pn_summary
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
+### take order from last plot 
+# cntry_mod2_summary$order <- arrange(cntry_tb_prev_mod_summary, tbPrev) %>% select(study.country) %>% unlist() 
+# tmp <- left_join(tmp, cntry_mod2_summary %>% select(study.country, order))
+# ggplot() +
+#     geom_point(data=cntry_mod2_summary,
+#               aes(x=reorder(study.country, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
+#     geom_errorbar(data=cntry_mod2_summary,
+#               aes(x=reorder(study.country, tbPrev), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+#     theme_minimal(base_size=14) + theme(legend.position = "none",
+#                             axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+#     facet_grid() + ggtitle("Sex-stratified TB prevalence by country") +
+#     coord_flip() +
+#     scale_color_manual(values = c("darkred", "dodgerblue4"))+
+#     ylab("Bacteriologically confirmed TB prevalence (per 100,000)") +
+#     xlab("") +
+#     geom_point(data=tmp,
+#                aes(x=reorder(study.country, rawTBPrev), y=rawTBPrev,
+#                     group=Sex, color=Sex), alpha = .5, size=3) +
+#     facet_wrap(facets = vars(Sex), scales = "free_x")
+
+ggplot() +
+    geom_point(data=cntry_mod2_summary,
+              aes(x=reorder(study.country, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
+    geom_errorbar(data=cntry_mod2_summary,
+              aes(x=reorder(study.country, tbPrev), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB prevalence by country") +
+    coord_flip() +
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") +
+    xlab("") +
+    geom_point(data=tmp,
+               aes(x=reorder(study.country, tbPrev), y=rawTBPrev,
+                    group=Sex, color=Sex), alpha = .3, size=3) +
+    facet_wrap(facets = vars(Sex), scales = "free_x")
+```
+
+### Plot the pn ratio 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
+ggplot() +
+    geom_point(data=cntry_mod2_pn_summary,
+              aes(x=reorder(study.country, pnRatio), y=pnRatio, group=Sex, color=Sex), size=2) +
+    geom_errorbar(data=cntry_mod2_pn_summary,
+              aes(x=reorder(study.country, pnRatio), ymin=.lower, ymax=.upper, group=Sex, color=Sex)) +
+    theme_minimal(base_size=14) + theme(legend.position = "none",
+                            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
+    facet_grid() + ggtitle("Sex-stratified TB P:N ratio by country") +
+    coord_flip() +
+    scale_color_manual(values = c("darkred", "dodgerblue4"))+
+    ylab("Bacteriologically confirmed TB prevalence (per 100,000)") +
+    xlab("") +
+    facet_wrap(facets = vars(Sex), scales = "free_x")
+```
+
+### Recreate WHO plot
+```{r}
+survey_mod2_pn_summary <- 
+    survey_mod2_pn_summary %>% 
+ select(label, Sex, pnRatio) %>% 
+ pivot_wider(id_cols = label, names_from = Sex, values_from = pnRatio) %>% 
+ rowwise() %>% 
+  mutate(mean = mean(c(female,male) )) %>% 
+  arrange(mean) %>% 
+  mutate(label=factor(label, label))
+
+ggplot(survey_mod2_pn_summary) + 
+      geom_segment( aes(x=label, xend=label, y=female, yend=male), color="grey") +
+  geom_point( aes(x=label, y=female), color="#6A5ACD", size=3 ) +
+  geom_point( aes(x=label, y=male), color="#FFB302", size=3 ) +
+  coord_flip() + theme_minimal() + 
+  scale_y_continuous(breaks=seq(0, 26,2)) + 
+  ylab("prevalence:notification ratio") + 
+    xlab("") + 
+    ggtitle("bact conf with pooling")
+
+
+```
+
+### without pooling
+```{r}
+lolliNoPoolDF <- 
+    notifStrat %>% 
+ select(study.country, study.end.year, Sex, logTbPrev, notifRate) %>%
+ mutate(label = paste(study.country, study.end.year), pnRatio = exp(logTbPrev)/notifRate) %>% select(label, Sex,  pnRatio) %>% 
+ pivot_wider(id_cols = label, names_from = Sex, values_from = pnRatio) %>% 
+ rowwise() %>% 
+  mutate(mean = mean(c(female,male) )) %>% 
+  arrange(mean) %>% 
+  mutate(label=factor(label, label)) %>% na.omit()
+
+ggplot(lolliNoPoolDF) + 
+      geom_segment( aes(x=label, xend=label, y=female, yend=male), color="grey") +
+  geom_point( aes(x=label, y=female), color="#6A5ACD", size=3 ) +
+  geom_point( aes(x=label, y=male), color="#FFB302", size=3 ) +
+  coord_flip() + theme_minimal() + 
+  scale_y_continuous(breaks=seq(0, 26,2)) + 
+  ylab("prevalence:notification ratio") + 
+    xlab("") + 
+    ggtitle("bact conf without pooling")
+
+
+```
+
+### who uses smear positive so let's try that 
+
+## SMEAR POSITIVE ANALYSIS 
+
+```{r, echo = FALSE,  warning = FALSE, message=FALSE}
+
+cleanSexSmrDF0 <- smrPosIndicator("sex") %>% 
+                  filter(sex.smr.analysis.indicator !="none",
+                  study.geography == "Nationally representative")  
+
+##############################################################################|
+##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
+cleanSexSmrDF <- cleanSexSmrDF0 %>% 
+                 mutate("id" = row_number(),
+                        ### We have a lower ci of zero so replace with super small non-zero number
+                        adj.prev100k.ci.lower.smear.positive.tb.female = ifelse(
+                                            adj.prev100k.ci.lower.smear.positive.tb.female == 0, 
+                                            1e-4, 
+                                            adj.prev100k.ci.lower.smear.positive.tb.female
+                        )) %>%
+                 ### Scale all prevalence estimates back to decimals 
+                 mutate_at(vars(matches('prev100k.smear.positive.tb.|prev100k.ci.([a-z]{3})er.smear.positive.tb.')),  ~ (. / 1e5)) %>% 
+                 select(id,
+                       covidence.id, 
+                       figure.id.yr, 
+                       study.geography, 
+                       title.extracted,
+                       study.country,
+                       WHO.region,
+                       study.start.year, 
+                       study.end.year, 
+                       publication.year,
+                       study.quality.summary,
+                       screening.tests,
+                       bacteriological.tb.definition, 
+                       xpert.samples, xpert.used, other.xpert.samples,
+                       culture.samples, culture.used, other.culture.samples,
+                       participants.sputum.collected,
+                       ends_with("male"), ends_with("sex"),
+                       sex.smr.analysis.indicator) %>%
+    
+    mutate("tbPrevSmr.male" =  case_when(sex.smr.analysis.indicator == 
+                                           "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.male,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.male, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.male/n.participants.male,
+                                        sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.male),
+           "tbPrevSmr.female" = case_when(sex.smr.analysis.indicator == 
+                                            "adj.prev100k.ci.smear.positive.tb" ~ adj.prev100k.smear.positive.tb.female,
+                                        sex.smr.analysis.indicator == 
+                                            "prev100k.ci.smear.positive.tb" ~ prev100k.smear.positive.tb.female, 
+                                       sex.smr.analysis.indicator == 
+                                           "n.smear.positive.tb" ~ n.smear.positive.tb.female/n.participants.female,
+                                       sex.smr.analysis.indicator == 
+                                           "prev100k.smear.positive.tb" ~ prev100k.smear.positive.tb.female),
+           logTbPrevSmr.male = log(tbPrevSmr.male), 
+           logTbPrevSmr.female = log(tbPrevSmr.female)) %>%
+
+    #### Create a confidence interval for those without 
+    #### these are using the wilson method with continuity correction
+    #### cannot seem to get case_when to work so this is going to be verbose bc deadline
+    
+    rowwise() %>%
+    mutate(calc.ci.lower.male = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[1],
+                                        ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[1], 
+                                              NA)),
+            calc.ci.upper.male = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                        (prop.test(n.smear.positive.tb.male, n.participants.male))$conf.int[2],
+                                  ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.male*n.participants.male, n.participants.male))$conf.int[2], 
+                                              NA)),
+           calc.ci.lower.female = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[1],
+                                  ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[1], 
+                                              NA)),
+            calc.ci.upper.female = ifelse(sex.smr.analysis.indicator == "n.smear.positive.tb",
+                                              (prop.test(n.smear.positive.tb.female, n.participants.female))$conf.int[2],
+                                   ifelse(sex.smr.analysis.indicator == "prev100k.smear.positive.tb",
+                                              (prop.test(prev100k.smear.positive.tb.female*n.participants.female, n.participants.female))$conf.int[2], 
+                                              NA))) %>%
+        ungroup() %>%
+        mutate("tbPrevSmrSE.male" = case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         (adj.prev100k.ci.upper.smear.positive.tb.male -
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            (prev100k.ci.upper.smear.positive.tb.male -
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                            (calc.ci.upper.male - calc.ci.lower.male)/3.92),
+           "tbPrevSmrSE.female" =  case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         (adj.prev100k.ci.upper.smear.positive.tb.female -
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            (prev100k.ci.upper.smear.positive.tb.female - 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                                        (calc.ci.upper.male - calc.ci.lower.male)/3.92),
+           "logTbPrevSmrSE.male" = case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.male /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.male /
+                                                                 prev100k.ci.lower.smear.positive.tb.male)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                            log(calc.ci.upper.male / calc.ci.lower.male)/3.92),
+           "logTbPrevSmrSE.female" =  case_when(
+                                        sex.smr.analysis.indicator == "adj.prev100k.ci.smear.positive.tb"  ~ 
+                                         log(adj.prev100k.ci.upper.smear.positive.tb.female /
+                                                                 adj.prev100k.ci.lower.smear.positive.tb.female)/3.92,
+
+                                        sex.smr.analysis.indicator == "prev100k.ci.smear.positive.tb" ~ 
+                                            log(prev100k.ci.upper.smear.positive.tb.female / 
+                                                                 prev100k.ci.lower.smear.positive.tb.female)/3.92,
+                                        sex.smr.analysis.indicator %in% c("n.smear.positive.tb", 
+                                                                      "prev100k.smear.positive.tb")  ~ 
+                                                        log(calc.ci.upper.male / calc.ci.lower.male)/3.92)) %>% 
+     pivot_longer(cols = c(tbPrevSmr.male, tbPrevSmr.female,
+                              logTbPrevSmr.male, logTbPrevSmr.female, 
+                              logTbPrevSmrSE.male, logTbPrevSmrSE.female), 
+                 names_to = c("Measure","Sex"), 
+                 names_pattern = "(.*)\\.(.*)$", 
+                 ) %>% 
+        pivot_wider(names_from = Measure, values_from = value) %>% 
+                                mutate(natRep = ifelse(is.na(study.geography), 
+                                                       NA, 
+                                                       ifelse(study.geography == "Nationally representative", 
+                                                       "Yes", "No")),
+                                       ## preserve the extracted study end year
+                                       study.end.year.ext = study.end.year, 
+                                       ## update missing study end year to be publication year - mean lag
+                                       study.end.year = ifelse(!is.na(study.end.year), 
+                                                               study.end.year.ext, 
+                                                               publication.year - meanLag),
+                                       ## Mean center year for temporal analysis
+                                       year_z = study.end.year - round(mean(study.end.year, na.rm=TRUE)),
+
+                                       bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+                                       
+                                       symptomScreen = ifelse(is.na(screening.tests), 
+                                                                    NA, 
+                                                                    ifelse(grepl("Symptom", 
+                                                                    screening.tests, 
+                                                                    ignore.case=TRUE), "Yes", "No")),
+                                       symptomsRequired = ifelse(is.na(participants.sputum.collected) | grepl("unknown", 
+                                                                                                              participants.sputum.collected,ignore.case=TRUE), 
+                                                                       NA, 
+                                                                       ifelse(!grepl("x-ray|all participants|other",
+                                                                        participants.sputum.collected,ignore.case=TRUE),
+                                                                 "Yes", "No")),
+
+                                       WHO.region = gsub("\\(WHO\\)", "region", WHO.region)) 
+
+##############################################################################|
+#### Dataset for modeling #####################################################
+##############################################################################|
+#### Calculate the variance adjustment for non-adjusted studies
+varAdjPR <- varianceAdjust("sex")
+
+
+smrModelNatDF1 <- cleanSexSmrDF %>%  
+    select(id, WHO.region, study.country, study.end.year, 
+sex.smr.analysis.indicator,
+Sex, tbPrevSmr, 
+           logTbPrevSmr, logTbPrevSmrSE,
+           symptomsRequired,
+           bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z) 
+
+smrModelNatDF <- cleanSexSmrDF %>%  
+    select(id, WHO.region, study.country, study.end.year, 
+           sex.smr.analysis.indicator, Sex, tbPrevSmr,
+           logTbPrevSmr, logTbPrevSmrSE,
+           symptomsRequired,
+           bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z) %>%
+    pivot_wider(id_cols = c(id, WHO.region, study.country, study.end.year, 
+           symptomsRequired, sex.smr.analysis.indicator,
+            bias, 
+           n.participants.male, n.participants.female, 
+           bias, publication.year, year_z), 
+                names_from = Sex,
+                values_from = c(tbPrevSmr, logTbPrevSmr, logTbPrevSmrSE),
+                names_sep = "_") %>%
+    mutate(logPR = logTbPrevSmr_male - logTbPrevSmr_female,
+           unadj_logPR_se = sqrt(logTbPrevSmrSE_male^2 + logTbPrevSmrSE_female^2), 
+           log_PR_se = ifelse(grepl("adj", sex.smr.analysis.indicator), 
+                                     unadj_logPR_se,
+                                     ifelse(grepl("smear", sex.smr.analysis.indicator),
+                                         sqrt(`unadj_logPR_se`^2 + varAdj["Smear Variance Median"]),
+                                         sqrt(`unadj_logPR_se`^2 + varAdj["Bact Variance Median"]))))
+
+
+#### Add in notifications
+smrNotifStrat2 <- left_join(smrModelNatDF1, smrNotifStrat, 
+                            by = c("study.country", "study.end.year", "Sex")) %>% 
+    mutate(id = )
+
+View(smrNotifStrat2)
+
+```
+
+### Compare smear to total notifications
+```{r, warnings=FALSE}
+
+ggplot(data=smrNotifStrat) + 
+    geom_point(aes(x=study.country, y=notifRate, shape=Sex),  color = "springgreen3", size=3) + 
+    geom_point(aes(x=study.country, y=smrNotifRate, shape=Sex),  color = "orange", size =3) + 
+    theme_minimal()  + coord_flip() + theme(legend.position = "bottom")
+    # facet_wrap(facets=vars(study.country))
+    
+
+```
+
+
+
+### Model 3: prevalence with notification as a covariate 
+
+```{r}
+model3 <- brms::brm(formula = logTbPrevSmr | se(logTbPrevSmrSE, sigma=TRUE) ~ 
+                           1 + Sex + (1 + Sex | study.country) + (1 + Sex | id) + smrNotifRate,
+                       data = smrNotifStrat2 %>% filter(!is.na(smrNotifRate)) %>% 
+                              mutate("id" = row_number()),
+                       prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                               prior(normal(0, 1), class = b) +
+                               prior(exponential(2), class = sd) +
+                               prior(exponential(4), class = sigma) +
+                               prior(lkj(4), class=cor),
+                       
+                       family = gaussian(),
+                       control = list(adapt_delta = 0.99),
+                       chains = 4,
+                       cores = 4,
+                       iter = 10000, warmup = 2500, thin=3)
+
+
+### coefficients
+summary(model3)
+
+### create model estimates 
+survey_mod3_est <-  model3 %>% 
+    add_epred_draws(newdata = smrNotifStrat2 %>% filter(!is.na(smrNotifRate)) %>% 
+                              mutate("id" = row_number()) %>%  
+                              mutate(logTbPrevSE = 0),
+                    re_formula =  ~ 1 + Sex + (1 + Sex | study.country) + (1 + Sex | id) + smrNotifRate, 
+                    allow_new_levels=TRUE) %>%
+    ungroup() %>% 
+    mutate(label = paste(study.country, study.end.year)) %>% 
+    dplyr::select(label, study.country, id, Sex, smrNotifRate, .draw, .epred) %>%
+    group_by(Sex, id, study.country) %>%  
+    mutate(tbPrevSmr = exp(.epred) * 1e5, 
+           pnRatio = exp(.epred) / smrNotifRate) %>% 
+    select(!smrNotifRate)
+
+### Create summary statistics 
+survey_mod3_summary <- 
+    survey_mod3_est %>%
+    group_by(Sex, study.country, id, label) %>%
+    mean_qi(tbPrevSmr, na.rm=T) %>% 
+    mutate(across(c(tbPrevSmr, .lower, .upper), 
+                  round, 2)); survey_mod3_summary
+
+survey_mod3_pn_summary <- 
+    survey_mod3_est %>%
+    group_by(Sex, study.country, id, label) %>%
+    mean_qi(pnRatio, na.rm=T) %>% 
+    mutate(across(c(pnRatio, .lower, .upper), 
+                  round, 2)); survey_mod3_pn_summary
+```
+
+
+### Recreate WHO plot
+```{r}
+survey_mod3_pn_summary <- 
+    survey_mod3_pn_summary %>% 
+ select(label, Sex, pnRatio) %>% 
+ pivot_wider(id_cols = label, names_from = Sex, values_from = pnRatio) %>% 
+ rowwise() %>% 
+  mutate(mean = mean(c(female,male) )) %>% 
+  arrange(mean) %>% 
+  mutate(label=factor(label, label))
+
+ggplot(survey_mod3_pn_summary) + 
+      geom_segment( aes(x=label, xend=label, y=female, yend=male), color="grey") +
+  geom_point( aes(x=label, y=female), color="#6A5ACD", size=3 ) +
+  geom_point( aes(x=label, y=male), color="#FFB302", size=3 ) +
+  coord_flip() + theme_minimal() + 
+  scale_y_continuous(breaks=seq(0, 26,2)) + 
+  ylab("smr positive prevalence:notification ratio") + 
+    xlab("") + 
+    ggtitle("Smr positive with pooling")
+
+```
+
+```{r}
+lolliNoPoolDF <- 
+    smrNotifStrat2 %>% 
+ select(study.country, study.end.year, Sex, logTbPrevSmr, smrNotifRate) %>%
+ mutate(label = paste(study.country, study.end.year), pnRatio = exp(logTbPrevSmr)/smrNotifRate) %>% select(label, Sex,  pnRatio) %>% 
+ pivot_wider(id_cols = label, names_from = Sex, values_from = pnRatio) %>% 
+ rowwise() %>% 
+  mutate(mean = mean(c(female,male) )) %>% 
+  arrange(mean) %>% 
+  mutate(label=factor(label, label)) %>% na.omit()
+
+ggplot(lolliNoPoolDF) + 
+      geom_segment( aes(x=label, xend=label, y=female, yend=male), color="grey") +
+  geom_point( aes(x=label, y=female), color="#6A5ACD", size=3 ) +
+  geom_point( aes(x=label, y=male), color="#FFB302", size=3 ) +
+  coord_flip() + theme_minimal() + 
+  scale_y_continuous(breaks=seq(0, 26,2)) + 
+  ylab("smr positive prevalence:notification ratio") + 
+    xlab("") + 
+    ggtitle("Smr positive without pooling")
+```
