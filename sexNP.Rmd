@@ -7,6 +7,7 @@ geometry: margin=.5cm
 header-includes:
   - \pagenumbering{gobble}
 ---
+## Setup 
 
 ```{r Setup, echo = FALSE,  warning = FALSE, message=FALSE}
 
@@ -269,7 +270,6 @@ npRatioDF <- left_join(bactModelNatDF1  %>%
 ## Plot notification data 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
-
 ggplot(data=notifStrat %>% 
            rename(study.country = country, 
                   study.end.year = year)) +
@@ -340,21 +340,6 @@ tbPrevMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~
                        cores = 4,
                        iter = 10000, warmup = 2500, thin=3)
 
-# tbPrevSimpMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
-#                            1 + Sex + (1 | study.country) + (1 + Sex | id),
-#                        data = bactModelNatDF1,
-#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-#                                prior(exponential(2), class = sd),
-#                             
-#                        family = gaussian(),
-#                        control = list(adapt_delta = 0.99),
-#                        chains = 4,
-#                        cores = 4,
-#                        iter = 10000, warmup = 2500, thin=3)
-
-### check the fit 
-# plot(tbPrevMod)
-
 ### posterior predictive check 
 pp_check(tbPrevMod, ndraws=100)
 
@@ -382,8 +367,9 @@ survey_tb_prev_mod_summary <-
                   round, 2)); survey_tb_prev_mod_summary
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
+### Plot survey-level pooled prevalence estimates
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
 ggplot() +
     geom_point(data=survey_tb_prev_mod_summary, 
               aes(x=reorder(label, tbPrev), y=tbPrev, group=Sex, color=Sex), size=2) +
@@ -401,10 +387,9 @@ ggplot() +
                aes(x=reorder(label, tbPrev), y=tbPrev*1e5,
                     group=Sex, color=Sex), alpha = .3, size=3) +
     facet_wrap(facets = vars(Sex))
-
 ```
 
-### Country level prevalence 
+### Estimate country level pooled prevalence 
 
 ```{r}
 cntry_nd <- crossing(study.country = unique(bactModelNatDF1$study.country),
@@ -427,27 +412,6 @@ cntry_tb_prev_mod_summary <-
     mean_qi(tbPrev, na.rm=T) %>% 
     mutate(across(c(tbPrev, .lower, .upper), 
                   round, 2)); cntry_tb_prev_mod_summary
-```
-
-```{r}
-tb_prev_mod_est <-  tbPrevMod %>% 
-                          add_epred_draws(newdata = cntry_nd %>% distinct(),
-                                          re_formula =  ~ 1 + Sex,
-                                          allow_new_levels=TRUE) %>%
-                            ungroup() %>% 
-                            dplyr::select(study.country, Sex, .draw, .epred) %>%
-                            group_by(Sex, study.country) %>%  
-                            mutate(tbPrev = exp(.epred) * 1e5)
-
-tb_prev_mod_summary <- 
-    tb_prev_mod_est %>%
-    select(!.epred) %>% 
-    pivot_wider(names_from = Sex, values_from = tbPrev) %>% 
-    mutate(mfRatio = male/female) %>% 
-    ungroup() %>% 
-    mean_qi(mfRatio, na.rm=T) %>% 
-    mutate(across(c(mfRatio, .lower, .upper), 
-                  round, 2)); tb_prev_mod_summary
 ```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height = 8, fig.width =11}
@@ -499,6 +463,29 @@ ggplot() +
     ylab("Bacteriologically confirmed TB prevalence (per 100,000)") + 
     xlab("") + 
     facet_wrap(facets = vars(Sex), scales = "free_x")
+```
+
+### Total pooled M:F ratio of prevalence estimate
+
+```{r}
+tb_prev_mod_est <-  tbPrevMod %>% 
+                          add_epred_draws(newdata = cntry_nd %>% distinct(),
+                                          re_formula =  ~ 1 + Sex,
+                                          allow_new_levels=TRUE) %>%
+                            ungroup() %>% 
+                            dplyr::select(study.country, Sex, .draw, .epred) %>%
+                            group_by(Sex, study.country) %>%  
+                            mutate(tbPrev = exp(.epred) * 1e5)
+
+tb_prev_mod_summary <- 
+    tb_prev_mod_est %>%
+    select(!.epred) %>% 
+    pivot_wider(names_from = Sex, values_from = tbPrev) %>% 
+    mutate(mfRatio = male/female) %>% 
+    ungroup() %>% 
+    mean_qi(mfRatio, na.rm=T) %>% 
+    mutate(across(c(mfRatio, .lower, .upper), 
+                  round, 2)); tb_prev_mod_summary
 ```
 
 ### Model 2: Sex-stratified TB prevalence + year 
@@ -641,21 +628,6 @@ model3 <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~
                        cores = 4,
                        iter = 10000, warmup = 2500, thin=3, seed = npSeed)
 
-# tbPrevSimpMod <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~ 
-#                            1 + Sex + (1 | study.country) + (1 + Sex | id),
-#                        data = bactModelNatDF1,
-#                        prior = prior(student_t(7, 0, 1.5), class = Intercept) +
-#                                prior(exponential(2), class = sd),
-#                             
-#                        family = gaussian(),
-#                        control = list(adapt_delta = 0.99),
-#                        chains = 4,
-#                        cores = 4,
-#                        iter = 10000, warmup = 2500, thin=3)
-
-### check the fit 
-# plot(model2)
-
 ### posterior predictive check 
 pp_check(model3, ndraws=100)
 
@@ -744,57 +716,7 @@ as.data.frame(modelNP) %>%
 
 ```
 
-# ```{r survey np ratios}
-# model4<-modelNP
-# 
-# survey_mod4_samps <-  as.data.frame(model4) %>% 
-#                       select(contains("r_id.new"), b_Intercept, b_Sexmale)
-# 
-# 
-# colnames(survey_mod4_samps) <- gsub("\\]", "", gsub("\\[", ",", colnames(survey_mod4_samps)))
-# 
-# survey_mod4_samps <- survey_mod4_samps %>% 
-# pivot_longer(cols=`r_id.new,1,Intercept`:`r_id.new,38,Sexmale`, names_sep = ",",
-#              names_to= c("variable", "id.new", "coefficient"), values_to="value") %>% 
-# select(!variable) %>% 
-# pivot_wider(id_cols = c(b_Intercept, b_Sexmale, id.new), names_from = coefficient, values_from = value, names_prefix = "survey_reff_") 
-#     
-#     
-# survey_mod4_est <- left_join(bactNotifStrat %>% 
-#                              group_by(id) %>% 
-#                              mutate(id.new = cur_group_id()) %>% ungroup() %>% 
-#                              mutate(label = paste(study.country, study.end.year)) %>% 
-#                              select(label, id.new), 
-#                              survey_mod4_samps %>% 
-#                     mutate(npRatioFemale  = exp(b_Intercept + survey_reff_Intercept),
-#                            npRatioMale = exp(b_Intercept + b_Sexmale + survey_reff_Intercept + survey_reff_Sexmale), 
-#                            mfRatio = npRatioMale/npRatioFemale,
-#                            id.new = as.integer(id.new)) %>% 
-#                     group_by(id.new) %>% 
-#                     mean_qi(npRatioFemale, npRatioMale, mfRatio) %>% 
-#                     mutate(across(c(npRatioFemale, npRatioFemale.lower, npRatioFemale.upper, 
-#                                     npRatioMale, npRatioMale.lower, npRatioMale.upper,
-#                                     mfRatio, mfRatio.lower, mfRatio.upper), 
-#                                   round, 2))); survey_mod4_est
-# 
-# survey_mod4_est_f <- survey_mod4_est[,1:5]; survey_mod4_est_f$Sex <- "Female"
-# colnames(survey_mod4_est_f)[3:5] <- c("Mean", "Lower", "Upper")
-# survey_mod4_est_m <- survey_mod4_est[,c(1:2, 6:8)]; survey_mod4_est_m$Sex <- "Male"
-# colnames(survey_mod4_est_m)[3:5] <- c("Mean", "Lower", "Upper")
-# survey_mod4_est_b <- rbind(survey_mod4_est_f, survey_mod4_est_m)
-# 
-# ggplot(survey_mod4_est_b) + 
-#     geom_point(aes(x=reorder(label, Mean), y=Mean, color = Sex), position = position_dodge(width = 0.5)) +
-#     geom_errorbar(aes(x=reorder(label, Mean), ymin=Lower, ymax=Upper, color = Sex), position = position_dodge(width = 0.5)) +
-#     theme_minimal(base_size = 16) + coord_flip() + 
-#     scale_color_manual(values = c("darkred", "dodgerblue4")) + 
-#     theme(legend.position = "inside", legend.position.inside = c(0.9, 0.2), 
-#           legend.background = element_rect(fill="white", color = "black")) + 
-#     xlab("") + ylab("notification-to-prevalence ratio")
-# ```
-
 ```{r country np ratios}
-
 model4<-modelNP
 
 country_mod4_samps <-  as.data.frame(model4) %>% 
@@ -886,10 +808,15 @@ ggsave(plot = get_last_plot(), file = "~/tbPrevalenceReviewLMIC/tb-lmic-prevalen
 ### Covariate analysis 
 
 ```{r covariate data, echo = FALSE,  warning = FALSE, message=FALSE}
-artCoverage0 <- read.csv(here("data/covariates/unaids-2025-adult-art-coverage-sex.csv")) %>% 
-                mutate(female = as.numeric(female)/100, 
-                       male = as.numeric(male) / 100) %>% 
-                pivot_longer(cols = c(male, female), names_to = "Sex", values_to = "art_coverage")
+# artCoverage0 <- read.csv(here("data/covariates/unaids-2025-adult-art-coverage-sex.csv")) %>%
+#                 mutate(female = as.numeric(female)/100, 
+#                        male = as.numeric(male) / 100) %>% 
+#                 pivot_longer(cols = c(male, female), names_to = "Sex", values_to = "art_coverage")
+
+artCoverage0 <- read.csv(here("data/covariates/unaids-00_25-adult-art-coverage-sex.csv")) %>% 
+                pivot_longer(cols = X2000:X2025, names_to = "study.end.year", values_to = "art_coverage")  %>% 
+                rename(study.country = Region) %>% select(!ISO3) %>% 
+                mutate(study.end.year = as.numeric(gsub("X", "", study.end.year)))
 
 gdi0 <- read.csv(file=here("data/covariates/GenderDevelopmentIndex.csv")) %>%
         rename(study.country = Entity, study.end.year = Year, 
@@ -929,11 +856,13 @@ smoking0 <- read.csv("~/Downloads/IHME-GBD_2023_DATA-d1ad2106-1/IHME-GBD_2023_DA
         rename(study.country = location_name) %>%
         mutate(Sex = ifelse(sex_name == "Male", "male", "female")) %>%
         select(study.country, year, Sex, val)  %>% 
-        rename(smoking = val, study.end.year = year)
+        mutate(smoking = val * 100) %>% 
+        rename(study.end.year = year)
 
 # uhc0 <- read.csv("~/tb-lmic-patientcosts-review/data/covariateData")
 uhc0 <- readRDS("~/Desktop/nis100/tbPatientCosts/tb-lmic-patientcosts-review/data/covariateData/uhcIndex.rds") %>% 
-    mutate(study.end.year = as.integer(study.end.year))
+    mutate(study.end.year = as.integer(study.end.year),
+           UHCindex = UHCindex*100)
 
 fitCovariates <-left_join(covariates00, bmi0) %>% 
                 left_join(uhc0) %>% 
@@ -963,8 +892,8 @@ fitCovariatesModelFit <- left_join(bactNotifStrat, fitCovariates) %>%
                                 diabetes.scld = scale(`Diabetes mellitus type 2`), 
                                 bmi.scld = scale(bmi),
                                 gdi.scld = scale(gdi),
-                                uhc.scld = scale(UHCindex) * 100, 
-                                smoking.scld = scale(smoking) *100, 
+                                uhc.scld = scale(UHCindex), 
+                                smoking.scld = scale(smoking), 
                                 symp.req = ifelse(is.na(symptomsRequired) & study.country == "Thailand", 
                                                   "Yes", symptomsRequired),
                                 xpert.cult.used = XpertCultUsed) 
@@ -1231,16 +1160,16 @@ summary(model10c_xpertCult)
 modelAllOffset <- brms::brm(formula = logTbPrevNeg | se(logTbPrevSE, sigma=TRUE) ~ 
                               1 + Sex + (1 + Sex | study.country) + #(1 + Sex | id) + 
                               Sex*year_z +
-                              Sex*offset(logCalcNotifRateNeg) + 
-                              Sex*alcohol.scld + 
-                              Sex*diabetes.scld +  
-                              Sex*hiv.trtd.scld + 
-                              Sex*hiv.untrtd.scld + 
-                              Sex*smoking.scld + 
-                              Sex*bmi.scld +
-                              Sex*uhc.scld + 
-                              Sex*symp.req + 
-                              Sex*xpert.cult.used,
+                              Sex*offset(logCalcNotifRateNeg) #+ 
+                              # Sex*alcohol.scld + 
+                              # Sex*diabetes.scld +  
+                              # Sex*hiv.trtd.scld + 
+                              # Sex*hiv.untrtd.scld + 
+                              # Sex*smoking.scld + 
+                              # Sex*bmi.scld +
+                              # Sex*uhc.scld + 
+                              # Sex*symp.req + 
+                              # Sex*xpert.cult.used,
                     data = fitCovariatesNaRm %>% 
                            mutate(logTbPrevNeg = logTbPrev *-1, 
                                   logCalcNotifRateNeg = -1 * logCalcNotifRate), 
@@ -1720,10 +1649,7 @@ lmicPrevN2 <- left_join(lmicEst %>%
 lmicDataAllYr <- left_join(fitCovariates_lmic, 
                       notifStrat %>% rename(study.country = country, 
                                             study.end.year = year)) %>% 
-            filter(!study.country %in% c("Micronesia (Federated States of)", 
-                                        "Timor-Leste", 
-                                        "Montenegro", "South Sudan", 
-                                        "Serbia")) %>% 
+            # filter(study.country %in% bactModelNatDF$study.country) %>% 
                 mutate(year_z = study.end.year - 2013) 
 
 ################### Plot Covariates ##################################
@@ -1745,10 +1671,11 @@ ggplot(lmicDataAllYrCov %>% filter(Sex == "female")) +
 
 lmicAllYrEst <- modelAllPred %>%
                 add_epred_draws(newdata = lmicDataAllYr %>%  
+                                    # filter(study.end.year %in% c(2000,2005, 2010, 2015)) %>% 
                                          mutate(logTbPrevSE = 0, 
                                                 symp.req = "No", 
                                                 xpert.cult.used = "Yes"),
-                               re_formula =  ~ 1 + Sex + offset(logCalcNotifRate),
+                               re_formula =  ~ 1 + Sex + Sex*year_z,
                                allow_new_levels=TRUE) %>%
                 ungroup() %>% 
                 mutate(label = paste(study.country, study.end.year)) %>% 
@@ -1757,7 +1684,23 @@ lmicAllYrEst <- modelAllPred %>%
                 # group_by(Sex, study.country, country.code, .draw) %>%  
                 mutate(prev = exp(.epred), 
                        npRatio = calcNotifRate / prev); #lmicEst
-  
+
+# lmicAllYrCntryEst <- modelAllPred %>%
+#                 add_epred_draws(newdata = lmicDataAllYr %>%  
+#                                     # filter(study.end.year %in% c(2000,2005, 2010, 2015)) %>% 
+#                                          mutate(logTbPrevSE = 0, 
+#                                                 symp.req = "No", 
+#                                                 xpert.cult.used = "Yes"),
+#                                re_formula =  ~ 1 + Sex + offset(logCalcNotifRate),
+#                                allow_new_levels=TRUE) %>%
+#                 ungroup() %>% 
+#                 mutate(label = paste(study.country, study.end.year)) %>% 
+#                 dplyr::select(label, study.country, country.code, study.end.year, 
+#                               Sex, .draw, .epred, calcNotifRate) %>%
+#                 # group_by(Sex, study.country, country.code, .draw) %>%  
+#                 mutate(prev = exp(.epred), 
+#                        npRatio = calcNotifRate / prev);
+#   
 lmicNPratioAllYr <- lmicAllYrEst %>% 
     group_by(Sex, study.end.year) %>%
     na.omit() %>% 
@@ -1770,22 +1713,26 @@ ggplot(lmicNPratioAllYr) +
                     theme_minimal() + 
     scale_color_manual(values = c("darkred", "dodgerblue4")) +
     scale_fill_manual(values = c("darkred", "dodgerblue4")) +
-    facet_wrap(facets = vars(Sex))
+    facet_wrap(facets = vars(Sex)) + ylab("Notification-to-prevalence ratio") +
+    theme(legend.position = "bottom") + 
+    ggtitle("Notification-to-prevalence ratio for all countries")
 
-# lmicPrevAllYr <- lmicAllYrEst %>% 
-#     group_by(Sex, study.end.year) %>%
-#     na.omit() %>% 
-#     mean_qi(prev, width = 0.95) ; lmicPrevAllYr
-# 
-# 
-# ggplot(lmicPrevAllYr) + 
-#     geom_point(aes(x=study.end.year, y=prev, color = Sex)) + 
-#     geom_ribbon(aes(x=study.end.year, ymin=prev.lower, ymax=prev.upper, fill = Sex), alpha = 0.5) +
-#                     theme_minimal() + 
-#     scale_color_manual(values = c("darkred", "dodgerblue4")) +
-#     scale_fill_manual(values = c("darkred", "dodgerblue4")) +
-#     facet_wrap(facets = vars(Sex))
-# 
+lmicPrevAllYr <- lmicAllYrEst %>%
+    group_by(Sex, study.end.year) %>%
+    na.omit() %>%
+    mean_qi(prev, width = 0.95) ; lmicPrevAllYr
+
+
+ggplot(lmicPrevAllYr) +
+    geom_point(aes(x=study.end.year, y=prev*1e5, color = Sex)) +
+    geom_ribbon(aes(x=study.end.year, ymin=prev.lower*1e5, ymax=prev.upper*1e5, fill = Sex), alpha = 0.5) +
+                    theme_minimal() +
+    scale_color_manual(values = c("darkred", "dodgerblue4")) +
+    scale_fill_manual(values = c("darkred", "dodgerblue4")) +
+    facet_wrap(facets = vars(Sex)) + ylab("TB prevalence rate (per 100K)") +
+    theme(legend.position = "bottom") + 
+    ggtitle("Projected TB prevalence for all countries")
+
 # 
 # lmicNPAllYr <- ((lmicAllYrEst %>% 
 #                 ungroup() %>%
@@ -1818,9 +1765,84 @@ ggplot(lmicNPratioAllYr) +
 #     mean_qi(mfRatio, width = 0.95)
 ```
 
+
+### Predict to all LMICs with covariate data for all available years (2000 onward) using only year model
+```{r}
+lmicDataAllYr <- left_join(fitCovariates_lmic, 
+                      notifStrat %>% rename(study.country = country, 
+                                            study.end.year = year)) %>% 
+            filter(study.country %in% bactModelNatDF$study.country) %>% 
+                mutate(year_z = study.end.year - 2013) 
+
+
+modelPredYr <- brms::brm(formula = logTbPrev | se(logTbPrevSE, sigma=TRUE) ~
+                              1 + Sex + (1 + Sex | study.country) + 
+                              Sex* + Sex*year_z + Sex*logCalcNotifRate,
+                    data = fitCovariatesNaRm,
+                    prior = c(prior(normal(0,1), class = Intercept),
+                              prior(normal(0,1), class = b),
+                              prior(cauchy(0,1), class = sd),
+                              prior(cauchy(0,1), class = sigma),
+                              prior(lkj(10), class=cor)),
+                    family = gaussian(),
+                    control = list(adapt_delta = 0.99),
+                    chains = 4,
+                    cores = 4,
+                    iter = 10000, warmup = 2500, thin=3)
+
+
+lmicAllYrEstSimp <- modelPredYr %>%
+                add_epred_draws(newdata = lmicDataAllYr %>%  
+                                         mutate(logTbPrevSE = 0),
+                               re_formula =  ~ 1 + Sex + Sex*year_z,
+                               allow_new_levels=TRUE) %>%
+                ungroup() %>% 
+                mutate(label = paste(study.country, study.end.year)) %>% 
+                dplyr::select(label, study.country, country.code, study.end.year, 
+                              Sex, .draw, .epred, calcNotifRate) %>%
+                # group_by(Sex, study.country, country.code, .draw) %>%  
+                mutate(prev = exp(.epred), 
+                       npRatio = calcNotifRate / prev); #lmicEst
+  
+lmicNPratioAllYrSimp <- lmicAllYrEstSimp %>% 
+    group_by(Sex, study.end.year) %>%
+    na.omit() %>% 
+    mean_qi(npRatio, width = 0.95) ; lmicNPratioAllYrSimp
+
+
+ggplot(lmicNPratioAllYrSimp) + 
+    geom_point(aes(x=study.end.year, y=npRatio, color = Sex)) + 
+    geom_ribbon(aes(x=study.end.year, ymin=npRatio.lower, ymax=npRatio.upper, fill = Sex), alpha = 0.5) +
+                    theme_minimal() + 
+    scale_color_manual(values = c("darkred", "dodgerblue4")) +
+    scale_fill_manual(values = c("darkred", "dodgerblue4")) +
+    facet_wrap(facets = vars(Sex)) + ylab("Notification-to-prevalence ratio") +
+    theme(legend.position = "bottom") + 
+    ggtitle("Notification-to-prevalence ratio for all countries (year only)")
+
+lmicPrevAllYrSimp <- lmicAllYrEstSimp %>%
+    group_by(Sex, study.end.year) %>%
+    na.omit() %>%
+    mean_qi(prev, width = 0.95) ; lmicPrevAllYrSimp
+
+
+ggplot(lmicPrevAllYrSimp) +
+    geom_point(aes(x=study.end.year, y=prev*1e5, color = Sex)) +
+    geom_ribbon(aes(x=study.end.year, ymin=prev.lower*1e5, ymax=prev.upper*1e5, fill = Sex), alpha = 0.5) +
+                    theme_minimal() +
+    scale_color_manual(values = c("darkred", "dodgerblue4")) +
+    scale_fill_manual(values = c("darkred", "dodgerblue4")) +
+    facet_wrap(facets = vars(Sex)) + ylab("TB prevalence rate (per 100K)") +
+    theme(legend.position = "bottom") + 
+    ggtitle("TB prevalence rate (per 100K) for all countries (year only)")
+```
+
+
 ### who uses smear positive so let's try that 
 
 ## SMEAR POSITIVE ANALYSIS 
+
+
 
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 
