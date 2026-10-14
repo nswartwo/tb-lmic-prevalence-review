@@ -155,6 +155,7 @@ ggplot(nCountryMap, aes(x=long, y=lat)) +
 ```
 
 ## Step 2: Create a tidy dataset of relevant variables for modeling. 
+
 ```{r, echo = FALSE,  warning = FALSE, message=FALSE}
 ##############################################################################|
 ##### CREATE A TIDY DATASET OF RELEVANT VARIABLES #############################
@@ -329,6 +330,7 @@ cleanHivDF <-  cleanHivDF0 %>%
                            study.end.year - round(mean(study.end.year, na.rm=TRUE)),
                            (publication.year - meanLag) - round(mean((publication.year - meanLag), na.rm=TRUE))),                                       
            bias= ifelse(grepl("Low", study.quality.summary), "Low", "Not low"),
+           highBias = ifelse(grepl("High", study.quality.summary), "Yes", "No"),
            
            symptomScreen = ifelse(is.na(screening.tests), 
                                   NA, 
@@ -358,7 +360,7 @@ bactModelHivDFAll <- cleanHivDF %>%
     select(covidence.id, id, WHO.region, study.country,
            hiv.status.definition, hiv.analysis.indicator, 
            publication.year, study.end.year, year_z, study.quality.summary,
-           natRep, bias, symptomScreen, symptomsRequired, 
+           natRep, bias, highBias, symptomScreen, symptomsRequired, 
            XpertCultRequired, 
            study.rurality,
            n.participants.female, n.participants.male, n.participants.sex.total,
@@ -1081,11 +1083,24 @@ notif_ratio  <- notif0 %>%
     #        country %in% unique(bactModelHivDF$study.country)) %>% 
     select(country, g_whoregion, 
            year, 
+           c_newinc,
+           newrel_m014, 
+           newrel_f014,
            newrel_m15plus, 
            newrel_f15plus,
            newrel_hivpos, 
            newrel_hivpos_014,
+           newrel_hivtest, 
+           newrel_hivtest_014,
            new_sp, new_sn, 
+           new_sn_m014, 
+           new_sn_f014,
+           # new_sn_m15plus, 
+           # new_sn_f15plus,
+           new_sp_m014, 
+           new_sp_f014,
+           # new_sp_m15plus, 
+           # new_sp_f15plus,
            hivtest_pos, 
            hivtest) %>%
     rename(study.country = country, 
@@ -1094,50 +1109,53 @@ notif_ratio  <- notif0 %>%
                    mutate(study.end.year = ifelse(study.country == "Zimbabwe", 
                           2007, study.end.year))) %>%
     left_join(pop, by=c("study.country", "study.end.year")) %>%
-    mutate( # Cases 
-           casesHivPos = ifelse(study.end.year < 2019 & !is.na(hivtest_pos), 
-                                    hivtest_pos, 
-                                    ifelse(is.na(newrel_hivpos_014), 
-                                           newrel_hivpos,
-                                           newrel_hivpos - newrel_hivpos_014)), 
-           
-           casesHivNeg = ifelse(study.end.year == 2014, 
-                                    newrel_m15plus + newrel_f15plus - hivtest_pos, 
-                                    ifelse(study.end.year < 2014, 
-                                           new_sp + new_sn - 
-                                           # new_sn_f014 - new_sn_m014 -
-                                           # new_sp_f014 - new_sp_m014 -
-                                           hivtest_pos, 
-                                           ifelse(is.na(newrel_hivpos_014), 
-                                                  newrel_m15plus + newrel_f15plus - newrel_hivpos, 
-                                                  newrel_m15plus + newrel_f15plus - newrel_hivpos - newrel_hivpos_014))),
-           
-          ### Poisson uncertainty
-           stndErrCasesHivPos = sqrt(casesHivPos / hivpop.all),
-           stndErrCasesHivNeg = sqrt(casesHivNeg / (totpop-hivpop.all)),
-           
-           # Notification rates 
-           notifHivPos = casesHivPos / hivpop.all,
-           notifHivNeg = casesHivNeg / (totpop-hivpop.all),
-           stndErrNotifHivPos = stndErrCasesHivPos/hivpop.all,
-           stndErrNotifHivNeg = stndErrCasesHivNeg/(totpop - hivpop.all),
-           # Log Notification rate 
-           logNotifHivPos = log(notifHivPos),
-           logNotifHivNeg = log(notifHivNeg),
+    #### Calculate notifications 
+    mutate(
+        # percSex = ifelse(study.end.year >= 2019, 
+        #                  ((newrel_m014 + newrel_f014 + newrel_m15plus + newrel_f15plus) / c_newinc)*100,
+        #                  # ((new_sn_m014 + new_sn_m15plus + new_sn_f014 + new_sn_f15plus + 
+        #                  #   new_sp_m014 + new_sp_m15plus + new_sp_f014 + new_sp_f15plus) / c_newinc)*100  
+        #                  (new_sn + new_sp) / c_newinc *100), 
+        percHivTest = ifelse(study.end.year < 2019,
+                             hivtest/c_newinc * 100,
+                             newrel_hivtest/c_newinc *100), 
         
-           logNotifStErrHivPos = (log(casesHivPos + stndErrCasesHivPos)  -
-                                  log(casesHivPos - stndErrCasesHivPos)) / hivpop.all,
-           logNotifStErrHivNeg = (log(casesHivNeg + stndErrCasesHivNeg)  -
-                                  log(casesHivNeg - stndErrCasesHivNeg)) / (totpop-hivpop.all),
-           ### Notification rate ratio HIV positive / HIV negative
-           log_NR = logNotifHivPos - logNotifHivNeg,
-           # Hedges 1999 on meta-analyses of log response ratios
-           logNR_se = sqrt(logNotifStErrHivPos^2 + logNotifStErrHivNeg^2)
-    ) %>% rowwise() %>% 
+        casesHivPos = ifelse(study.end.year < 2019 & !is.na(hivtest_pos),
+                             (hivtest_pos / hivtest) * c_newinc,
+                                (newrel_hivpos / newrel_hivtest) * c_newinc), 
+        casesHivNeg = c_newinc - casesHivPos, 
+         ### Poisson uncertainty
+    stndErrCasesHivPos = sqrt(casesHivPos / hivpop.all),
+    stndErrCasesHivNeg = sqrt(casesHivNeg / (totpop-hivpop.all)),
+    
+    ### Internal notification rates = 
+    
+    # Notification rates 
+    notifHivPos = casesHivPos / hivpop.all,
+    notifHivNeg = casesHivNeg / (totpop-hivpop.all),
+    stndErrNotifHivPos = stndErrCasesHivPos/hivpop.all,
+    stndErrNotifHivNeg = stndErrCasesHivNeg/(totpop - hivpop.all),
+    # Log Notification rate 
+    logNotifHivPos = log(notifHivPos),
+    logNotifHivNeg = log(notifHivNeg),
+    
+    logNotifStErrHivPos = (log(casesHivPos + stndErrCasesHivPos)  -
+                               log(casesHivPos - stndErrCasesHivPos)) / hivpop.all,
+    logNotifStErrHivNeg = (log(casesHivNeg + stndErrCasesHivNeg)  -
+                               log(casesHivNeg - stndErrCasesHivNeg)) / (totpop-hivpop.all),
+    ### Notification rate ratio HIV positive / HIV negative
+    log_NR = logNotifHivPos - logNotifHivNeg,
+    # Hedges 1999 on meta-analyses of log response ratios
+    logNR_se = sqrt(logNotifStErrHivPos^2 + logNotifStErrHivNeg^2), 
+    #################################################################
+    ### scale these 
+) %>% rowwise() %>% 
     mutate(logNotifStErrHivPos2 = sd(log(rpois(1e6,casesHivPos))), 
            logNotifStErrHivNeg2 = sd(log(rpois(1e6,casesHivNeg))), 
            logNR_se2 = sqrt(logNotifStErrHivPos2^2 + logNotifStErrHivNeg2^2)
-)
+    )
+    
+ 
 ```
 
 ## Model 4: TB notifications by country
@@ -1226,13 +1244,15 @@ notif <- rbind(notif_ratio %>%
                           logPrevStErrHivNeg,
                           logNotifHivNeg,
                           logNotifStErrHivNeg, 
-                          study.end.year) %>%
+                          study.end.year,
+                          highBias) %>%
                    transmute(study.country, 
                              HIVstatus = "HivNeg",
                               logPrev = logPrevHivNeg, 
                               logPrevSE = logPrevStErrHivNeg, 
                               logNotif = logNotifHivNeg,
-                              logNotifSE = logNotifStErrHivNeg),
+                              logNotifSE = logNotifStErrHivNeg,
+                             highBias = highBias),
                notif_ratio %>% 
                    filter(natRep == "Yes") %>%
                    select(study.country, 
@@ -1240,13 +1260,15 @@ notif <- rbind(notif_ratio %>%
                           logPrevStErrHivPos,
                           logNotifHivPos,
                           logNotifStErrHivPos, 
-                          study.end.year) %>%
+                          study.end.year,
+                          highBias) %>%
                    transmute(study.country, 
                              HIVstatus = "HivPos",
                              logPrev = logPrevHivPos, 
                              logPrevSE = logPrevStErrHivPos, 
                              logNotif = logNotifHivPos,
-                             logNotifSE = logNotifStErrHivPos))
+                             logNotifSE = logNotifStErrHivPos,
+                             highBias = highBias))
 ```
 
 
@@ -2193,3 +2215,126 @@ hivTbl_1_b <- hivTbl_b %>% t() %>% as.data.frame() %>%
 
 ```
 
+
+
+# Sensitivity analysis using only those surveys that are low and medium risk 
+# of bias. 
+
+## Model 8: Main effect model
+
+Model specification
+```{r, warning = FALSE, message=FALSE, cache=TRUE}
+saBiasMod <- brms::brm(formula = logPR | se(logPR_se, sigma=TRUE) ~ 
+                               1  + (1|study.country) + (1|id),
+                           data = bactModelHivDF %>% 
+                                  filter(highBias == "No"),
+                           prior = prior(student_t(7, 0, 1.5), class = Intercept) +
+                                   prior(exponential(2), class = sd),
+                           family = gaussian(),
+                           control = list(adapt_delta = 0.99),
+                           chains = 4,
+                           cores = 4,
+                           iter = 10000,
+                           warmup = 2500, seed = hivReviewSeed)
+```
+
+Summarize and check 
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, fig.height = 20, fig.width = 28}
+summary(saBiasMod)
+# plot(saBiasMod)
+
+nd <- bactModelHivDF %>%
+    select(study.country, logPrevHivNeg) %>%
+    mutate(logPR_se=1)
+
+saBiasModEst <- add_epred_draws(object = saBiasMod,
+                                    newdata = nd,
+                                    re_formula = NA, 
+                                    allow_new_levels = TRUE) %>% 
+    mutate(hivRatio = exp(.epred),
+           type="Posterior mean and 95% credible interval") 
+```
+
+Main estimate
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+saBiasModEst  %>% ungroup() %>% mean_qi(hivRatio)  %>% 
+    mutate(across(c(hivRatio, .lower, .upper), round, 2))
+```
+
+## Model 10: Multivariate model of TB prevalence risk and notification rate
+
+Model specification
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+###############################################################################
+### Run a multivariate model
+#prevalence model:
+prev_model <- bf(
+    logPrev | se(logPrevSE, sigma = TRUE) ~ 1 + HIVstatus + (1 | p | study.country)
+)
+
+#notifications model:
+notif_model <- bf(
+    logNotif | se(logNotifSE, sigma = TRUE) ~ 1  + HIVstatus + (1 | p | study.country)
+)
+
+#fit the model
+saBias_prev_notif_model <- brm(
+    formula = prev_model + notif_model + set_rescor(FALSE),
+    data = notif,
+    family = gaussian(), 
+    # sample_prior = "only",
+    prior = c(
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logPrev"),
+        prior(student_t(7, 0, 1.5), class = Intercept, resp = "logNotif"),
+        # prior(student_t(7, 0, 1.5), class = b, resp = "logPrev"),
+        # prior(student_t(7, 0, 1.5), class = b, resp = "logNotif"),
+        prior(exponential(2), class = sd, resp = "logPrev"),
+        prior(exponential(2), class = sd, resp = "logNotif")
+    ),
+    control = list(adapt_delta = 0.99),
+    chains = 4,
+    cores = 4,
+    iter = 10000, 
+    warmup = 2500, seed = hivReviewSeed
+)
+```
+
+Summarize and check
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+summary(prev_notif_model)
+```
+
+Prediction
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE}
+prev_notif_est <-  prev_notif_model %>% 
+    add_epred_draws(newdata = crossing(study.country=unique(notif$study.country), 
+                                       HIVstatus = c("HivNeg", "HivPos"), 
+                                       logPrevSE = 1,
+                                       logNotifSE = 1),
+                    re_formula =  ~ 1 + HIVstatus + (1 | study.country)) %>%
+    ungroup() %>% 
+    dplyr::select(study.country, .category, HIVstatus, .draw, .epred) %>%
+    pivot_wider(names_from = .category, values_from = .epred) %>%
+    # Note we use expit here to recover the probability; 
+    # if we use exp we would recover the odds ratio. 
+    mutate(npRatio = exp(logNotif - logPrev)) 
+
+prev_notif_estSummary <- 
+    prev_notif_est %>%
+    group_by(HIVstatus, study.country) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); prev_notif_estSummary
+
+prev_notif_estSummary2 <- 
+    prev_notif_est %>%
+    group_by(HIVstatus) %>%
+    mean_qi(npRatio, na.rm=T) %>% 
+    mutate(across(c(npRatio, .lower, .upper), 
+                  round, 2)); prev_notif_estSummary2
+
+```
